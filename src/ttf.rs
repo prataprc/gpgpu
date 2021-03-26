@@ -1,64 +1,39 @@
-use structopt::StructOpt;
 use ttf_parser::{cmap, kern, Face, TableName};
 
-use std::{fs, path, process};
+use std::{ffi, fs};
 
-#[derive(Debug, Clone, StructOpt)]
-#[structopt(name = "ttf", version = "0.0.1")]
-struct Opt {
-    #[structopt(long = "names")]
-    pub names: bool,
+pub fn print_names(file: &ffi::OsStr) -> Result<(), String> {
+    let font_data = fs::read(&file).unwrap();
+    let face = Face::from_slice(&font_data, 0).map_err(|e| e.to_string())?;
+    print_ttf_names(&face);
 
-    pub file: String,
+    Ok(())
 }
 
-fn main() {
-    let opts = Opt::from_args();
-
-    let file = path::Path::new(&opts.file);
-    let res = match file.extension().map(|s| s.to_str().unwrap()) {
-        Some("ttf") => print_ttf(opts.clone()),
-        Some(_) | None => {
-            println!("Don't know how to deal with {:?}", opts.file);
-            process::exit(1)
-        }
-    };
-
-    match res {
-        Ok(_) => (),
-        Err(err) => println!("error: {}", err),
-    }
-}
-
-fn print_ttf(opts: Opt) -> Result<(), String> {
-    // use prettytable::{cell, Row, Table};
-
-    let font_data = fs::read(&opts.file).unwrap();
+pub fn print_info(file: &ffi::OsStr) -> Result<(), String> {
+    let font_data = fs::read(&file).unwrap();
     let face = Face::from_slice(&font_data, 0).map_err(|e| e.to_string())?;
 
-    if opts.names {
-        print_names(&face);
-    } else {
-        print_type(&face);
+    print_type(&face);
 
-        print_font_anatomy(&face);
+    print_font_anatomy(&face);
 
-        println!("** Tables:");
-        let tables = get_tables(&face);
-        let mut ss: Vec<String> = tables.iter().map(|t| format!("{:?}", t)).collect();
-        while ss.len() > 4 {
-            println!("    {}", ss.drain(..4).collect::<Vec<String>>().join(" | "));
-        }
-        println!("    {}", ss.drain(..).collect::<Vec<String>>().join(" | "));
-
-        let sub_tables: Vec<cmap::Subtable> = face.character_mapping_subtables().collect();
-        println!("** number of cmaps: {}", sub_tables.len());
-
-        let kern_tables: Vec<kern::Subtable> = face.kerning_subtables().collect();
-        println!("** number of kerning-tables: {}", kern_tables.len());
-
-        println!("** number of glyphs: {}", face.number_of_glyphs());
+    println!("** Tables:");
+    let tables = get_tables(&face);
+    let mut ss: Vec<String> = tables.iter().map(|t| format!("{:?}", t)).collect();
+    while ss.len() > 4 {
+        println!("    {}", ss.drain(..4).collect::<Vec<String>>().join(" | "));
     }
+    println!("    {}", ss.drain(..).collect::<Vec<String>>().join(" | "));
+
+    let sub_tables: Vec<cmap::Subtable> = face.character_mapping_subtables().collect();
+    println!("** number of cmaps: {}", sub_tables.len());
+
+    let kern_tables: Vec<kern::Subtable> = face.kerning_subtables().collect();
+    println!("** number of kerning-tables: {}", kern_tables.len());
+
+    println!("** number of glyphs: {}", face.number_of_glyphs());
+
     Ok(())
 }
 
@@ -78,7 +53,7 @@ fn print_type(face: &Face) {
     println!("** Type: {}", font_type);
 }
 
-fn print_names(face: &Face) {
+fn print_ttf_names(face: &Face) {
     face.names()
         .filter_map(|n| n.to_string())
         .for_each(|s| println!("** {}", s));

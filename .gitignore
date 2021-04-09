@@ -7,4 +7,8 @@ perf.out
 check.out
 perf.data
 perf.data.old
-Monaco_Linux.ttf
+*.ttf
+*.bmp
+*.png
+*.jpg
+*.jpeg

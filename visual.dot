@@ -1,0 +1,72 @@
+digraph G {
+    subgraph loader {
+        vkGetInstanceProcAddr -> vkEnumerateInstanceVersion;
+        vkGetInstanceProcAddr -> vkCreateInstance;
+        vkGetInstanceProcAddr -> vkEnumerateInstanceExtensionProperties;
+        vkGetInstanceProcAddr -> vkEnumerateInstanceLayerProperties;
+
+        vkGetInstanceProcAddr -> DestroyInstance;
+        DestroyInstance(VkInstance);
+
+        vkGetInstanceProcAddr -> GetDeviceProcAddr;
+        GetDeviceProcAddr(VkDevice) -> ;
+
+        EnumeratePhysicalDevices => (instance: Instance, pPhysicalDeviceCount: *mut u32, pPhysicalDevices: *mut PhysicalDevice) -> Result,
+        EnumerateDeviceExtensionProperties => (physicalDevice: PhysicalDevice, pLayerName: *const c_char, pPropertyCount: *mut u32, pProperties: *mut ExtensionProperties) -> Result,
+        EnumerateDeviceLayerProperties => (physicalDevice: PhysicalDevice, pPropertyCount: *mut u32, pProperties: *mut LayerProperties) -> Result,
+        CreateDevice => (physicalDevice: PhysicalDevice, pCreateInfo: *const DeviceCreateInfo, pAllocator: *const AllocationCallbacks, pDevice: *mut Device) -> Result,
+        GetPhysicalDeviceFeatures => (physicalDevice: PhysicalDevice, pFeatures: *mut PhysicalDeviceFeatures) -> (),
+        GetPhysicalDeviceFormatProperties => (physicalDevice: PhysicalDevice, format: Format, pFormatProperties: *mut FormatProperties) -> (),
+        GetPhysicalDeviceImageFormatProperties => (physicalDevice: PhysicalDevice, format: Format, ty: ImageType, tiling: ImageTiling, usage: ImageUsageFlags, flags: ImageCreateFlags, pImageFormatProperties: *mut ImageFormatProperties) -> Result,
+        GetPhysicalDeviceProperties => (physicalDevice: PhysicalDevice, pProperties: *mut PhysicalDeviceProperties) -> (),
+        GetPhysicalDeviceQueueFamilyProperties => (physicalDevice: PhysicalDevice, pQueueFamilyPropertyCount: *mut u32, pQueueFamilyProperties: *mut QueueFamilyProperties) -> (),
+        GetPhysicalDeviceMemoryProperties => (physicalDevice: PhysicalDevice, pMemoryProperties: *mut PhysicalDeviceMemoryProperties) -> (),
+        GetPhysicalDeviceSparseImageFormatProperties => (physicalDevice: PhysicalDevice, format: Format, ty: ImageType, samples: SampleCountFlagBits, usage: ImageUsageFlags, tiling: ImageTiling, pPropertyCount: *mut u32, pProperties: *mut SparseImageFormatProperties) -> (),
+        DestroySurfaceKHR => (instance: Instance, surface: SurfaceKHR, pAllocator: *const AllocationCallbacks) -> (),
+        CreateXlibSurfaceKHR => (instance: Instance, pCreateInfo: *const XlibSurfaceCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result,
+        GetPhysicalDeviceXlibPresentationSupportKHR => (physicalDevice: PhysicalDevice, queueFamilyIndex: u32, dpy: *mut c_void, visualID: u32/* FIXME: VisualID */) -> Bool32,
+        CreateXcbSurfaceKHR => (instance: Instance, pCreateInfo: *const XcbSurfaceCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result,
+        GetPhysicalDeviceXcbPresentationSupportKHR => (physicalDevice: PhysicalDevice, queueFamilyIndex: u32, connection: *mut c_void, visual_id: u32 /* FIXME: xcb_visualid */) -> Bool32,
+        CreateWaylandSurfaceKHR => (instance: Instance, pCreateInfo: *const WaylandSurfaceCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result,
+        GetPhysicalDeviceWaylandPresentationSupportKHR => (physicalDevice: PhysicalDevice, queueFamilyIndex: u32, display: *mut c_void) -> Bool32,
+        CreateAndroidSurfaceKHR => (instance: Instance, pCreateInfo: *const AndroidSurfaceCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result,
+        CreateWin32SurfaceKHR => (instance: Instance, pCreateInfo: *const Win32SurfaceCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result,
+        GetPhysicalDeviceWin32PresentationSupportKHR => (physicalDevice: PhysicalDevice, queueFamilyIndex: u32) -> Bool32,
+        GetPhysicalDeviceDisplayPropertiesKHR => (physicalDevice: PhysicalDevice, pPropertyCount: *mut u32, pProperties: *mut DisplayPropertiesKHR) -> Result,
+        GetPhysicalDeviceDisplayPlanePropertiesKHR => (physicalDevice: PhysicalDevice, pPropertyCount: *mut u32, pProperties: *mut DisplayPlanePropertiesKHR) -> Result,
+        GetDisplayPlaneSupportedDisplaysKHR => (physicalDevice: PhysicalDevice, planeIndex: u32, pDisplayCount: *mut u32, pDisplays: *mut DisplayKHR) -> Result,
+        GetDisplayModePropertiesKHR => (physicalDevice: PhysicalDevice, display: DisplayKHR, pPropertyCount: *mut u32, pProperties: *mut DisplayModePropertiesKHR) -> Result,
+        CreateDisplayModeKHR => (physicalDevice: PhysicalDevice, display: DisplayKHR, pCreateInfo: *const DisplayModeCreateInfoKHR, pAllocator: *const AllocationCallbacks, pMode: *mut DisplayModeKHR) -> Result,
+        GetDisplayPlaneCapabilitiesKHR => (physicalDevice: PhysicalDevice, mode: DisplayModeKHR, planeIndex: u32, pCapabilities: *mut DisplayPlaneCapabilitiesKHR) -> Result,
+        CreateDisplayPlaneSurfaceKHR => (instance: Instance, pCreateInfo: *const DisplaySurfaceCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result,
+        GetPhysicalDeviceSurfaceSupportKHR => (physicalDevice: PhysicalDevice, queueFamilyIndex: u32, surface: SurfaceKHR, pSupported: *mut Bool32) -> Result,
+        GetPhysicalDeviceSurfaceCapabilitiesKHR => (physicalDevice: PhysicalDevice, surface: SurfaceKHR, pSurfaceCapabilities: *mut SurfaceCapabilitiesKHR) -> Result,
+        GetPhysicalDeviceSurfaceFormatsKHR => (physicalDevice: PhysicalDevice, surface: SurfaceKHR, pSurfaceFormatCount: *mut u32, pSurfaceFormats: *mut SurfaceFormatKHR) -> Result,
+        GetPhysicalDeviceSurfacePresentModesKHR => (physicalDevice: PhysicalDevice, surface: SurfaceKHR, pPresentModeCount: *mut u32, pPresentModes: *mut PresentModeKHR) -> Result,
+        CreateDebugUtilsMessengerEXT => (instance: Instance, pCreateInfo: *const DebugUtilsMessengerCreateInfoEXT, pAllocator: *const AllocationCallbacks, pMessenger: *const DebugUtilsMessengerEXT) -> Result,
+        DestroyDebugUtilsMessengerEXT => (instance: Instance, messenger: DebugUtilsMessengerEXT, pAllocator: *const AllocationCallbacks) -> Result,
+        CreateIOSSurfaceMVK => (instance: Instance, pCreateInfo: *const IOSSurfaceCreateInfoMVK, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result,
+        CreateMacOSSurfaceMVK => (instance: Instance, pCreateInfo: *const MacOSSurfaceCreateInfoMVK, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result,
+        ActivateMoltenVKLicenseMVK => (licenseID: *const c_char, licenseKey: *const c_char, acceptLicenseTermsAndConditions: Bool32) -> Result,
+        ActivateMoltenVKLicensesMVK => () -> Result,
+        GetMoltenVKDeviceConfigurationMVK => (device: Device, pConfiguration: *mut MVKDeviceConfiguration) -> Result,
+        SetMoltenVKDeviceConfigurationMVK => (device: Device, pConfiguration: *mut MVKDeviceConfiguration) -> Result,
+        GetPhysicalDeviceMetalFeaturesMVK => (physicalDevice: PhysicalDevice, pMetalFeatures: *mut MVKPhysicalDeviceMetalFeatures) -> Result,
+        GetSwapchainPerformanceMVK => (device: Device, swapchain: SwapchainKHR, pSwapchainPerf: *mut MVKSwapchainPerformance) -> Result,
+        CreateViSurfaceNN => (instance: Instance, pCreateInfo: *const ViSurfaceCreateInfoNN, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result,
+        GetPhysicalDeviceFeatures2KHR => (physicalDevice: PhysicalDevice, pFeatures: *mut PhysicalDeviceFeatures2KHR) -> (),
+        GetPhysicalDeviceProperties2KHR => (physicalDevice: PhysicalDevice, pProperties: *mut PhysicalDeviceProperties2KHR) -> (),
+        GetPhysicalDeviceFormatProperties2KHR => (physicalDevice: PhysicalDevice, pFormatProperties: *mut FormatProperties2KHR) -> (),
+        GetPhysicalDeviceImageFormatProperties2KHR => (physicalDevice: PhysicalDevice, pImageFormatInfo: *const PhysicalDeviceImageFormatInfo2KHR, pImageFormatProperties: *mut ImageFormatProperties2KHR) -> Result,
+        GetPhysicalDeviceQueueFamilyProperties2KHR => (physicalDevice: PhysicalDevice, pQueueFamilyPropertiesCount: *mut u32, pQueueFamilyProperties: *mut QueueFamilyProperties2KHR) -> (),
+        GetPhysicalDeviceMemoryProperties2KHR => (physicalDevice: PhysicalDevice, pMemoryProperties: *mut PhysicalDeviceMemoryProperties2KHR) -> (),
+        GetPhysicalDeviceSparseImageFormatProperties2KHR => (physicalDevice: PhysicalDevice, pFormatInfo: *const PhysicalDeviceSparseImageFormatInfo2KHR, pPropertyCount: *mut u32, pProperties: *mut SparseImageFormatProperties2KHR) -> (),
+    }
+
+    subgraph instance-dispatch {
+        vkEnumerateInstanceVersion
+        vkCreateInstance
+        vkEnumerateInstanceExtensionProperties
+        vkEnumerateInstanceLayerProperties
+    }
+}

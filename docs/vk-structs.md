@@ -1,7 +1,8 @@
 Simple types
 ------------
 
-VkDeviceType, VkMemoryType, VkMemoryHeap
+VkDeviceType, VkMemoryType, VkMemoryHeap, VkExtent2D, VkOffset2D,
+VkRect2D { VkOffset2D, VkExtent2D }
 
 Dispatchable Handles
 --------------------
@@ -109,10 +110,64 @@ VkQueue
 VkCommandBuffer
 
 
+VkDiskplayMode {
+  VkExtent2D, refreshRate
+}
+VkDisplaySurfaceCreateInfo {
+  VkDisplayMode, planeIndex, planeStackIndex, VkSurfaceTransformFlags,
+  globalAlpha, alphaMode, VkExtent2D
+} -> VkSurface
+VkDisplayProperties {
+  name, VkExtent2D, VkExtent2D, VkSurfaceTransformFlags, planeReorderPossible,
+  persistentContent
+}
+VkDisplayPlaneAlphaFlagBits {
+  `VK_DISPLAY_PLANE_ALPHA_OPAQUE_BIT_KHR`, `VK_DISPLAY_PLANE_ALPHA_GLOBAL_BIT_KHR`
+  `VK_DISPLAY_PLANE_ALPHA_PER_PIXEL_BIT_KHR`
+  `VK_DISPLAY_PLANE_ALPHA_PER_PIXEL_PREMULTIPLIED_BIT_KHR`
+}
+VkDisplayPlaneCapabilities
+VkDisplayPresentInfo { VkRect2D, VkRect2D, persistent }
+
 VkSurfaceKHR
+  VkSurfaceFormat { VkFormat, VkColorSpace }
   VkSurfaceCapabilities {
      minImageCount, maxImageCount,
      currImageExtent, minImageExtent, maxImageExtent, maxImageArrayLayers,
-     VkSurfaceTransformFlagsKHR, VkCompositeAlphaFlagsKHR, VkImageUsageFlags
+     VkSurfaceTransformFlags, VkCompositeAlphaFlags, VkImageUsageFlags
   }
-  VkSurfaceFormat { VkFormat, VkColorSpace }
+  VkCompositeAlphaFlagBits {
+    VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR = 0x00000001,
+    VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR = 0x00000002,
+    VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR = 0x00000004,
+    VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR = 0x00000008,
+  }
+  VkPresentModeKHR {
+    VK_PRESENT_MODE_IMMEDIATE_KHR = 0,
+    VK_PRESENT_MODE_MAILBOX_KHR = 1,
+    VK_PRESENT_MODE_FIFO_KHR = 2,
+    VK_PRESENT_MODE_FIFO_RELAXED_KHR = 3,
+    // Provided by VK_KHR_shared_presentable_image
+    VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR = 1000111000,
+    // Provided by VK_KHR_shared_presentable_image
+    VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR = 1000111001,
+  }
+
+VkSwapChain
+  VkSharingMode {
+    VK_SHARING_MODE_EXCLUSIVE = 0,
+    VK_SHARING_MODE_CONCURRENT = 1,
+  }
+  VkSwapchainCreateFlagBitsKHR {
+    // Provided by VK_KHR_swapchain with VK_VERSION_1_1, VK_KHR_device_group with VK_KHR_swapchain
+    VK_SWAPCHAIN_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT_KHR,
+    // Provided by VK_KHR_swapchain with VK_VERSION_1_1
+    VK_SWAPCHAIN_CREATE_PROTECTED_BIT_KHR,
+    // Provided by VK_KHR_swapchain_mutable_format
+    VK_SWAPCHAIN_CREATE_MUTABLE_FORMAT_BIT_KHR,
+  }
+  VkSwapchainCreateInfoKHR {
+    VkSurface, VkSwapchainCreateFlagBitsKHR, minImageCount, VkFormat, VkColorSpace,
+    VkExtent2D, imageArrayLayers, VkImageUsageFlagBits, VkSharingMode, QueueFamilies
+    VkSurfaceTransformFlag, VkCompositeAlphaFlag, VkPresentMode, clipped, oldSwapchain
+  }

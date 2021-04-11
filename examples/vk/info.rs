@@ -1,6 +1,43 @@
 use vulkano::device::Features;
 use vulkano::instance::{self, InstanceExtensions, PhysicalDevice};
 
+pub fn print_monitors() {
+    use winit::event_loop::EventLoop;
+
+    let evl = EventLoop::new();
+    let monitors = evl.available_monitors();
+    let primary = evl.primary_monitor();
+
+    for m in monitors {
+        let size = m.size();
+        let pos = m.position();
+        match primary.as_ref() {
+            Some(p) if p.name() == m.name() => {
+                println!("*{}", m.name().unwrap_or("-no-name-".to_string()));
+            }
+            _ => {
+                println!("{}", m.name().unwrap_or("-no-name-".to_string()));
+            }
+        }
+        println!(
+            "  {:-15} {:12} scale:{:2}",
+            format!("({},{})", pos.x, pos.y),
+            format!("{}x{}", size.width, size.height),
+            m.scale_factor()
+        );
+        for (i, v) in m.video_modes().enumerate() {
+            let size = v.size();
+            println!(
+                "  {:-15} {:12} depth:{:2} refresh:{}",
+                format!("video:{}", i),
+                format!("{}x{}", size.width, size.height),
+                v.bit_depth(),
+                v.refresh_rate()
+            );
+        }
+    }
+}
+
 pub fn print_layers() {
     match instance::layers_list() {
         Ok(layers) => {

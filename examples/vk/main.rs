@@ -24,6 +24,12 @@ pub struct Opt {
     #[structopt(long = "features")]
     features: bool,
 
+    #[structopt(long = "monitors")]
+    monitors: bool,
+
+    #[structopt(long = "events")]
+    events: bool,
+
     #[structopt(long = "limits")]
     limits: bool,
 }
@@ -39,7 +45,11 @@ fn main() {
         None => None,
     };
 
-    if opts.layers {
+    if opts.monitors {
+        info::print_monitors()
+    } else if opts.events {
+        window::event_loop(opts)
+    } else if opts.layers {
         info::print_layers()
     } else if opts.extensions {
         println!("Supported by core:");
@@ -68,8 +78,6 @@ fn main() {
             println!("{:4}: {}", pd.index(), pd.name())
         }
     }
-
-    //window::show_window()
 }
 
 #[allow(dead_code)]

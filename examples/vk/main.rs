@@ -1,3 +1,5 @@
+#![feature(maybe_uninit_ref)]
+
 use structopt::StructOpt;
 use vulkano::app_info_from_cargo_toml;
 use vulkano::instance::{Instance, InstanceExtensions, PhysicalDevice, QueueFamily};
@@ -48,7 +50,7 @@ fn main() {
     if opts.monitors {
         info::print_monitors()
     } else if opts.events {
-        window::event_loop(opts)
+        window::main_loop(opts)
     } else if opts.layers {
         info::print_layers()
     } else if opts.extensions {

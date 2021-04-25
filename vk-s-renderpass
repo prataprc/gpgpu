@@ -1,0 +1,79 @@
+* The use of a render pass in a command buffer is a render pass instance.
+* The subpasses in a render pass all render to the same dimensions.
+* Fragments for pixel (x,y,layer) in one subpass can only read attachment contents written by previous subpasses at that same (x,y,layer) location.
+* For multi-pixel fragments, the pixel read from an input attachment is selected from the pixels covered by that fragment in an implementation- dependent manner.
+  However, this selection must be made consistently for any fragment with the same shading rate for the lifetime of the VkDevice.
+* The specific image views that will be used for the attachments, and their dimensions, are specified in VkFramebuffer objects.
+* Framebuffers are created with respect to a specific render pass that the framebuffer is compatible with
+* Collectively, a render pass and a framebuffer define the complete render target state for one or more subpasses as well as the algorithmic dependencies between the subpasses.
+
+VkResult vkCreateRenderPass(
+    VkDevice                       device,
+    const VkRenderPassCreateInfo*  pCreateInfo,
+    const VkAllocationCallbacks*   pAllocator,
+    VkRenderPass*                  pRenderPass);
+
+    typedef struct VkRenderPassCreateInfo {                     typedef struct VkAttachmentDescription {                typedef enum VkAttachmentDescriptionFlagBits {
+        VkRenderPassCreateFlags         flags;                      VkAttachmentDescriptionFlags  flags;                    VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT
+        uint32_t                        attachmentCount;            VkFormat                      format;               }
+        const VkAttachmentDescription*  pAttachments;               VkSampleCountFlagBits         samples;
+        uint32_t                        subpassCount;               VkAttachmentLoadOp            loadOp;
+        const VkSubpassDescription*     pSubpasses;                 VkAttachmentStoreOp           storeOp;              typedef enum VkImageLayout {
+        uint32_t                        dependencyCount;            VkAttachmentLoadOp            stencilLoadOp;            VK_IMAGE_LAYOUT_UNDEFINED,
+        const VkSubpassDependency*      pDependencies;              VkAttachmentStoreOp           stencilStoreOp;           VK_IMAGE_LAYOUT_GENERAL,
+    }                                                               VkImageLayout                 initialLayout;            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                                                    VkImageLayout                 finalLayout;              VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+                                                                }                                                           VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
+                                                                                                                            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+    typedef struct VkSubpassDescription {                       typedef enum VkAttachmentLoadOp {                           VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+        VkSubpassDescriptionFlags     flags;                        VK_ATTACHMENT_LOAD_OP_LOAD,                             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        VkPipelineBindPoint           pipelineBindPoint;            VK_ATTACHMENT_LOAD_OP_CLEAR,                            VK_IMAGE_LAYOUT_PREINITIALIZED,
+        uint32_t                      inputAttachmentCount;         VK_ATTACHMENT_LOAD_OP_DONT_CARE,                        VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL,
+        const VkAttachmentReference*  pInputAttachments;        }                                                           VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL,
+        uint32_t                      colorAttachmentCount;                                                                 VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+        const VkAttachmentReference*  pColorAttachments;        typedef enum VkAttachmentStoreOp {                          VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL,
+        const VkAttachmentReference*  pResolveAttachments;          VK_ATTACHMENT_STORE_OP_STORE,                           VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL,
+        const VkAttachmentReference*  pDepthStencilAttachment;      VK_ATTACHMENT_STORE_OP_DONT_CARE,                       VK_IMAGE_LAYOUT_STENCIL_READ_ONLY_OPTIMAL,
+        uint32_t                      preserveAttachmentCount;      VK_ATTACHMENT_STORE_OP_NONE_QCOM,                       VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+        const uint32_t*               pPreserveAttachments;     }                                                           VK_IMAGE_LAYOUT_VIDEO_DECODE_DST_KHR,
+    }                                                                                                                       VK_IMAGE_LAYOUT_VIDEO_DECODE_SRC_KHR,
+    typedef enum VkSubpassDescriptionFlagBits {                 typedef enum VkPipelineBindPoint {                          VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR,
+        VK_SUBPASS_DESCRIPTION_PER_VIEW_ATTRIBUTES_BIT_NVX,         VK_PIPELINE_BIND_POINT_GRAPHICS,                        VK_IMAGE_LAYOUT_VIDEO_ENCODE_DST_KHR,
+        VK_SUBPASS_DESCRIPTION_PER_VIEW_POSITION_X_ONLY_BIT_NVX,    VK_PIPELINE_BIND_POINT_COMPUTE,                         VK_IMAGE_LAYOUT_VIDEO_ENCODE_SRC_KHR,
+        VK_SUBPASS_DESCRIPTION_FRAGMENT_REGION_BIT_QCOM,            VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR,                 VK_IMAGE_LAYOUT_VIDEO_ENCODE_DPB_KHR,
+        VK_SUBPASS_DESCRIPTION_SHADER_RESOLVE_BIT_QCOM,         }                                                           VK_IMAGE_LAYOUT_SHARED_PRESENT_KHR,
+    }                                                                                                                       VK_IMAGE_LAYOUT_SHADING_RATE_OPTIMAL_NV,
+    typedef struct VkAttachmentReference {                      typedef enum VkAccessFlagBits {                             VK_IMAGE_LAYOUT_FRAGMENT_DENSITY_MAP_OPTIMAL_EXT,
+        uint32_t         attachment;                                VK_ACCESS_INDIRECT_COMMAND_READ_BIT,                    VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL_KHR,
+        VkImageLayout    layout;                                    VK_ACCESS_INDEX_READ_BIT,                               VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL_KHR,
+    }                                                               VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,
+    typedef struct VkSubpassDependency {                            VK_ACCESS_UNIFORM_READ_BIT,                         enum VkPipelineStageFlagBits {
+        uint32_t                srcSubpass;                         VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,                    VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+        uint32_t                dstSubpass;                         VK_ACCESS_SHADER_READ_BIT,                              VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT,
+        VkPipelineStageFlags    srcStageMask;                       VK_ACCESS_SHADER_WRITE_BIT,                             VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
+        VkPipelineStageFlags    dstStageMask;                       VK_ACCESS_COLOR_ATTACHMENT_READ_BIT,                    VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
+        VkAccessFlags           srcAccessMask;                      VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,                   VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT,
+        VkAccessFlags           dstAccessMask;                      VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT,            VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT,
+        VkDependencyFlags       dependencyFlags;                    VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,           VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT,
+    } VkSubpassDependency;                                          VK_ACCESS_TRANSFER_READ_BIT,                            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                                                                    VK_ACCESS_TRANSFER_WRITE_BIT,                           VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+     typedef enum VkDependencyFlagBits {                            VK_ACCESS_HOST_READ_BIT,                                VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+         VK_DEPENDENCY_BY_REGION_BIT = 0x00000001,                  VK_ACCESS_HOST_WRITE_BIT,                               VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+         VK_DEPENDENCY_DEVICE_GROUP_BIT = 0x00000004,               VK_ACCESS_MEMORY_READ_BIT,                              VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+         VK_DEPENDENCY_VIEW_LOCAL_BIT = 0x00000002,                 VK_ACCESS_MEMORY_WRITE_BIT,                             VK_PIPELINE_STAGE_TRANSFER_BIT,
+     }                                                              VK_ACCESS_TRANSFORM_FEEDBACK_WRITE_BIT_EXT,             VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                                                                    VK_ACCESS_TRANSFORM_FEEDBACK_COUNTER_READ_BIT_EXT,      VK_PIPELINE_STAGE_HOST_BIT,
+                                                                    VK_ACCESS_TRANSFORM_FEEDBACK_COUNTER_WRITE_BIT_EXT,     VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+                                                                    VK_ACCESS_CONDITIONAL_RENDERING_READ_BIT_EXT,           VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+                                                                    VK_ACCESS_COLOR_ATTACHMENT_READ_NONCOHERENT_BIT_EXT,    VK_PIPELINE_STAGE_TRANSFORM_FEEDBACK_BIT_EXT,
+                                                                    VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR,          VK_PIPELINE_STAGE_CONDITIONAL_RENDERING_BIT_EXT,
+                                                                    VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR,         VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
+                                                                    VK_ACCESS_SHADING_RATE_IMAGE_READ_BIT_NV,               VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,
+                                                                    VK_ACCESS_FRAGMENT_DENSITY_MAP_READ_BIT_EXT,            VK_PIPELINE_STAGE_SHADING_RATE_IMAGE_BIT_NV,
+                                                                    VK_ACCESS_COMMAND_PREPROCESS_READ_BIT_NV,               VK_PIPELINE_STAGE_TASK_SHADER_BIT_NV,
+                                                                    VK_ACCESS_COMMAND_PREPROCESS_WRITE_BIT_NV,              VK_PIPELINE_STAGE_MESH_SHADER_BIT_NV,
+                                                                    VK_ACCESS_NONE_KHR,                                     VK_PIPELINE_STAGE_FRAGMENT_DENSITY_PROCESS_BIT_EXT,
+                                                                }                                                           VK_PIPELINE_STAGE_COMMAND_PREPROCESS_BIT_NV,
+                                                                                                                            VK_PIPELINE_STAGE_NONE_KHR,
+                                                                                                                        }
+

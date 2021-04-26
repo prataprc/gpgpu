@@ -90,10 +90,12 @@ fn get_physical_device_optimal<'a>(instance: *const Arc<Instance>) -> PhysicalDe
 }
 
 pub fn main_loop(_opts: Opt) {
-    let required_extensions = vulkano_win::required_extensions();
-    let instance = Instance::new(None, &required_extensions, None).unwrap();
-    let physical = get_physical_device_optimal(&instance as *const Arc<Instance>);
-    let mut vk = Vk::new(instance, physical);
+    let mut vk = {
+        let required_extensions = vulkano_win::required_extensions();
+        let instance = Instance::new(None, &required_extensions, None).unwrap();
+        let physical = get_physical_device_optimal(&instance as *const Arc<Instance>);
+        Vk::new(instance, physical)
+    };
 
     vk.print_info();
 

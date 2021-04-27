@@ -1,0 +1,99 @@
+==== VkInstance
+
+* vkGetInstanceProcAddr                               VkSurface, (platform specific)
+* Query Physical Devices and Device Groups            VkPhysicalDevice
+* Layers and Extensions.
+
+VkResult vkCreateInstance(
+    const VkInstanceCreateInfo*   pCreateInfo,      typedef struct VkInstanceCreateInfo {                       typedef struct VkApplicationInfo {
+    const VkAllocationCallbacks*  pAllocator,           const VkApplicationInfo*    pApplicationInfo;               VkStructureType    sType;
+    VkInstance*                   pInstance);           uint32_t                    enabledLayerCount;              const void*        pNext;
+                                                        const char* const*          ppEnabledLayerNames;            const char*        pApplicationName;
+                                                        uint32_t                    enabledExtensionCount;          uint32_t           applicationVersion;
+                                                        const char* const*          ppEnabledExtensionNames;        const char*        pEngineName;
+                                                    }                                                               uint32_t           engineVersion; 
+                                                                                                                    uint32_t           apiVersion;
+                                                                                                                }
+PFN_vkVoidFunction vkGetInstanceProcAddr(           VkResult vkEnumeratePhysicalDevices(
+    VkInstance    instance,                             VkInstance          instance,
+    const char*   pName);                               uint32_t*           pPhysicalDeviceCount,
+                                                        VkPhysicalDevice*   pPhysicalDevices);
+
+
+VkResult vkEnumerateInstanceLayerProperties(        typedef struct VkLayerProperties {
+    uint32_t*           pPropertyCount,                 char        layerName[VK_MAX_EXTENSION_NAME_SIZE];
+    VkLayerProperties*  pProperties);                   uint32_t    specVersion;
+                                                        uint32_t    implementationVersion;
+                                                        char        description[VK_MAX_DESCRIPTION_SIZE];
+                                                    }
+
+VkResult vkEnumerateInstanceExtensionProperties(    typedef struct VkExtensionProperties {
+    const char*               pLayerName,               char        extensionName[VK_MAX_EXTENSION_NAME_SIZE];
+    uint32_t*                 pPropertyCount,           uint32_t    specVersion;
+    VkExtensionProperties*    pProperties);         }
+
+
+==== VkPhysicalDevice
+
+* Vulkan separates the concept of physical and logical devices.
+* Layers and extensions
+
+VkDevice
+VkDisplayMode
+
+
+vkCreateDevice
+vkCreateDisplayModeKHR
+vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR
+vkEnumeratePhysicalDevices
+vkGetDisplayModeProperties2KHR
+vkGetDisplayModePropertiesKHR
+vkGetDisplayPlaneCapabilities2KHR
+vkGetDisplayPlaneCapabilitiesKHR
+vkGetDisplayPlaneSupportedDisplaysKHR
+vkGetPhysicalDeviceDisplayPlaneProperties2KHR
+vkGetPhysicalDeviceDisplayPlanePropertiesKHR
+vkGetPhysicalDeviceDisplayProperties2KHR
+vkGetPhysicalDeviceDisplayPropertiesKHR
+vkGetPhysicalDeviceExternalBufferProperties
+vkGetPhysicalDeviceExternalBufferPropertiesKHR
+vkGetPhysicalDeviceExternalFenceProperties
+vkGetPhysicalDeviceExternalFencePropertiesKHR
+vkGetPhysicalDeviceExternalSemaphoreProperties
+vkGetPhysicalDeviceExternalSemaphorePropertiesKHR
+vkGetPhysicalDeviceFeatures
+vkGetPhysicalDeviceFeatures2
+vkGetPhysicalDeviceFeatures2KHR
+vkGetPhysicalDeviceFormatProperties
+vkGetPhysicalDeviceFormatProperties2
+vkGetPhysicalDeviceFormatProperties2KHR
+vkGetPhysicalDeviceFragmentShadingRatesKHR
+vkGetPhysicalDeviceImageFormatProperties
+vkGetPhysicalDeviceImageFormatProperties2
+vkGetPhysicalDeviceImageFormatProperties2KHR
+vkGetPhysicalDeviceMemoryProperties
+vkGetPhysicalDeviceMemoryProperties2
+vkGetPhysicalDeviceMemoryProperties2KHR
+vkGetPhysicalDevicePresentRectanglesKHR
+vkGetPhysicalDeviceProperties
+vkGetPhysicalDeviceProperties2
+vkGetPhysicalDeviceProperties2KHR
+vkGetPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR
+vkGetPhysicalDeviceQueueFamilyProperties
+vkGetPhysicalDeviceQueueFamilyProperties2
+vkGetPhysicalDeviceQueueFamilyProperties2KHR
+vkGetPhysicalDeviceSparseImageFormatProperties
+vkGetPhysicalDeviceSparseImageFormatProperties2
+vkGetPhysicalDeviceSparseImageFormatProperties2KHR
+vkGetPhysicalDeviceSurfaceCapabilities2KHR
+vkGetPhysicalDeviceSurfaceCapabilitiesKHR
+vkGetPhysicalDeviceSurfaceFormats2KHR
+vkGetPhysicalDeviceSurfaceFormatsKHR
+vkGetPhysicalDeviceSurfacePresentModesKHR
+vkGetPhysicalDeviceSurfaceSupportKHR
+vkGetPhysicalDeviceVideoCapabilitiesKHR
+vkGetPhysicalDeviceVideoFormatPropertiesKHR
+vkGetPhysicalDeviceWaylandPresentationSupportKHR
+vkGetPhysicalDeviceWin32PresentationSupportKHR
+vkGetPhysicalDeviceXcbPresentationSupportKHR
+vkGetPhysicalDeviceXlibPresentationSupportKHR

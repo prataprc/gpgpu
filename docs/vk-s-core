@@ -1,8 +1,9 @@
 ==== VkInstance
 
+
 * vkGetInstanceProcAddr                               VkSurface, (platform specific)
 * Query Physical Devices and Device Groups            VkPhysicalDevice
-* Layers and Extensions.
+* Query Layers and Extensions.
 
 VkResult vkCreateInstance(
     const VkInstanceCreateInfo*   pCreateInfo,      typedef struct VkInstanceCreateInfo {                       typedef struct VkApplicationInfo {
@@ -35,65 +36,66 @@ VkResult vkEnumerateInstanceExtensionProperties(    typedef struct VkExtensionPr
 
 ==== VkPhysicalDevice
 
+
 * Vulkan separates the concept of physical and logical devices.
-* Layers and extensions
+* Layers and extensions.
+* Display, DisplayMode, DisplayPlane, DisplayCapabilities, DisplayProperties.
 
-VkDevice
+VkDisplay
 VkDisplayMode
+VkDevice
 
 
-vkCreateDevice
-vkCreateDisplayModeKHR
-vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR
-vkEnumeratePhysicalDevices
-vkGetDisplayModeProperties2KHR
-vkGetDisplayModePropertiesKHR
-vkGetDisplayPlaneCapabilities2KHR
-vkGetDisplayPlaneCapabilitiesKHR
-vkGetDisplayPlaneSupportedDisplaysKHR
-vkGetPhysicalDeviceDisplayPlaneProperties2KHR
-vkGetPhysicalDeviceDisplayPlanePropertiesKHR
-vkGetPhysicalDeviceDisplayProperties2KHR
-vkGetPhysicalDeviceDisplayPropertiesKHR
-vkGetPhysicalDeviceExternalBufferProperties
-vkGetPhysicalDeviceExternalBufferPropertiesKHR
-vkGetPhysicalDeviceExternalFenceProperties
-vkGetPhysicalDeviceExternalFencePropertiesKHR
-vkGetPhysicalDeviceExternalSemaphoreProperties
-vkGetPhysicalDeviceExternalSemaphorePropertiesKHR
-vkGetPhysicalDeviceFeatures
-vkGetPhysicalDeviceFeatures2
-vkGetPhysicalDeviceFeatures2KHR
-vkGetPhysicalDeviceFormatProperties
-vkGetPhysicalDeviceFormatProperties2
-vkGetPhysicalDeviceFormatProperties2KHR
-vkGetPhysicalDeviceFragmentShadingRatesKHR
-vkGetPhysicalDeviceImageFormatProperties
-vkGetPhysicalDeviceImageFormatProperties2
-vkGetPhysicalDeviceImageFormatProperties2KHR
-vkGetPhysicalDeviceMemoryProperties
-vkGetPhysicalDeviceMemoryProperties2
-vkGetPhysicalDeviceMemoryProperties2KHR
-vkGetPhysicalDevicePresentRectanglesKHR
-vkGetPhysicalDeviceProperties
-vkGetPhysicalDeviceProperties2
-vkGetPhysicalDeviceProperties2KHR
-vkGetPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR
-vkGetPhysicalDeviceQueueFamilyProperties
-vkGetPhysicalDeviceQueueFamilyProperties2
-vkGetPhysicalDeviceQueueFamilyProperties2KHR
-vkGetPhysicalDeviceSparseImageFormatProperties
-vkGetPhysicalDeviceSparseImageFormatProperties2
-vkGetPhysicalDeviceSparseImageFormatProperties2KHR
-vkGetPhysicalDeviceSurfaceCapabilities2KHR
-vkGetPhysicalDeviceSurfaceCapabilitiesKHR
-vkGetPhysicalDeviceSurfaceFormats2KHR
-vkGetPhysicalDeviceSurfaceFormatsKHR
-vkGetPhysicalDeviceSurfacePresentModesKHR
-vkGetPhysicalDeviceSurfaceSupportKHR
-vkGetPhysicalDeviceVideoCapabilitiesKHR
-vkGetPhysicalDeviceVideoFormatPropertiesKHR
-vkGetPhysicalDeviceWaylandPresentationSupportKHR
-vkGetPhysicalDeviceWin32PresentationSupportKHR
-vkGetPhysicalDeviceXcbPresentationSupportKHR
-vkGetPhysicalDeviceXlibPresentationSupportKHR
+vkCreateDevice,
+
+vkGetPhysicalDeviceFeatures,
+vkGetPhysicalDeviceFeatures2,
+vkGetPhysicalDeviceMemoryProperties,
+vkGetPhysicalDeviceMemoryProperties2,
+vkGetPhysicalDeviceQueueFamilyProperties,
+vkGetPhysicalDeviceQueueFamilyProperties2,
+
+vkGetPhysicalDeviceSurfaceCapabilities2EXT,
+vkGetPhysicalDeviceSurfaceCapabilities2KHR,
+vkGetPhysicalDeviceSurfaceCapabilitiesKHR,
+vkGetPhysicalDeviceSurfaceFormats2KHR,
+vkGetPhysicalDeviceSurfaceFormatsKHR,
+vkGetPhysicalDeviceSurfacePresentModes2EXT,
+vkGetPhysicalDeviceSurfacePresentModesKHR,
+vkGetPhysicalDeviceSurfaceSupportKHR,
+vkGetPhysicalDevicePresentRectanglesKHR,
+vkGetPhysicalDeviceWaylandPresentationSupportKHR,
+vkGetPhysicalDeviceWin32PresentationSupportKHR,
+vkGetPhysicalDeviceXcbPresentationSupportKHR,
+vkGetPhysicalDeviceXlibPresentationSupportKHR,
+
+vkGetPhysicalDeviceFormatProperties,
+vkGetPhysicalDeviceFormatProperties2,
+vkGetPhysicalDeviceImageFormatProperties,
+vkGetPhysicalDeviceImageFormatProperties2,
+vkGetPhysicalDeviceSparseImageFormatProperties,
+vkGetPhysicalDeviceSparseImageFormatProperties2,
+vkGetPhysicalDeviceFragmentShadingRatesKHR,
+vkGetPhysicalDeviceMultisamplePropertiesEXT,
+
+vkGetPhysicalDeviceExternalBufferProperties,
+vkGetPhysicalDeviceExternalFenceProperties,
+vkGetPhysicalDeviceExternalSemaphoreProperties,
+
+vkGetPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR,
+vkGetPhysicalDeviceToolPropertiesEXT,
+vkGetPhysicalDeviceVideoCapabilitiesKHR,
+vkGetPhysicalDeviceVideoFormatPropertiesKHR,
+
+
+memory_heap_by_id
+memory_heaps
+memory_type_by_id
+memory_types
+queue_families
+queue_family_by_id
+supported_features
+uuid
+
+pipelineCacheUUID[VK_UUID_SIZE];
+sparseProperties;

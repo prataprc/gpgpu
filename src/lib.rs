@@ -51,7 +51,7 @@ pub mod plane;
 pub mod space;
 pub mod ttf;
 
-pub mod vk;
+pub mod vulkan;
 
 /// Error variants that are returned by this package's API.
 ///
@@ -59,6 +59,7 @@ pub mod vk;
 /// error location.
 pub enum Error {
     Fatal(String, String),
+    Invalid(String, String),
     Vk(String, String),
 }
 
@@ -68,6 +69,7 @@ impl fmt::Display for Error {
 
         match self {
             Fatal(p, msg) => write!(f, "{} Fatal: {}", p, msg),
+            Invalid(p, msg) => write!(f, "{} Invalid: {}", p, msg),
             Vk(p, msg) => write!(f, "{} Vk: {}", p, msg),
         }
     }

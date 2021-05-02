@@ -1,4 +1,8 @@
+==== VkSurface
+
 * Surface is created using Instance and platform specific surface constructor and parameters.
+* Surface can be created directly from display (monitor) bypassing WSI
+* Headless surface can be created, which is essentially a no-op.
 
 typedef struct VkRect2D {       typedef struct VkOffset2D {         typedef struct VkExtent2D {
     VkOffset2D    offset;           int32_t    x;                       uint32_t    width;
@@ -40,3 +44,23 @@ typedef enum VkColorSpaceKHR {                              VK_COMPOSITE_ALPHA_P
     VK_COLOR_SPACE_EXTENDED_SRGB_NONLINEAR_EXT,                                                                    }
     VK_COLOR_SPACE_DISPLAY_NATIVE_AMD,
 }
+
+
+==== VkDisplay
+
+vkGetPhysicalDeviceDisplayPropertiesKHR
+typedef struct VkDisplayPropertiesKHR {                         vkGetPhysicalDeviceDisplayPlanePropertiesKHR
+    VkDisplayKHR                  display;                      typedef struct VkDisplayPlanePropertiesKHR {
+    const char*                   displayName;                      VkDisplayKHR    currentDisplay;
+    VkExtent2D                    physicalDimensions; (in mm)       uint32_t        currentStackIndex;
+    VkExtent2D                    physicalResolution;           };
+    VkSurfaceTransformFlagsKHR    supportedTransforms;
+    VkBool32                      planeReorderPossible;
+    VkBool32                      persistentContent;
+};
+
+
+
+
+
+

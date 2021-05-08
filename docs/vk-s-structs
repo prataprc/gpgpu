@@ -1,0 +1,80 @@
+Simple types
+------------
+
+VkDeviceType, VkMemoryType, VkMemoryHeap, VkExtent2D, VkOffset2D,
+VkRect2D { VkOffset2D, VkExtent2D }
+
+Dispatchable and Non-Dispatchable Handles
+-----------------------------------------
+
+VkInstance
+    +-> VkPhysicalDevice
+    |   +-> VkDevice <- VkDeviceCreateInfo
+    |       +-> VkQueue
+    |       +-> VkCommandPool <- VkCommandPoolCreateInfo
+    |       +-> VkCommandBuffer <- VkCommandBufferAllocateInfo
+    |       +-> VkSwapchain <- VkSwapchainCreateInfo
+    |       +-> VkDeviceMemory <- VkMemoryAllocateInfo
+    |       +-> VkBuffer <- VkBufferCreateInfo
+    |       +-> VkBufferView <- VkBufferViewCreateInfo
+    |       +-> VkImage <- VkImageCreateInfo
+    |       +-> VkImageView <- VkImageViewCreateInfo
+    |       +-> VkSampler <- VkSamplerCreateInfo
+    |       +-> VkQueryPool <- VkQueryPoolCreateInfo
+    |       +-> VkShaderModule <- VkShaderModuleCreateInfo
+    |       +-> VkPipeline <- VkPipelineCache, VkGraphicsPipelineCreateInfo
+    |       +-> VkPipeline <- VkPipelineCache, VkComputePipelineCreateInfo
+    |       +-> VkPipelineLayout <- VkPipelineLayoutCreateInfo
+    |       +-> VkPipelineCache <- VkPipelineCacheCreateInfo
+    |       +-> VkEvent <- VkEventCreateInfo
+    |       +-> VkFence <- VkFenceCreateInfo
+    |       +-> VkSemaphore <- VkSemaphoreCreateInfo
+    |       +-> VkRenderPass <- VkRenderPassCreateInfo
+    |       +-> VkFramebuffer <- VkFramebufferCreateInfo
+    |       +-> VkDescriptorPool <- VkDescriptorPoolCreateInfo
+    |       +-> VkDescriptorSet <- VkDescriptorSetAllocateInfo
+    |       +-> VkDescriptorSetLayout <- VkDescriptorSetLayoutCreateInfo
+    |       +-> VkDescriptorUpdateTemplate <- VkDescriptorUpdateTemplateCreateInfo
+    +-> VkSurface
+    +-> VkDisplay
+    +-> VkDisplayMode
+
+typedef struct VkCommandPoolCreateInfo {            typedef enum VkCommandPoolCreateFlagBits {
+    VkStructureType             sType;                  VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,
+    const void*                 pNext;                  VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+    VkCommandPoolCreateFlags    flags;                  VK_COMMAND_POOL_CREATE_PROTECTED_BIT,
+    uint32_t                    queueFamilyIndex;   }
+}
+
+typedef struct VkCommandBufferAllocateInfo {        typedef enum VkCommandBufferLevel {
+    VkStructureType         sType;                      VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+    const void*             pNext;                      VK_COMMAND_BUFFER_LEVEL_SECONDARY,
+    VkCommandPool           commandPool;            }
+    VkCommandBufferLevel    level;
+    uint32_t                commandBufferCount;
+}
+
+typedef struct VkSwapchainCreateInfo {
+    VkStructureType                  sType;
+    const void*                      pNext;
+    VkSwapchainCreateFlagsKHR        flags;
+    VkSurfaceKHR                     surface;
+    uint32_t                         minImageCount;
+    VkFormat                         imageFormat;
+    VkColorSpaceKHR                  imageColorSpace;
+    VkExtent2D                       imageExtent;
+    uint32_t                         imageArrayLayers;
+    VkImageUsageFlags                imageUsage;
+    VkSharingMode                    imageSharingMode;
+    uint32_t                         queueFamilyIndexCount;
+    const uint32_t*                  pQueueFamilyIndices;
+    VkSurfaceTransformFlagBitsKHR    preTransform;
+    VkCompositeAlphaFlagBitsKHR      compositeAlpha;
+    VkPresentModeKHR                 presentMode;
+    VkBool32                         clipped;
+    VkSwapchainKHR                   oldSwapchain;
+}
+
+
+
+

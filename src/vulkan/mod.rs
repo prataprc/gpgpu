@@ -4,7 +4,10 @@ use prettytable::{cell, row};
 use vk_sys as vk;
 use vulkano::{
     device::Device,
-    instance::{Instance, LayerProperties, PhysicalDevice, PhysicalDeviceType},
+    instance::{
+        Instance, LayerProperties, MemoryHeap, MemoryType, PhysicalDevice,
+        PhysicalDeviceType,
+    },
     VulkanObject,
 };
 
@@ -38,6 +41,47 @@ impl PrettyRow for LayerProperties {
             self.description(),
             self.vulkan_version(),
             self.implementation_version()
+        ]
+    }
+}
+
+impl<'a> PrettyRow for MemoryHeap<'a> {
+    fn to_format() -> prettytable::format::TableFormat {
+        *prettytable::format::consts::FORMAT_CLEAN
+    }
+
+    fn to_head() -> prettytable::Row {
+        row![Fy => "Id", "Size", "DEVICE_LOCAL", "MULTI_INSTANCE"]
+    }
+
+    fn to_row(&self) -> prettytable::Row {
+        row![
+            self.id(),
+            self.size(),
+            self.is_device_local(),
+            self.is_multi_instance()
+        ]
+    }
+}
+
+impl<'a> PrettyRow for MemoryType<'a> {
+    fn to_format() -> prettytable::format::TableFormat {
+        *prettytable::format::consts::FORMAT_CLEAN
+    }
+
+    fn to_head() -> prettytable::Row {
+        row![Fy => "Id", "Heap", "LOCAL", "VISIBLE", "CACHED", "COHERENT", "LAZY"]
+    }
+
+    fn to_row(&self) -> prettytable::Row {
+        row![
+            self.id(),
+            self.heap().id(),
+            self.is_device_local(),
+            self.is_host_visible(),
+            self.is_host_cached(),
+            self.is_host_coherent(),
+            self.is_lazily_allocated(),
         ]
     }
 }
@@ -252,7 +296,7 @@ impl PrettyRow for PhysicalDeviceLimit {
     }
 
     fn to_head() -> prettytable::Row {
-        row![Fy => "Limit-name", "Index"]
+        row![Fy => "Limit-name", "Device"]
     }
 
     fn to_row(&self) -> prettytable::Row {
@@ -261,12 +305,12 @@ impl PrettyRow for PhysicalDeviceLimit {
 }
 
 macro_rules! make_limits {
-    ($(($limit:ident, $name:expr, $limit_name:ident),)*) => (
+    ($(($limit:ident, $field:ident),)*) => (
         vec![
             $(
                 PhysicalDeviceLimit {
-                    name: $name.to_string(),
-                    value: format!("{:?}", $limit.$limit_name()),
+                    name: stringify!($field).to_string(),
+                    value: format!("{:?}", $limit.$field()),
                 },
             )*
         ]
@@ -276,639 +320,229 @@ macro_rules! make_limits {
 pub fn physical_device_limits<'a>(pd: &PhysicalDevice<'a>) -> Vec<PhysicalDeviceLimit> {
     let l = pd.limits();
     make_limits![
-        (l, "max_image_dimension_1d", max_image_dimension_1d),
-        (l, "max_image_dimension_2d", max_image_dimension_2d),
-        (l, "max_image_dimension_3d", max_image_dimension_3d),
-        (l, "max_image_dimension_cube", max_image_dimension_cube),
-        (l, "max_image_array_layers", max_image_array_layers),
-        (l, "max_texel_buffer_elements", max_texel_buffer_elements),
-        (l, "max_uniform_buffer_range", max_uniform_buffer_range),
-        (l, "max_storage_buffer_range", max_storage_buffer_range),
-        (l, "max_push_constants_size", max_push_constants_size),
-        (
-            l,
-            "max_memory_allocation_count",
-            max_memory_allocation_count
-        ),
-        (
-            l,
-            "max_sampler_allocation_count",
-            max_sampler_allocation_count
-        ),
-        (l, "buffer_image_granularity", buffer_image_granularity),
-        (l, "sparse_address_space_size", sparse_address_space_size),
-        (l, "max_bound_descriptor_sets", max_bound_descriptor_sets),
-        (
-            l,
-            "max_per_stage_descriptor_samplers",
-            max_per_stage_descriptor_samplers
-        ),
-        (
-            l,
-            "max_per_stage_descriptor_uniform_buffers",
-            max_per_stage_descriptor_uniform_buffers
-        ),
-        (
-            l,
-            "max_per_stage_descriptor_storage_buffers",
-            max_per_stage_descriptor_storage_buffers
-        ),
-        (
-            l,
-            "max_per_stage_descriptor_sampled_images",
-            max_per_stage_descriptor_sampled_images
-        ),
-        (
-            l,
-            "max_per_stage_descriptor_storage_images",
-            max_per_stage_descriptor_storage_images
-        ),
-        (
-            l,
-            "max_per_stage_descriptor_input_attachments",
-            max_per_stage_descriptor_input_attachments
-        ),
-        (l, "max_per_stage_resources", max_per_stage_resources),
-        (
-            l,
-            "max_descriptor_set_samplers",
-            max_descriptor_set_samplers
-        ),
-        (
-            l,
-            "max_descriptor_set_uniform_buffers",
-            max_descriptor_set_uniform_buffers
-        ),
-        (
-            l,
-            "max_descriptor_set_uniform_buffers_dynamic",
-            max_descriptor_set_uniform_buffers_dynamic
-        ),
-        (
-            l,
-            "max_descriptor_set_storage_buffers",
-            max_descriptor_set_storage_buffers
-        ),
-        (
-            l,
-            "max_descriptor_set_storage_buffers_dynamic",
-            max_descriptor_set_storage_buffers_dynamic
-        ),
-        (
-            l,
-            "max_descriptor_set_sampled_images",
-            max_descriptor_set_sampled_images
-        ),
-        (
-            l,
-            "max_descriptor_set_storage_images",
-            max_descriptor_set_storage_images
-        ),
-        (
-            l,
-            "max_descriptor_set_input_attachments",
-            max_descriptor_set_input_attachments
-        ),
-        (
-            l,
-            "max_vertex_input_attributes",
-            max_vertex_input_attributes
-        ),
-        (l, "max_vertex_input_bindings", max_vertex_input_bindings),
-        (
-            l,
-            "max_vertex_input_attribute_offset",
-            max_vertex_input_attribute_offset
-        ),
-        (
-            l,
-            "max_vertex_input_binding_stride",
-            max_vertex_input_binding_stride
-        ),
-        (
-            l,
-            "max_vertex_output_components",
-            max_vertex_output_components
-        ),
-        (
-            l,
-            "max_tessellation_generation_level",
-            max_tessellation_generation_level
-        ),
-        (
-            l,
-            "max_tessellation_patch_size",
-            max_tessellation_patch_size
-        ),
-        (
-            l,
-            "max_tessellation_control_per_vertex_input_components",
-            max_tessellation_control_per_vertex_input_components
-        ),
-        (
-            l,
-            "max_tessellation_control_per_vertex_output_components",
-            max_tessellation_control_per_vertex_output_components
-        ),
-        (
-            l,
-            "max_tessellation_control_per_patch_output_components",
-            max_tessellation_control_per_patch_output_components
-        ),
-        (
-            l,
-            "max_tessellation_control_total_output_components",
-            max_tessellation_control_total_output_components
-        ),
-        (
-            l,
-            "max_tessellation_evaluation_input_components",
-            max_tessellation_evaluation_input_components
-        ),
-        (
-            l,
-            "max_tessellation_evaluation_output_components",
-            max_tessellation_evaluation_output_components
-        ),
-        (
-            l,
-            "max_geometry_shader_invocations",
-            max_geometry_shader_invocations
-        ),
-        (
-            l,
-            "max_geometry_input_components",
-            max_geometry_input_components
-        ),
-        (
-            l,
-            "max_geometry_output_components",
-            max_geometry_output_components
-        ),
-        (
-            l,
-            "max_geometry_output_vertices",
-            max_geometry_output_vertices
-        ),
-        (
-            l,
-            "max_geometry_total_output_components",
-            max_geometry_total_output_components
-        ),
-        (
-            l,
-            "max_fragment_input_components",
-            max_fragment_input_components
-        ),
-        (
-            l,
-            "max_fragment_output_attachments",
-            max_fragment_output_attachments
-        ),
-        (
-            l,
-            "max_fragment_dual_src_attachments",
-            max_fragment_dual_src_attachments
-        ),
-        (
-            l,
-            "max_fragment_combined_output_resources",
-            max_fragment_combined_output_resources
-        ),
-        (
-            l,
-            "max_compute_shared_memory_size",
-            max_compute_shared_memory_size
-        ),
-        (
-            l,
-            "max_compute_work_group_count",
-            max_compute_work_group_count
-        ),
-        (
-            l,
-            "max_compute_work_group_invocations",
-            max_compute_work_group_invocations
-        ),
-        (
-            l,
-            "max_compute_work_group_size",
-            max_compute_work_group_size
-        ),
-        (l, "sub_pixel_precision_bits", sub_pixel_precision_bits),
-        (l, "sub_texel_precision_bits", sub_texel_precision_bits),
-        (l, "mipmap_precision_bits", mipmap_precision_bits),
-        (
-            l,
-            "max_draw_indexed_index_value",
-            max_draw_indexed_index_value
-        ),
-        (l, "max_draw_indirect_count", max_draw_indirect_count),
-        (l, "max_sampler_lod_bias", max_sampler_lod_bias),
-        (l, "max_sampler_anisotropy", max_sampler_anisotropy),
-        (l, "max_viewports", max_viewports),
-        (l, "max_viewport_dimensions", max_viewport_dimensions),
-        (l, "viewport_bounds_range", viewport_bounds_range),
-        (l, "viewport_sub_pixel_bits", viewport_sub_pixel_bits),
-        (l, "min_memory_map_alignment", min_memory_map_alignment),
-        (
-            l,
-            "min_texel_buffer_offset_alignment",
-            min_texel_buffer_offset_alignment
-        ),
-        (
-            l,
-            "min_uniform_buffer_offset_alignment",
-            min_uniform_buffer_offset_alignment
-        ),
-        (
-            l,
-            "min_storage_buffer_offset_alignment",
-            min_storage_buffer_offset_alignment
-        ),
-        (l, "min_texel_offset", min_texel_offset),
-        (l, "max_texel_offset", max_texel_offset),
-        (l, "min_texel_gather_offset", min_texel_gather_offset),
-        (l, "max_texel_gather_offset", max_texel_gather_offset),
-        (l, "min_interpolation_offset", min_interpolation_offset),
-        (l, "max_interpolation_offset", max_interpolation_offset),
-        (
-            l,
-            "sub_pixel_interpolation_offset_bits",
-            sub_pixel_interpolation_offset_bits
-        ),
-        (l, "max_framebuffer_width", max_framebuffer_width),
-        (l, "max_framebuffer_height", max_framebuffer_height),
-        (l, "max_framebuffer_layers", max_framebuffer_layers),
-        (
-            l,
-            "framebuffer_color_sample_counts",
-            framebuffer_color_sample_counts
-        ),
-        (
-            l,
-            "framebuffer_depth_sample_counts",
-            framebuffer_depth_sample_counts
-        ),
-        (
-            l,
-            "framebuffer_stencil_sample_counts",
-            framebuffer_stencil_sample_counts
-        ),
-        (
-            l,
-            "framebuffer_no_attachments_sample_counts",
-            framebuffer_no_attachments_sample_counts
-        ),
-        (l, "max_color_attachments", max_color_attachments),
-        (
-            l,
-            "sampled_image_color_sample_counts",
-            sampled_image_color_sample_counts
-        ),
-        (
-            l,
-            "sampled_image_integer_sample_counts",
-            sampled_image_integer_sample_counts
-        ),
-        (
-            l,
-            "sampled_image_depth_sample_counts",
-            sampled_image_depth_sample_counts
-        ),
-        (
-            l,
-            "sampled_image_stencil_sample_counts",
-            sampled_image_stencil_sample_counts
-        ),
-        (
-            l,
-            "storage_image_sample_counts",
-            storage_image_sample_counts
-        ),
-        (l, "max_sample_mask_words", max_sample_mask_words),
-        (
-            l,
-            "timestamp_compute_and_graphics",
-            timestamp_compute_and_graphics
-        ),
-        (l, "timestamp_period", timestamp_period),
-        (l, "max_clip_distances", max_clip_distances),
-        (l, "max_cull_distances", max_cull_distances),
-        (
-            l,
-            "max_combined_clip_and_cull_distances",
-            max_combined_clip_and_cull_distances
-        ),
-        (l, "discrete_queue_priorities", discrete_queue_priorities),
-        (l, "point_size_range", point_size_range),
-        (l, "line_width_range", line_width_range),
-        (l, "point_size_granularity", point_size_granularity),
-        (l, "line_width_granularity", line_width_granularity),
-        (l, "strict_lines", strict_lines),
-        (l, "standard_sample_locations", standard_sample_locations),
-        (
-            l,
-            "optimal_buffer_copy_offset_alignment",
-            optimal_buffer_copy_offset_alignment
-        ),
-        (
-            l,
-            "optimal_buffer_copy_row_pitch_alignment",
-            optimal_buffer_copy_row_pitch_alignment
-        ),
-        (l, "non_coherent_atom_size", non_coherent_atom_size),
+        (l, max_image_dimension_1d),
+        (l, max_image_dimension_2d),
+        (l, max_image_dimension_3d),
+        (l, max_image_dimension_cube),
+        (l, max_image_array_layers),
+        (l, max_texel_buffer_elements),
+        (l, max_uniform_buffer_range),
+        (l, max_storage_buffer_range),
+        (l, max_push_constants_size),
+        (l, max_memory_allocation_count),
+        (l, max_sampler_allocation_count),
+        (l, buffer_image_granularity),
+        (l, sparse_address_space_size),
+        (l, max_bound_descriptor_sets),
+        (l, max_per_stage_descriptor_samplers),
+        (l, max_per_stage_descriptor_uniform_buffers),
+        (l, max_per_stage_descriptor_storage_buffers),
+        (l, max_per_stage_descriptor_sampled_images),
+        (l, max_per_stage_descriptor_storage_images),
+        (l, max_per_stage_descriptor_input_attachments),
+        (l, max_per_stage_resources),
+        (l, max_descriptor_set_samplers),
+        (l, max_descriptor_set_uniform_buffers),
+        (l, max_descriptor_set_uniform_buffers_dynamic),
+        (l, max_descriptor_set_storage_buffers),
+        (l, max_descriptor_set_storage_buffers_dynamic),
+        (l, max_descriptor_set_sampled_images),
+        (l, max_descriptor_set_storage_images),
+        (l, max_descriptor_set_input_attachments),
+        (l, max_vertex_input_attributes),
+        (l, max_vertex_input_bindings),
+        (l, max_vertex_input_attribute_offset),
+        (l, max_vertex_input_binding_stride),
+        (l, max_vertex_output_components),
+        (l, max_tessellation_generation_level),
+        (l, max_tessellation_patch_size),
+        (l, max_tessellation_control_per_vertex_input_components),
+        (l, max_tessellation_control_per_vertex_output_components),
+        (l, max_tessellation_control_per_patch_output_components),
+        (l, max_tessellation_control_total_output_components),
+        (l, max_tessellation_evaluation_input_components),
+        (l, max_tessellation_evaluation_output_components),
+        (l, max_geometry_shader_invocations),
+        (l, max_geometry_input_components),
+        (l, max_geometry_output_components),
+        (l, max_geometry_output_vertices),
+        (l, max_geometry_total_output_components),
+        (l, max_fragment_input_components),
+        (l, max_fragment_output_attachments),
+        (l, max_fragment_dual_src_attachments),
+        (l, max_fragment_combined_output_resources),
+        (l, max_compute_shared_memory_size),
+        (l, max_compute_work_group_count),
+        (l, max_compute_work_group_invocations),
+        (l, max_compute_work_group_size),
+        (l, sub_pixel_precision_bits),
+        (l, sub_texel_precision_bits),
+        (l, mipmap_precision_bits),
+        (l, max_draw_indexed_index_value),
+        (l, max_draw_indirect_count),
+        (l, max_sampler_lod_bias),
+        (l, max_sampler_anisotropy),
+        (l, max_viewports),
+        (l, max_viewport_dimensions),
+        (l, viewport_bounds_range),
+        (l, viewport_sub_pixel_bits),
+        (l, min_memory_map_alignment),
+        (l, min_texel_buffer_offset_alignment),
+        (l, min_uniform_buffer_offset_alignment),
+        (l, min_storage_buffer_offset_alignment),
+        (l, min_texel_offset),
+        (l, max_texel_offset),
+        (l, min_texel_gather_offset),
+        (l, max_texel_gather_offset),
+        (l, min_interpolation_offset),
+        (l, max_interpolation_offset),
+        (l, sub_pixel_interpolation_offset_bits),
+        (l, max_framebuffer_width),
+        (l, max_framebuffer_height),
+        (l, max_framebuffer_layers),
+        (l, framebuffer_color_sample_counts),
+        (l, framebuffer_depth_sample_counts),
+        (l, framebuffer_stencil_sample_counts),
+        (l, framebuffer_no_attachments_sample_counts),
+        (l, max_color_attachments),
+        (l, sampled_image_color_sample_counts),
+        (l, sampled_image_integer_sample_counts),
+        (l, sampled_image_depth_sample_counts),
+        (l, sampled_image_stencil_sample_counts),
+        (l, storage_image_sample_counts),
+        (l, max_sample_mask_words),
+        (l, timestamp_compute_and_graphics),
+        (l, timestamp_period),
+        (l, max_clip_distances),
+        (l, max_cull_distances),
+        (l, max_combined_clip_and_cull_distances),
+        (l, discrete_queue_priorities),
+        (l, point_size_range),
+        (l, line_width_range),
+        (l, point_size_granularity),
+        (l, line_width_granularity),
+        (l, strict_lines),
+        (l, standard_sample_locations),
+        (l, optimal_buffer_copy_offset_alignment),
+        (l, optimal_buffer_copy_row_pitch_alignment),
+        (l, non_coherent_atom_size),
     ]
 }
 
+pub struct PhysicalDeviceFeature {
+    name: String,
+    supported: bool,
+}
+
+impl PrettyRow for PhysicalDeviceFeature {
+    fn to_format() -> prettytable::format::TableFormat {
+        *prettytable::format::consts::FORMAT_CLEAN
+    }
+
+    fn to_head() -> prettytable::Row {
+        row![Fy => "Feature-name", "Device"]
+    }
+
+    fn to_row(&self) -> prettytable::Row {
+        let supported = (if self.supported { "✓" } else { "✗" }).to_string();
+        match self.supported {
+            true => row![self.name, Fg -> supported],
+            false => row![self.name, Fr -> supported],
+        }
+    }
+}
+
 macro_rules! make_features {
-    ($(($features:ident, $field:ident, $name:expr, $ok:ident, $fail:ident),)*) => (
-        $(
-            (if $features.$field { &mut $ok } else { &mut $fail }).push($name);
-        )*
+    ($(($features:ident, $field:ident),)*) => (
+        vec![
+            $(
+                PhysicalDeviceFeature {
+                    name: stringify!($field).to_string(),
+                    supported: $features.$field,
+                },
+            )*
+        ]
     );
 }
 
 pub fn physical_device_features<'a>(
     pd: &PhysicalDevice<'a>,
-) -> (Vec<&'static str>, Vec<&'static str>) {
+) -> Vec<PhysicalDeviceFeature> {
     let f = pd.supported_features();
-    let mut a = vec![];
-    let mut b = vec![];
 
     make_features![
-        (f, robust_buffer_access, "robust_buffer_access", a, b),
-        (f, full_draw_index_uint32, "full_draw_index_uint32", a, b),
-        (f, image_cube_array, "image_cube_array", a, b),
-        (f, independent_blend, "independent_blend", a, b),
-        (f, geometry_shader, "geometry_shader", a, b),
-        (f, tessellation_shader, "tessellation_shader", a, b),
-        (f, sample_rate_shading, "sample_rate_shading", a, b),
-        (f, dual_src_blend, "dual_src_blend", a, b),
-        (f, logic_op, "logic_op", a, b),
-        (f, multi_draw_indirect, "multi_draw_indirect", a, b),
-        (
-            f,
-            draw_indirect_first_instance,
-            "draw_indirect_first_instance",
-            a,
-            b
-        ),
-        (f, depth_clamp, "depth_clamp", a, b),
-        (f, depth_bias_clamp, "depth_bias_clamp", a, b),
-        (f, fill_mode_non_solid, "fill_mode_non_solid", a, b),
-        (f, depth_bounds, "depth_bounds", a, b),
-        (f, wide_lines, "wide_lines", a, b),
-        (f, large_points, "large_points", a, b),
-        (f, alpha_to_one, "alpha_to_one", a, b),
-        (f, multi_viewport, "multi_viewport", a, b),
-        (f, sampler_anisotropy, "sampler_anisotropy", a, b),
-        (
-            f,
-            texture_compression_etc2,
-            "texture_compression_etc2",
-            a,
-            b
-        ),
-        (
-            f,
-            texture_compression_astc_ldr,
-            "texture_compression_astc_ldr",
-            a,
-            b
-        ),
-        (f, texture_compression_bc, "texture_compression_bc", a, b),
-        (f, occlusion_query_precise, "occlusion_query_precise", a, b),
-        (
-            f,
-            pipeline_statistics_query,
-            "pipeline_statistics_query",
-            a,
-            b
-        ),
-        (
-            f,
-            vertex_pipeline_stores_and_atomics,
-            "vertex_pipeline_stores_and_atomics",
-            a,
-            b
-        ),
-        (
-            f,
-            fragment_stores_and_atomics,
-            "fragment_stores_and_atomics",
-            a,
-            b
-        ),
-        (
-            f,
-            shader_tessellation_and_geometry_point_size,
-            "shader_tessellation_and_geometry_point_size",
-            a,
-            b
-        ),
-        (
-            f,
-            shader_image_gather_extended,
-            "shader_image_gather_extended",
-            a,
-            b
-        ),
-        (
-            f,
-            shader_storage_image_extended_formats,
-            "shader_storage_image_extended_formats",
-            a,
-            b
-        ),
-        (
-            f,
-            shader_storage_image_multisample,
-            "shader_storage_image_multisample",
-            a,
-            b
-        ),
-        (
-            f,
-            shader_storage_image_read_without_format,
-            "shader_storage_image_read_without_format",
-            a,
-            b
-        ),
-        (
-            f,
-            shader_storage_image_write_without_format,
-            "shader_storage_image_write_without_format",
-            a,
-            b
-        ),
-        (
-            f,
-            shader_uniform_buffer_array_dynamic_indexing,
-            "shader_uniform_buffer_array_dynamic_indexing",
-            a,
-            b
-        ),
-        (
-            f,
-            shader_sampled_image_array_dynamic_indexing,
-            "shader_sampled_image_array_dynamic_indexing",
-            a,
-            b
-        ),
-        (
-            f,
-            shader_storage_buffer_array_dynamic_indexing,
-            "shader_storage_buffer_array_dynamic_indexing",
-            a,
-            b
-        ),
-        (
-            f,
-            shader_storage_image_array_dynamic_indexing,
-            "shader_storage_image_array_dynamic_indexing",
-            a,
-            b
-        ),
-        (f, shader_clip_distance, "shader_clip_distance", a, b),
-        (f, shader_cull_distance, "shader_cull_distance", a, b),
-        (f, shader_float64, "shader_float64", a, b),
-        (f, shader_int64, "shader_int64", a, b),
-        (f, shader_int16, "shader_int16", a, b),
-        (
-            f,
-            shader_resource_residency,
-            "shader_resource_residency",
-            a,
-            b
-        ),
-        (f, shader_resource_min_lod, "shader_resource_min_lod", a, b),
-        (f, sparse_binding, "sparse_binding", a, b),
-        (f, sparse_residency_buffer, "sparse_residency_buffer", a, b),
-        (
-            f,
-            sparse_residency_image2d,
-            "sparse_residency_image2d",
-            a,
-            b
-        ),
-        (
-            f,
-            sparse_residency_image3d,
-            "sparse_residency_image3d",
-            a,
-            b
-        ),
-        (
-            f,
-            sparse_residency2_samples,
-            "sparse_residency2_samples",
-            a,
-            b
-        ),
-        (
-            f,
-            sparse_residency4_samples,
-            "sparse_residency4_samples",
-            a,
-            b
-        ),
-        (
-            f,
-            sparse_residency8_samples,
-            "sparse_residency8_samples",
-            a,
-            b
-        ),
-        (
-            f,
-            sparse_residency16_samples,
-            "sparse_residency16_samples",
-            a,
-            b
-        ),
-        (
-            f,
-            sparse_residency_aliased,
-            "sparse_residency_aliased",
-            a,
-            b
-        ),
-        (
-            f,
-            variable_multisample_rate,
-            "variable_multisample_rate",
-            a,
-            b
-        ),
-        (f, inherited_queries, "inherited_queries", a, b),
-        (f, buffer_device_address, "buffer_device_address", a, b),
-        (
-            f,
-            buffer_device_address_capture_replay,
-            "buffer_device_address_capture_replay",
-            a,
-            b
-        ),
-        (
-            f,
-            buffer_device_address_multi_device,
-            "buffer_device_address_multi_device",
-            a,
-            b
-        ),
-        (
-            f,
-            variable_pointers_storage_buffer,
-            "variable_pointers_storage_buffer",
-            a,
-            b
-        ),
-        (f, variable_pointers, "variable_pointers", a, b),
-        (
-            f,
-            shader_buffer_int64_atomics,
-            "shader_buffer_int64_atomics",
-            a,
-            b
-        ),
-        (
-            f,
-            shader_shared_int64_atomics,
-            "shader_shared_int64_atomics",
-            a,
-            b
-        ),
-        (f, storage_buffer_8bit, "storage_buffer_8bit", a, b),
-        (f, storage_uniform_8bit, "storage_uniform_8bit", a, b),
-        (
-            f,
-            storage_push_constant_8bit,
-            "storage_push_constant_8bit",
-            a,
-            b
-        ),
-        (f, storage_buffer_16bit, "storage_buffer_16bit", a, b),
-        (f, storage_uniform_16bit, "storage_uniform_16bit", a, b),
-        (
-            f,
-            storage_push_constant_16bit,
-            "storage_push_constant_16bit",
-            a,
-            b
-        ),
-        (
-            f,
-            storage_input_output_16bit,
-            "storage_input_output_16bit",
-            a,
-            b
-        ),
-        (f, shader_float16, "shader_float16", a, b),
-        (f, shader_int8, "shader_int8", a, b),
-    ];
-
-    (a, b)
+        (f, robust_buffer_access),
+        (f, full_draw_index_uint32),
+        (f, image_cube_array),
+        (f, independent_blend),
+        (f, geometry_shader),
+        (f, tessellation_shader),
+        (f, sample_rate_shading),
+        (f, dual_src_blend),
+        (f, logic_op),
+        (f, multi_draw_indirect),
+        (f, draw_indirect_first_instance),
+        (f, depth_clamp),
+        (f, depth_bias_clamp),
+        (f, fill_mode_non_solid),
+        (f, depth_bounds),
+        (f, wide_lines),
+        (f, large_points),
+        (f, alpha_to_one),
+        (f, multi_viewport),
+        (f, sampler_anisotropy),
+        (f, texture_compression_etc2),
+        (f, texture_compression_astc_ldr),
+        (f, texture_compression_bc),
+        (f, occlusion_query_precise),
+        (f, pipeline_statistics_query),
+        (f, vertex_pipeline_stores_and_atomics),
+        (f, fragment_stores_and_atomics),
+        (f, shader_tessellation_and_geometry_point_size),
+        (f, shader_image_gather_extended),
+        (f, shader_storage_image_extended_formats),
+        (f, shader_storage_image_multisample),
+        (f, shader_storage_image_read_without_format),
+        (f, shader_storage_image_write_without_format),
+        (f, shader_uniform_buffer_array_dynamic_indexing),
+        (f, shader_sampled_image_array_dynamic_indexing),
+        (f, shader_storage_buffer_array_dynamic_indexing),
+        (f, shader_storage_image_array_dynamic_indexing),
+        (f, shader_clip_distance),
+        (f, shader_cull_distance),
+        (f, shader_float64),
+        (f, shader_int64),
+        (f, shader_int16),
+        (f, shader_resource_residency),
+        (f, shader_resource_min_lod),
+        (f, sparse_binding),
+        (f, sparse_residency_buffer),
+        (f, sparse_residency_image2d),
+        (f, sparse_residency_image3d),
+        (f, sparse_residency2_samples),
+        (f, sparse_residency4_samples),
+        (f, sparse_residency8_samples),
+        (f, sparse_residency16_samples),
+        (f, sparse_residency_aliased),
+        (f, variable_multisample_rate),
+        (f, inherited_queries),
+        (f, buffer_device_address),
+        (f, buffer_device_address_capture_replay),
+        (f, buffer_device_address_multi_device),
+        (f, variable_pointers_storage_buffer),
+        (f, variable_pointers),
+        (f, shader_buffer_int64_atomics),
+        (f, shader_shared_int64_atomics),
+        (f, storage_buffer_8bit),
+        (f, storage_uniform_8bit),
+        (f, storage_push_constant_8bit),
+        (f, storage_buffer_16bit),
+        (f, storage_uniform_16bit),
+        (f, storage_push_constant_16bit),
+        (f, storage_input_output_16bit),
+        (f, shader_float16),
+        (f, shader_int8),
+    ]
 }
 
 fn check_errors(result: vk::Result) -> Result<()> {

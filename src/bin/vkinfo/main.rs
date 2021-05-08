@@ -1,9 +1,9 @@
 use colored::Colorize;
-use prettytable::{cell, row, Row};
+use prettytable::{cell, row};
 use structopt::StructOpt;
-use vulkano::instance::{InstanceExtensions, LayerProperties, PhysicalDevice};
-
-use std::iter::FromIterator;
+use vulkano::instance::{
+    InstanceExtensions, LayerProperties, MemoryHeap, MemoryType, PhysicalDevice,
+};
 
 use cgi::vulkan::{self, PrettyRow};
 
@@ -58,25 +58,19 @@ fn main() {
     println!();
     make_table(&pds).print_tty(force_color);
     println!();
-    make_table_pdlimits(&pds).print_tty(force_color);
-    println!();
-    for pd in pds.iter() {
-        let name = pd.name().yellow();
-        let (ok, na) = make_table_pdfeatures(&pd);
-
-        println!("{}: {}", "Device supported features".green(), name);
-        ok.print_tty(force_color);
-        println!();
-
-        println!("{}: {}", "Device missing features".red(), name);
-        na.print_tty(force_color);
-        println!();
-    }
 
     make_table(&layers).print_tty(force_color);
     println!();
-
     make_table(&extns).print_tty(force_color);
+    println!();
+
+    make_table_pdlimits(&pds).print_tty(force_color);
+    println!();
+    make_table_pdfeatures(&pds).print_tty(force_color);
+    println!();
+
+    print_memory_table(&pds, force_color);
+    println!();
 }
 
 fn make_table<R>(rows: &[R]) -> prettytable::Table
@@ -133,50 +127,59 @@ fn make_table_pdlimits(pds: &[PhysicalDevice]) -> prettytable::Table {
     }
 }
 
-fn make_table_pdfeatures(
-    pd: &PhysicalDevice,
-) -> (prettytable::Table, prettytable::Table) {
-    use std::convert::identity;
+fn make_table_pdfeatures(pds: &[PhysicalDevice]) -> prettytable::Table {
+    let mut table = prettytable::Table::new();
 
-    let mut ok_table = prettytable::Table::new();
-    let mut na_table = prettytable::Table::new();
+    match pds.len() {
+        0 => table,
+        _ => {
+            let titles =
+                row![Fy => "Feature-name", format!("Device-{}", pds[0].index()) ];
 
-    let (ok, na) = vulkan::physical_device_features(pd);
+            let mut lists: Vec<Vec<vulkan::PhysicalDeviceFeature>> = pds
+                .iter()
+                .map(|pd| vulkan::physical_device_features(&pd))
+                .collect();
+            let list = lists.remove(0);
 
-    let mut ok_iter = ok.into_iter();
-    loop {
-        let r = Row::from_iter(
-            vec![ok_iter.next(), ok_iter.next()]
-                .into_iter()
-                .filter_map(identity),
-        );
-        match r.len() {
-            0 => break,
-            _ => {
-                ok_table.add_row(r);
+            for l in list.iter() {
+                table.add_row(l.to_row());
             }
+
+            for list in lists.into_iter() {
+                for (i, l) in list.iter().enumerate() {
+                    table
+                        .get_mut_row(i)
+                        .unwrap()
+                        .add_cell(l.to_row().get_cell(1).unwrap().clone())
+                }
+            }
+
+            table.set_titles(titles);
+
+            table.set_format(vulkan::PhysicalDeviceFeature::to_format());
+            table
         }
     }
+}
 
-    let mut na_iter = na.into_iter();
-    loop {
-        let r = Row::from_iter(
-            vec![na_iter.next(), na_iter.next()]
-                .into_iter()
-                .filter_map(identity),
-        );
-        match r.len() {
-            0 => break,
-            _ => {
-                na_table.add_row(r);
-            }
-        }
+fn print_memory_table(pds: &[PhysicalDevice], force_color: bool) {
+    for pd in pds {
+        let s = format!("Physical-device {{{}}} {}", pd.index(), pd.name()).red();
+        println!("{}", s);
+
+        let mut heap_table = prettytable::Table::new();
+        let mut type_table = prettytable::Table::new();
+
+        heap_table.set_titles(MemoryHeap::to_head());
+        type_table.set_titles(MemoryType::to_head());
+
+        let heaps: Vec<MemoryHeap> = pd.memory_heaps().collect();
+        let types: Vec<MemoryType> = pd.memory_types().collect();
+
+        make_table(&heaps).print_tty(force_color);
+        make_table(&types).print_tty(force_color);
     }
-
-    ok_table.set_format(*prettytable::format::consts::FORMAT_CLEAN);
-    na_table.set_format(*prettytable::format::consts::FORMAT_CLEAN);
-
-    (ok_table, na_table)
 }
 
 fn enable_layers(layers: &[LayerProperties]) -> Vec<&'static str> {

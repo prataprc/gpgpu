@@ -1,6 +1,5 @@
 ==== VkInstance
 
-
 * vkGetInstanceProcAddr                               VkSurface, (platform specific)
 * Query Physical Devices and Device Groups            VkPhysicalDevice
 * Query Layers and Extensions.
@@ -48,10 +47,6 @@ VkDevice
 
 vkCreateDevice,
 
-vkGetPhysicalDeviceFeatures,
-vkGetPhysicalDeviceFeatures2,
-vkGetPhysicalDeviceMemoryProperties,
-vkGetPhysicalDeviceMemoryProperties2,
 vkGetPhysicalDeviceQueueFamilyProperties,
 vkGetPhysicalDeviceQueueFamilyProperties2,
 
@@ -88,14 +83,3 @@ vkGetPhysicalDeviceVideoCapabilitiesKHR,
 vkGetPhysicalDeviceVideoFormatPropertiesKHR,
 
 
-memory_heap_by_id
-memory_heaps
-memory_type_by_id
-memory_types
-queue_families
-queue_family_by_id
-supported_features
-uuid
-
-pipelineCacheUUID[VK_UUID_SIZE];
-sparseProperties;

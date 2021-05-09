@@ -1,8 +1,30 @@
 Simple types
 ------------
 
-VkDeviceType, VkMemoryType, VkMemoryHeap, VkExtent2D, VkOffset2D,
+VkExtent2D VkExtent3D { width, height, depth },
+VkOffset2D VkOffset3D { x, y, z },
 VkRect2D { VkOffset2D, VkExtent2D }
+
+typedef uint64_t VkDeviceSize;
+
+typedef struct VkMemoryType {
+    VkMemoryPropertyFlags    propertyFlags;                                                     typedef enum VkMemoryPropertyFlagBits {
+    uint32_t                 heapIndex;                                                             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+}                                                                                                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+                                                                                                    VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+typedef struct VkMemoryHeap {                   typedef enum VkMemoryHeapFlagBits {                 VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
+    VkDeviceSize         size;                      VK_MEMORY_HEAP_DEVICE_LOCAL_BIT,                VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT,
+    VkMemoryHeapFlags    flags;                     VK_MEMORY_HEAP_MULTI_INSTANCE_BIT,              VK_MEMORY_PROPERTY_PROTECTED_BIT,
+}                                               }                                                   VK_MEMORY_PROPERTY_DEVICE_COHERENT_BIT_AMD,
+                                                                                                    VK_MEMORY_PROPERTY_DEVICE_UNCACHED_BIT_AMD,
+typedef enum VkPhysicalDeviceType {                                                             }
+    VK_PHYSICAL_DEVICE_TYPE_OTHER,
+    VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU,
+    VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU,
+    VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU,
+    VK_PHYSICAL_DEVICE_TYPE_CPU,
+}
+
 
 Dispatchable and Non-Dispatchable Handles
 -----------------------------------------
@@ -39,12 +61,112 @@ VkInstance
     +-> VkDisplay
     +-> VkDisplayMode
 
+
+VkFormat:
+    BC1/BC2/BC3/BC4/BC5/BC6H/BC7/ETC2/EAC/ASTC/PVRTC1/PVRTC2
+    RGBA/E/DS/X
+    2BPP/4BPP/SRGB, 2PLANE/3PLANE, 422/420/444
+    UNORM/SNORM/USCALED/SSCALED/UINT/SINT/UFLOAT/SFLOAT
+    PACK8/PACK16/2PACK16/3PACK16/4PACK16/PACK32/BLOCK
+
+
+==== VkInstance
+
+* vkGetInstanceProcAddr
+* Query Physical Devices and Device Groups
+* Query Layers and Extensions
+
+VkResult vkCreateInstance(
+    const VkInstanceCreateInfo*   pCreateInfo,      typedef struct VkInstanceCreateInfo {                       typedef struct VkApplicationInfo {
+    const VkAllocationCallbacks*  pAllocator,           const VkApplicationInfo*    pApplicationInfo;               VkStructureType    sType;
+    VkInstance*                   pInstance);           uint32_t                    enabledLayerCount;              const void*        pNext;
+                                                        const char* const*          ppEnabledLayerNames;            const char*        pApplicationName;
+ PFN_vkVoidFunction vkGetInstanceProcAddr(              uint32_t                    enabledExtensionCount;          uint32_t           applicationVersion;
+     VkInstance    instance,                            const char* const*          ppEnabledExtensionNames;        const char*        pEngineName;
+     const char*   pName);                          }                                                               uint32_t           engineVersion; 
+                                                                                                                    uint32_t           apiVersion;
+ VkResult vkEnumeratePhysicalDevices(                                                                           }
+     VkInstance          instance,
+     uint32_t*           pPhysicalDeviceCount,
+     VkPhysicalDevice*   pPhysicalDevices);
+
+ VkResult vkEnumerateInstanceLayerProperties(        typedef struct VkLayerProperties {
+     uint32_t*           pPropertyCount,                 char        layerName[VK_MAX_EXTENSION_NAME_SIZE];
+     VkLayerProperties*  pProperties);                   uint32_t    specVersion;
+                                                         uint32_t    implementationVersion;
+                                                         char        description[VK_MAX_DESCRIPTION_SIZE];
+                                                     }
+ VkResult vkEnumerateInstanceExtensionProperties(    typedef struct VkExtensionProperties {
+     const char*               pLayerName,               char        extensionName[VK_MAX_EXTENSION_NAME_SIZE];
+     uint32_t*                 pPropertyCount,           uint32_t    specVersion;
+     VkExtensionProperties*    pProperties);         }
+
+
+==== VkPhysicalDevice
+
+* Vulkan separates the concept of physical and logical devices.
+* Layers and extensions.
+* Display, DisplayMode, DisplayPlane, DisplayCapabilities, DisplayProperties.
+
+void vkGetPhysicalDeviceFeatures(                               typedef struct VkPhysicalDeviceProperties {
+    VkPhysicalDevice            physicalDevice,                     uint32_t                          apiVersion;
+    VkPhysicalDeviceFeatures*   pFeatures);                         uint32_t                          driverVersion;
+void vkGetPhysicalDeviceFeatures2KHR(                               uint32_t                          vendorID;
+    VkPhysicalDevice            physicalDevice,                     uint32_t                          deviceID;
+    VkPhysicalDeviceFeatures2*  pFeatures);                         VkPhysicalDeviceType              deviceType;
+void vkGetPhysicalDeviceProperties(                                 char                              deviceName[VK_MAX_PHYSICAL_DEVICE_NAME_SIZE];
+    VkPhysicalDevice            physicalDevice,                     uint8_t                           pipelineCacheUUID[VK_UUID_SIZE];
+    VkPhysicalDeviceProperties* pProperties);                       VkPhysicalDeviceLimits            limits;
+                                                                    VkPhysicalDeviceSparseProperties  sparseProperties;
+                                                                }
+void vkGetPhysicalDeviceMemoryProperties(                       typedef struct VkPhysicalDeviceMemoryProperties {
+    VkPhysicalDevice                    physicalDevice,             uint32_t        memoryTypeCount;
+    VkPhysicalDeviceMemoryProperties*   pMemoryProperties);         VkMemoryType    memoryTypes[VK_MAX_MEMORY_TYPES];
+                                                                    uint32_t        memoryHeapCount;
+                                                                    VkMemoryHeap    memoryHeaps[VK_MAX_MEMORY_HEAPS];
+                                                                }
+VkResult vkEnumerateDeviceExtensionProperties(
+    VkPhysicalDevice        physicalDevice,
+    const char*             pLayerName,
+    uint32_t*               pPropertyCount,
+    VkExtensionProperties*  pProperties);
+VkResult vkEnumerateDeviceLayerProperties(
+    VkPhysicalDevice        physicalDevice,
+    uint32_t*               pPropertyCount,
+    VkLayerProperties*      pProperties);
+
+
+==== VkDevice
+
+typedef struct VkDeviceCreateInfo {
+    VkStructureType                    sType;
+    const void*                        pNext; // long list of optional parameters.
+    VkDeviceCreateFlags                flags; // reserved
+    uint32_t                           queueCreateInfoCount;
+    const VkDeviceQueueCreateInfo*     pQueueCreateInfos;
+    uint32_t                           enabledLayerCount;
+    const char* const*                 ppEnabledLayerNames;
+    uint32_t                           enabledExtensionCount;
+    const char* const*                 ppEnabledExtensionNames;
+    const VkPhysicalDeviceFeatures*    pEnabledFeatures;
+}
+typedef struct VkDeviceQueueCreateInfo {                typedef enum VkDeviceQueueCreateFlagBits {
+    VkStructureType             sType;                      VK_DEVICE_QUEUE_CREATE_PROTECTED_BIT = 0x00000001,
+    const void*                 pNext;                  }
+    VkDeviceQueueCreateFlags    flags;
+    uint32_t                    queueFamilyIndex;
+    uint32_t                    queueCount;
+    const float*                pQueuePriorities;
+}
+
+
 typedef struct VkCommandPoolCreateInfo {            typedef enum VkCommandPoolCreateFlagBits {
     VkStructureType             sType;                  VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,
     const void*                 pNext;                  VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
     VkCommandPoolCreateFlags    flags;                  VK_COMMAND_POOL_CREATE_PROTECTED_BIT,
     uint32_t                    queueFamilyIndex;   }
 }
+
 
 typedef struct VkCommandBufferAllocateInfo {        typedef enum VkCommandBufferLevel {
     VkStructureType         sType;                      VK_COMMAND_BUFFER_LEVEL_PRIMARY,
@@ -54,27 +176,150 @@ typedef struct VkCommandBufferAllocateInfo {        typedef enum VkCommandBuffer
     uint32_t                commandBufferCount;
 }
 
+
 typedef struct VkSwapchainCreateInfo {
     VkStructureType                  sType;
-    const void*                      pNext;
+    const void*                      pNext -> VkDeviceGroupSwapchainCreateInfoKHR | VkImageFormatListCreateInfo;
     VkSwapchainCreateFlagsKHR        flags;
-    VkSurfaceKHR                     surface;
-    uint32_t                         minImageCount;
-    VkFormat                         imageFormat;
-    VkColorSpaceKHR                  imageColorSpace;
-    VkExtent2D                       imageExtent;
-    uint32_t                         imageArrayLayers;
-    VkImageUsageFlags                imageUsage;
-    VkSharingMode                    imageSharingMode;
-    uint32_t                         queueFamilyIndexCount;
-    const uint32_t*                  pQueueFamilyIndices;
-    VkSurfaceTransformFlagBitsKHR    preTransform;
-    VkCompositeAlphaFlagBitsKHR      compositeAlpha;
-    VkPresentModeKHR                 presentMode;
-    VkBool32                         clipped;
-    VkSwapchainKHR                   oldSwapchain;
-}
+    VkSurfaceKHR                     surface;               typedef enum VkSwapchainCreateFlagsKHR {
+    uint32_t                         minImageCount;             VK_SWAPCHAIN_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT_KHR,
+    VkFormat                         imageFormat;               VK_SWAPCHAIN_CREATE_PROTECTED_BIT_KHR,
+    VkColorSpaceKHR                  imageColorSpace;           VK_SWAPCHAIN_CREATE_MUTABLE_FORMAT_BIT_KHR,
+    VkExtent2D                       imageExtent;           }
+    uint32_t                         imageArrayLayers;      typedef enum VkColorSpaceKHR {
+    VkImageUsageFlags                imageUsage;                VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
+    VkSharingMode                    imageSharingMode;      }
+    uint32_t                         queueFamilyIndexCount; typedef enum VkImageUsageFlagBits {
+    const uint32_t*                  pQueueFamilyIndices;       VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+    VkSurfaceTransformFlagBitsKHR    preTransform;              VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+    VkCompositeAlphaFlagBitsKHR      compositeAlpha;            VK_IMAGE_USAGE_SAMPLED_BIT,
+    VkPresentModeKHR                 presentMode;               VK_IMAGE_USAGE_STORAGE_BIT,
+    VkBool32                         clipped;                   VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+    VkSwapchainKHR                   oldSwapchain;              VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+}                                                               VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT,
+                                                                VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
+                                                                VK_IMAGE_USAGE_VIDEO_DECODE_DST_BIT_KHR,
+                                                                VK_IMAGE_USAGE_VIDEO_DECODE_SRC_BIT_KHR,
+                                                                VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR,
+                                                                VK_IMAGE_USAGE_VIDEO_ENCODE_DST_BIT_KHR,
+                                                                VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR,
+                                                                VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR,
+                                                            }
+                                                            typedef enum VkSharingMode {
+                                                                VK_SHARING_MODE_EXCLUSIVE,
+                                                                VK_SHARING_MODE_CONCURRENT,
+                                                            }
 
 
 
 
+
+
+typedef struct VkPhysicalDeviceFeatures {               typedef struct VkPhysicalDeviceLimits {
+    VkBool32 robustBufferAccess;                            uint32_t              maxImageDimension1D;
+    VkBool32 fullDrawIndexUint32;                           uint32_t              maxImageDimension2D;
+    VkBool32 imageCubeArray;                                uint32_t              maxImageDimension3D;
+    VkBool32 independentBlend;                              uint32_t              maxImageDimensionCube;
+    VkBool32 geometryShader;                                uint32_t              maxImageArrayLayers;
+    VkBool32 tessellationShader;                            uint32_t              maxTexelBufferElements;
+    VkBool32 sampleRateShading;                             uint32_t              maxUniformBufferRange;
+    VkBool32 dualSrcBlend;                                  uint32_t              maxStorageBufferRange;
+    VkBool32 logicOp;                                       uint32_t              maxPushConstantsSize;
+    VkBool32 multiDrawIndirect;                             uint32_t              maxMemoryAllocationCount;
+    VkBool32 drawIndirectFirstInstance;                     uint32_t              maxSamplerAllocationCount;
+    VkBool32 depthClamp;                                    VkDeviceSize          bufferImageGranularity;
+    VkBool32 depthBiasClamp;                                VkDeviceSize          sparseAddressSpaceSize;
+    VkBool32 fillModeNonSolid;                              uint32_t              maxBoundDescriptorSets;
+    VkBool32 depthBounds;                                   uint32_t              maxPerStageDescriptorSamplers;
+    VkBool32 wideLines;                                     uint32_t              maxPerStageDescriptorUniformBuffers;
+    VkBool32 largePoints;                                   uint32_t              maxPerStageDescriptorStorageBuffers;
+    VkBool32 alphaToOne;                                    uint32_t              maxPerStageDescriptorSampledImages;
+    VkBool32 multiViewport;                                 uint32_t              maxPerStageDescriptorStorageImages;
+    VkBool32 samplerAnisotropy;                             uint32_t              maxPerStageDescriptorInputAttachments;
+    VkBool32 textureCompressionETC2;                        uint32_t              maxPerStageResources;
+    VkBool32 textureCompressionASTC_LDR;                    uint32_t              maxDescriptorSetSamplers;
+    VkBool32 textureCompressionBC;                          uint32_t              maxDescriptorSetUniformBuffers;
+    VkBool32 occlusionQueryPrecise;                         uint32_t              maxDescriptorSetUniformBuffersDynamic;
+    VkBool32 pipelineStatisticsQuery;                       uint32_t              maxDescriptorSetStorageBuffers;
+    VkBool32 vertexPipelineStoresAndAtomics;                uint32_t              maxDescriptorSetStorageBuffersDynamic;
+    VkBool32 fragmentStoresAndAtomics;                      uint32_t              maxDescriptorSetSampledImages;
+    VkBool32 shaderTessellationAndGeometryPointSize;        uint32_t              maxDescriptorSetStorageImages;
+    VkBool32 shaderImageGatherExtended;                     uint32_t              maxDescriptorSetInputAttachments;
+    VkBool32 shaderStorageImageExtendedFormats;             uint32_t              maxVertexInputAttributes;
+    VkBool32 shaderStorageImageMultisample;                 uint32_t              maxVertexInputBindings;
+    VkBool32 shaderStorageImageReadWithoutFormat;           uint32_t              maxVertexInputAttributeOffset;
+    VkBool32 shaderStorageImageWriteWithoutFormat;          uint32_t              maxVertexInputBindingStride;
+    VkBool32 shaderUniformBufferArrayDynamicIndexing;       uint32_t              maxVertexOutputComponents;
+    VkBool32 shaderSampledImageArrayDynamicIndexing;        uint32_t              maxTessellationGenerationLevel;
+    VkBool32 shaderStorageBufferArrayDynamicIndexing;       uint32_t              maxTessellationPatchSize;
+    VkBool32 shaderStorageImageArrayDynamicIndexing;        uint32_t              maxTessellationControlPerVertexInputComponents;
+    VkBool32 shaderClipDistance;                            uint32_t              maxTessellationControlPerVertexOutputComponents;
+    VkBool32 shaderCullDistance;                            uint32_t              maxTessellationControlPerPatchOutputComponents;
+    VkBool32 shaderFloat64;                                 uint32_t              maxTessellationControlTotalOutputComponents;
+    VkBool32 shaderInt64;                                   uint32_t              maxTessellationEvaluationInputComponents;
+    VkBool32 shaderInt16;                                   uint32_t              maxTessellationEvaluationOutputComponents;
+    VkBool32 shaderResourceResidency;                       uint32_t              maxGeometryShaderInvocations;
+    VkBool32 shaderResourceMinLod;                          uint32_t              maxGeometryInputComponents;
+    VkBool32 sparseBinding;                                 uint32_t              maxGeometryOutputComponents;
+    VkBool32 sparseResidencyBuffer;                         uint32_t              maxGeometryOutputVertices;
+    VkBool32 sparseResidencyImage2D;                        uint32_t              maxGeometryTotalOutputComponents;
+    VkBool32 sparseResidencyImage3D;                        uint32_t              maxFragmentInputComponents;
+    VkBool32 sparseResidency2Samples;                       uint32_t              maxFragmentOutputAttachments;
+    VkBool32 sparseResidency4Samples;                       uint32_t              maxFragmentDualSrcAttachments;
+    VkBool32 sparseResidency8Samples;                       uint32_t              maxFragmentCombinedOutputResources;
+    VkBool32 sparseResidency16Samples;                      uint32_t              maxComputeSharedMemorySize;
+    VkBool32 sparseResidencyAliased;                        uint32_t              maxComputeWorkGroupCount[3];
+    VkBool32 variableMultisampleRate;                       uint32_t              maxComputeWorkGroupInvocations;
+    VkBool32 inheritedQueries;                              uint32_t              maxComputeWorkGroupSize[3];
+}                                                           uint32_t              subPixelPrecisionBits;
+                                                            uint32_t              subTexelPrecisionBits;
+                                                            uint32_t              mipmapPrecisionBits;
+                                                            uint32_t              maxDrawIndexedIndexValue;
+                                                            uint32_t              maxDrawIndirectCount;
+                                                            float                 maxSamplerLodBias;
+                                                            float                 maxSamplerAnisotropy;
+                                                            uint32_t              maxViewports;
+                                                            uint32_t              maxViewportDimensions[2];
+                                                            float                 viewportBoundsRange[2];
+                                                            uint32_t              viewportSubPixelBits;
+                                                            size_t                minMemoryMapAlignment;
+                                                            VkDeviceSize          minTexelBufferOffsetAlignment;
+                                                            VkDeviceSize          minUniformBufferOffsetAlignment;
+                                                            VkDeviceSize          minStorageBufferOffsetAlignment;
+                                                            int32_t               minTexelOffset;
+                                                            uint32_t              maxTexelOffset;
+                                                            int32_t               minTexelGatherOffset;
+                                                            uint32_t              maxTexelGatherOffset;
+                                                            float                 minInterpolationOffset;
+                                                            float                 maxInterpolationOffset;
+                                                            uint32_t              subPixelInterpolationOffsetBits;
+                                                            uint32_t              maxFramebufferWidth;
+                                                            uint32_t              maxFramebufferHeight;
+                                                            uint32_t              maxFramebufferLayers;
+                                                            VkSampleCountFlags    framebufferColorSampleCounts;
+                                                            VkSampleCountFlags    framebufferDepthSampleCounts;
+                                                            VkSampleCountFlags    framebufferStencilSampleCounts;
+                                                            VkSampleCountFlags    framebufferNoAttachmentsSampleCounts;
+                                                            uint32_t              maxColorAttachments;
+                                                            VkSampleCountFlags    sampledImageColorSampleCounts;
+                                                            VkSampleCountFlags    sampledImageIntegerSampleCounts;
+                                                            VkSampleCountFlags    sampledImageDepthSampleCounts;
+                                                            VkSampleCountFlags    sampledImageStencilSampleCounts;
+                                                            VkSampleCountFlags    storageImageSampleCounts;
+                                                            uint32_t              maxSampleMaskWords;
+                                                            VkBool32              timestampComputeAndGraphics;
+                                                            float                 timestampPeriod;
+                                                            uint32_t              maxClipDistances;
+                                                            uint32_t              maxCullDistances;
+                                                            uint32_t              maxCombinedClipAndCullDistances;
+                                                            uint32_t              discreteQueuePriorities;
+                                                            float                 pointSizeRange[2];
+                                                            float                 lineWidthRange[2];
+                                                            float                 pointSizeGranularity;
+                                                            float                 lineWidthGranularity;
+                                                            VkBool32              strictLines;
+                                                            VkBool32              standardSampleLocations;
+                                                            VkDeviceSize          optimalBufferCopyOffsetAlignment;
+                                                            VkDeviceSize          optimalBufferCopyRowPitchAlignment;
+                                                            VkDeviceSize          nonCoherentAtomSize;
+                                                        }

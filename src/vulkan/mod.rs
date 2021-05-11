@@ -6,7 +6,7 @@ use vulkano::{
     device::Device,
     instance::{
         Instance, LayerProperties, MemoryHeap, MemoryType, PhysicalDevice,
-        PhysicalDeviceType,
+        PhysicalDeviceType, QueueFamily,
     },
     VulkanObject,
 };
@@ -51,7 +51,7 @@ impl<'a> PrettyRow for MemoryHeap<'a> {
     }
 
     fn to_head() -> prettytable::Row {
-        row![Fy => "Id", "Size", "DEVICE_LOCAL", "MULTI_INSTANCE"]
+        row![Fy => "MemoryHeap", "Size", "DEVICE_LOCAL", "MULTI_INSTANCE"]
     }
 
     fn to_row(&self) -> prettytable::Row {
@@ -64,13 +64,51 @@ impl<'a> PrettyRow for MemoryHeap<'a> {
     }
 }
 
+impl<'a> PrettyRow for QueueFamily<'a> {
+    fn to_format() -> prettytable::format::TableFormat {
+        *prettytable::format::consts::FORMAT_CLEAN
+    }
+
+    fn to_head() -> prettytable::Row {
+        row![Fy => "QueueId", "Count", "ImageTxGranularity", "Graphics", "Compute", "Sparse", "XTransfer"]
+    }
+
+    fn to_row(&self) -> prettytable::Row {
+        row![
+            self.id(),
+            self.queues_count(),
+            format!("{:?}", self.min_image_transfer_granularity()),
+            if self.supports_graphics() {
+                "✓"
+            } else {
+                "✗"
+            },
+            if self.supports_compute() {
+                "✓"
+            } else {
+                "✗"
+            },
+            if self.explicitly_supports_transfers() {
+                "✓"
+            } else {
+                "✗"
+            },
+            if self.supports_sparse_binding() {
+                "✓"
+            } else {
+                "✗"
+            },
+        ]
+    }
+}
+
 impl<'a> PrettyRow for MemoryType<'a> {
     fn to_format() -> prettytable::format::TableFormat {
         *prettytable::format::consts::FORMAT_CLEAN
     }
 
     fn to_head() -> prettytable::Row {
-        row![Fy => "Id", "Heap", "LOCAL", "VISIBLE", "CACHED", "COHERENT", "LAZY"]
+        row![Fy => "MemoryType", "Heap", "LOCAL", "VISIBLE", "CACHED", "COHERENT", "LAZY"]
     }
 
     fn to_row(&self) -> prettytable::Row {

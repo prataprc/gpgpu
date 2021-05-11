@@ -3,6 +3,7 @@ use prettytable::{cell, row};
 use structopt::StructOpt;
 use vulkano::instance::{
     InstanceExtensions, LayerProperties, MemoryHeap, MemoryType, PhysicalDevice,
+    QueueFamily,
 };
 
 use cgi::vulkan::{self, PrettyRow};
@@ -69,7 +70,7 @@ fn main() {
     make_table_pdfeatures(&pds).print_tty(force_color);
     println!();
 
-    print_memory_table(&pds, force_color);
+    print_physical_devices(&pds, force_color);
     println!();
 }
 
@@ -163,7 +164,7 @@ fn make_table_pdfeatures(pds: &[PhysicalDevice]) -> prettytable::Table {
     }
 }
 
-fn print_memory_table(pds: &[PhysicalDevice], force_color: bool) {
+fn print_physical_devices(pds: &[PhysicalDevice], force_color: bool) {
     for pd in pds {
         let s = format!("Physical-device {{{}}} {}", pd.index(), pd.name()).red();
         println!("{}", s);
@@ -176,9 +177,14 @@ fn print_memory_table(pds: &[PhysicalDevice], force_color: bool) {
 
         let heaps: Vec<MemoryHeap> = pd.memory_heaps().collect();
         let types: Vec<MemoryType> = pd.memory_types().collect();
+        let queues: Vec<QueueFamily> = pd.queue_families().collect();
 
         make_table(&heaps).print_tty(force_color);
+        println!();
         make_table(&types).print_tty(force_color);
+        println!();
+        make_table(&queues).print_tty(force_color);
+        println!();
     }
 }
 

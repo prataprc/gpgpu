@@ -10,6 +10,10 @@ edition = "2018"
 name = "vkinfo"
 path = "src/bin/vkinfo/main.rs"
 
+[[bin]]
+name = "fonts"
+path = "src/bin/fonts/main.rs"
+
 [[example]]
 name = "files"
 

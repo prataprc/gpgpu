@@ -30,10 +30,10 @@ ttf-parser = "0.12.0"
 bmp = "0.5.0"
 
 specs = { version = "0.16.1", features = ["specs-derive"] }
-vulkano = { version = "0.22", path = "/home/prataprc/devrs/vulkano/vulkano/" }
+vulkano = { version = "0.23", path = "/home/prataprc/devrs/vulkano/vulkano/" }
 vk-sys = { version = "0.6.0", path = "/home/prataprc/devrs/vulkano/vk-sys/" }
 vulkano-win = { version = "0.22", path = "/home/prataprc/devrs/vulkano/vulkano-win/" }
-vulkano-shaders = { version = "0.22", path = "/home/prataprc/devrs/vulkano/vulkano-shaders/" }
+vulkano-shaders = { version = "0.23", path = "/home/prataprc/devrs/vulkano/vulkano-shaders/" }
 winit = "0.24.0"
 
 [dev-dependencies]

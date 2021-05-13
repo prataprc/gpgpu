@@ -1,59 +1,62 @@
 use colored::Colorize;
 use prettytable::{cell, row};
 use structopt::StructOpt;
-use vulkano::instance::{
-    InstanceExtensions, LayerProperties, MemoryHeap, MemoryType, PhysicalDevice,
-    QueueFamily,
-};
+use vulkano::instance::{MemoryHeap, MemoryType, PhysicalDevice, QueueFamily};
+use vulkano_win::VkSurfaceBuild;
+use winit::event_loop::EventLoop;
+use winit::window::WindowBuilder;
 
-use cgi::vulkan::{self, PrettyRow};
+use cgi::vulkan::{self, PrettyRow, Vulkan};
 
 #[derive(Debug, Clone, StructOpt)]
 #[structopt(name = "vkinfo", version = "0.0.1")]
 pub struct Opt {
     #[structopt(long = "debug")]
     debug: bool,
+
+    #[structopt(long = "surface")]
+    surface: bool,
 }
 
 fn main() {
-    use vulkano::instance::Instance;
-
     let opts = Opt::from_args();
+
+    if opts.surface {
+        info_surface(opts)
+    } else {
+        info_device(opts)
+    }
+}
+
+fn info_surface(_opts: Opt) {
     let force_color = false;
 
-    let layers = vulkan::layers().unwrap();
+    let vobj = Vulkan::new();
+    let pds = vobj.as_physical_devices();
 
-    let mut extns = vulkan::extensions(None).unwrap();
-    extns.sort_by_key(|e| e.name().to_string());
-    for layer in layers.iter() {
-        let name = layer.name().to_string();
-        for extn in vulkan::extensions(Some(name.as_str())).unwrap().into_iter() {
-            let ext_name = extn.name().to_string();
-            match extns.binary_search_by_key(&ext_name, |e| e.name().to_string()) {
-                Ok(off) => extns[off].add_layer(name.as_str()),
-                Err(off) => extns.insert(off, extn),
-            }
+    let event_loop = EventLoop::new();
+    let surface = WindowBuilder::new()
+        .build_vk_surface(&event_loop, vobj.to_instance())
+        .unwrap();
+
+    match pds.len() {
+        0 => (),
+        _ => {
+            let caps = vulkan::surface_capabilities(pds[0], &surface);
+            let mut table = make_table(&caps);
+            table.set_titles(row![Fy => "Surface-capability", "Value"]);
+            table.print_tty(force_color);
         }
     }
+}
 
-    let ok_layers = enable_layers(&layers);
-    let inst_extns = enable_extensions(&extns);
+fn info_device(_opts: Opt) {
+    let force_color = false;
 
-    let instance = {
-        let app_info = vulkano::app_info_from_cargo_toml!();
-        Instance::new(Some(&app_info), &inst_extns, ok_layers).unwrap()
-    };
-
-    let pds: Vec<PhysicalDevice> = PhysicalDevice::enumerate(&instance).collect();
-    for pd in pds.iter() {
-        for extn in vulkan::device_extensions(pd.clone()).unwrap() {
-            let name = extn.name().to_string();
-            match extns.binary_search_by_key(&name, |e| e.name().to_string()) {
-                Ok(off) => extns[off].add_physical_device(pd.index()),
-                Err(off) => extns.push(extn),
-            }
-        }
-    }
+    let vobj = Vulkan::new();
+    let layers = vobj.as_layers();
+    let extns = vobj.as_extensions();
+    let pds = vobj.as_physical_devices();
 
     println!("{}: {}", "Number of physical devices".yellow(), pds.len());
     println!();
@@ -101,7 +104,7 @@ fn make_table_pdlimits(pds: &[PhysicalDevice]) -> prettytable::Table {
         _ => {
             let titles = row![Fy => "Limit-name", format!("Device-{}", pds[0].index()) ];
 
-            let mut lists: Vec<Vec<vulkan::PhysicalDeviceLimit>> = pds
+            let mut lists: Vec<Vec<vulkan::LimitItem>> = pds
                 .iter()
                 .map(|pd| vulkan::physical_device_limits(&pd))
                 .collect();
@@ -122,7 +125,7 @@ fn make_table_pdlimits(pds: &[PhysicalDevice]) -> prettytable::Table {
 
             table.set_titles(titles);
 
-            table.set_format(vulkan::PhysicalDeviceLimit::to_format());
+            table.set_format(vulkan::LimitItem::to_format());
             table
         }
     }
@@ -137,7 +140,7 @@ fn make_table_pdfeatures(pds: &[PhysicalDevice]) -> prettytable::Table {
             let titles =
                 row![Fy => "Feature-name", format!("Device-{}", pds[0].index()) ];
 
-            let mut lists: Vec<Vec<vulkan::PhysicalDeviceFeature>> = pds
+            let mut lists: Vec<Vec<vulkan::ChecklistItem>> = pds
                 .iter()
                 .map(|pd| vulkan::physical_device_features(&pd))
                 .collect();
@@ -158,7 +161,7 @@ fn make_table_pdfeatures(pds: &[PhysicalDevice]) -> prettytable::Table {
 
             table.set_titles(titles);
 
-            table.set_format(vulkan::PhysicalDeviceFeature::to_format());
+            table.set_format(vulkan::ChecklistItem::to_format());
             table
         }
     }
@@ -186,65 +189,4 @@ fn print_physical_devices(pds: &[PhysicalDevice], force_color: bool) {
         make_table(&queues).print_tty(force_color);
         println!();
     }
-}
-
-fn enable_layers(layers: &[LayerProperties]) -> Vec<&'static str> {
-    layers
-        .iter()
-        .filter_map(|layer| match layer.name() {
-            "VK_LAYER_LUNARG_parameter_validation" => {
-                Some("VK_LAYER_LUNARG_parameter_validation")
-            }
-            "VK_LAYER_LUNARG_object_tracker" => Some("VK_LAYER_LUNARG_object_tracker"),
-            "VK_LAYER_LUNARG_standard_validation" => {
-                Some("VK_LAYER_LUNARG_standard_validation")
-            }
-            "VK_LAYER_LUNARG_core_validation" => Some("VK_LAYER_LUNARG_core_validation"),
-            "VK_LAYER_GOOGLE_threading" => Some("VK_LAYER_GOOGLE_threading"),
-            "VK_LAYER_GOOGLE_unique_objects" => Some("VK_LAYER_GOOGLE_unique_objects"),
-            _ => None,
-        })
-        .collect()
-}
-
-fn enable_extensions(extns: &[vulkan::ExtensionProperties]) -> InstanceExtensions {
-    let mut ie = InstanceExtensions::none();
-
-    extns.iter().for_each(|extn| match extn.name() {
-        "VK_KHR_surface" => ie.khr_surface = true,
-        "VK_KHR_display" => ie.khr_display = true,
-        "VK_KHR_xlib_surface" => ie.khr_xlib_surface = true,
-        "VK_KHR_xcb_surface" => ie.khr_xcb_surface = true,
-        "VK_KHR_wayland_surface" => ie.khr_wayland_surface = true,
-        "VK_KHR_android_surface" => ie.khr_android_surface = true,
-        "VK_KHR_win32_surface" => ie.khr_win32_surface = true,
-        "VK_EXT_debug_utils" => ie.ext_debug_utils = true,
-        "VK_MVK_ios_surface" => ie.mvk_ios_surface = true,
-        "VK_MVK_macos_surface" => ie.mvk_macos_surface = true,
-        "VK_MVK_moltenvk" => ie.mvk_moltenvk = true,
-        "VK_NN_vi_surface" => ie.nn_vi_surface = true,
-        "VK_EXT_swapchain_colorspace" => ie.ext_swapchain_colorspace = true,
-        "VK_KHR_get_physical_device_properties2" => {
-            ie.khr_get_physical_device_properties2 = true;
-        }
-        "VK_KHR_get_surface_capabilities2" => {
-            ie.khr_get_surface_capabilities2 = true;
-        }
-        "VK_KHR_device_group_creation" => ie.khr_device_group_creation = true,
-        "VK_KHR_external_fence_capabilities" => ie.khr_external_fence_capabilities = true,
-        "VK_KHR_external_memory_capabilities" => {
-            ie.khr_external_memory_capabilities = true;
-        }
-        "VK_KHR_external_semaphore_capabilities" => {
-            ie.khr_external_semaphore_capabilities = true;
-        }
-        "VK_KHR_get_display_properties2" => ie.khr_get_display_properties2 = true,
-        "VK_EXT_acquire_xlib_display" => ie.ext_acquire_xlib_display = true,
-        "VK_EXT_debug_report" => ie.ext_debug_report = true,
-        "VK_EXT_direct_mode_display" => ie.ext_direct_mode_display = true,
-        "VK_EXT_display_surface_counter" => ie.ext_display_surface_counter = true,
-        name => panic!("{} extension uknown", name),
-    });
-
-    ie
 }

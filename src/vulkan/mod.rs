@@ -1,6 +1,6 @@
 //! Vulkan toolkit.
 
-mod info;
+pub mod info;
 
 use vk_sys as vk;
 use vulkano::instance::{Instance, InstanceExtensions, LayerProperties, PhysicalDevice};
@@ -8,12 +8,6 @@ use vulkano::instance::{Instance, InstanceExtensions, LayerProperties, PhysicalD
 use std::sync::Arc;
 
 use crate::{Error, Result};
-
-pub use info::{
-    device_extensions, extensions, layers, physical_device_features,
-    physical_device_limits, surface_capabilities, ChecklistItem, ExtensionProperties,
-    LimitItem, PrettyRow,
-};
 
 pub fn check_errors(result: vk::Result) -> Result<()> {
     if result & 0x80000000 > 0 {
@@ -25,20 +19,20 @@ pub fn check_errors(result: vk::Result) -> Result<()> {
 // TODO: implement drop.
 pub struct Vulkan<'a> {
     layers: Vec<LayerProperties>,
-    extens: Vec<ExtensionProperties>,
+    extens: Vec<info::ExtensionProperties>,
     instance: Box<Arc<Instance>>,
     phys_devices: Vec<PhysicalDevice<'a>>,
 }
 
 impl<'a> Vulkan<'a> {
     pub fn new() -> Self {
-        let layers = layers().unwrap();
+        let layers = info::layers().unwrap();
 
-        let mut extens = extensions(None).unwrap();
+        let mut extens = info::extensions(None).unwrap();
         extens.sort_by_key(|e| e.name().to_string());
         for layer in layers.iter() {
             let name = layer.name().to_string();
-            for extn in extensions(Some(name.as_str())).unwrap().into_iter() {
+            for extn in info::extensions(Some(name.as_str())).unwrap().into_iter() {
                 let ext_name = extn.name().to_string();
                 match extens.binary_search_by_key(&ext_name, |e| e.name().to_string()) {
                     Ok(off) => extens[off].add_layer(name.as_str()),
@@ -62,7 +56,7 @@ impl<'a> Vulkan<'a> {
         let pds: Vec<PhysicalDevice> = PhysicalDevice::enumerate(inst).collect();
 
         for pd in pds.iter() {
-            for extn in device_extensions(*pd).unwrap() {
+            for extn in info::device_extensions(*pd).unwrap() {
                 let name = extn.name().to_string();
                 match extens.binary_search_by_key(&name, |e| e.name().to_string()) {
                     Ok(off) => extens[off].add_physical_device(pd.index()),
@@ -95,7 +89,7 @@ impl<'a> Vulkan<'a> {
         &self.layers
     }
 
-    pub fn as_extensions(&self) -> &[ExtensionProperties] {
+    pub fn as_extensions(&self) -> &[info::ExtensionProperties] {
         &self.extens
     }
 }
@@ -119,7 +113,7 @@ fn enable_layers(layers: &[LayerProperties]) -> Vec<&'static str> {
         .collect()
 }
 
-fn enable_extensions(extns: &[ExtensionProperties]) -> InstanceExtensions {
+fn enable_extensions(extns: &[info::ExtensionProperties]) -> InstanceExtensions {
     let mut ie = InstanceExtensions::none();
 
     extns.iter().for_each(|extn| match extn.name() {

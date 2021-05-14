@@ -1,7 +1,9 @@
-use prettytable::{cell, row};
+use colored::Colorize;
+use prettytable::{cell, row, Row};
 use vk_sys as vk;
 use vulkano::{
-    image::ImageUsage,
+    format::{Format, FormatProperties},
+    image::{ImageAspects, ImageUsage},
     instance::{
         LayerProperties, MemoryHeap, MemoryType, PhysicalDevice, PhysicalDeviceType,
         QueueFamily,
@@ -711,6 +713,320 @@ fn present_modes(val: SupportedPresentModes) -> String {
         (val, relaxed),
         (val, shared_demand),
         (val, shared_continuous),
+    ]
+    .into_iter()
+    .filter(|s| s.len() > 0)
+    .collect();
+    ss.join(", ")
+}
+
+fn format_cell_content(a: bool, b: bool, c: bool) -> String {
+    let mut s = String::default();
+    match a {
+        true => s.push_str(&"✓".green().to_string()),
+        false => s.push_str(&"✗".red().to_string()),
+    }
+    match b {
+        true => s.push_str(&"✓".green().to_string()),
+        false => s.push_str(&"✗".red().to_string()),
+    }
+    match c {
+        true => s.push_str(&"✓".green().to_string()),
+        false => s.push_str(&"✗".red().to_string()),
+    }
+    s
+}
+
+macro_rules! format_props {
+    ($val:ident, $($field:ident,)*) => (
+        vec![
+            $(
+                match ($val.linear_tiling_features.$field, $val.optimal_tiling_features.$field, $val.buffer_features.$field) {
+                    (false, false, false) => "-".to_string(),
+                    (a, b, c) => format_cell_content(a, b, c).to_string(),
+                },
+            )*
+        ]
+    );
+}
+
+impl PrettyRow for FormatProperties {
+    fn to_format() -> prettytable::format::TableFormat {
+        *prettytable::format::consts::FORMAT_CLEAN
+    }
+
+    fn to_head() -> prettytable::Row {
+        row![Fy =>
+            "Format", "sai", "sti", "sia", "utb", "stb", "stba",
+            "vtb", "cra", "cab", "dsa", "bts", "btd", "sifl",
+            "txs", "txd", "mcs", "ycl", "ycs", "ycc", "ycf",
+            "disj", "ccs", "fmm", "cubc", "asvb", "fdm"
+        ]
+    }
+
+    fn to_row(&self) -> prettytable::Row {
+        use std::iter::FromIterator;
+
+        let cells = format_props![
+            self,
+            sampled_image,
+            storage_image,
+            storage_image_atomic,
+            uniform_texel_buffer,
+            storage_texel_buffer,
+            storage_texel_buffer_atomic,
+            vertex_buffer,
+            color_attachment,
+            color_attachment_blend,
+            depth_stencil_attachment,
+            blit_src,
+            blit_dst,
+            sampled_image_filter_linear,
+            transfer_src,
+            transfer_dst,
+            midpoint_chroma_samples,
+            sampled_image_ycbcr_conversion_linear_filter,
+            sampled_image_ycbcr_conversion_separate_reconstruction_filter,
+            sampled_image_ycbcr_conversion_chroma_reconstruction_explicit,
+            sampled_image_ycbcr_conversion_chroma_reconstruction_explicit_forceable,
+            disjoint,
+            cosited_chroma_samples,
+            sampled_image_filter_minmax,
+            img_sampled_image_filter_cubic,
+            khr_acceleration_structure_vertex_buffer,
+            ext_fragment_density_map,
+        ];
+
+        Row::from_iter(cells.into_iter())
+    }
+}
+
+pub fn format_list() -> Vec<Format> {
+    vec![
+        Format::R4G4UnormPack8,
+        Format::R4G4B4A4UnormPack16,
+        Format::B4G4R4A4UnormPack16,
+        Format::R5G6B5UnormPack16,
+        Format::B5G6R5UnormPack16,
+        Format::R5G5B5A1UnormPack16,
+        Format::B5G5R5A1UnormPack16,
+        Format::A1R5G5B5UnormPack16,
+        Format::R8Unorm,
+        Format::R8Snorm,
+        Format::R8Uscaled,
+        Format::R8Sscaled,
+        Format::R8Uint,
+        Format::R8Sint,
+        Format::R8Srgb,
+        Format::R8G8Unorm,
+        Format::R8G8Snorm,
+        Format::R8G8Uscaled,
+        Format::R8G8Sscaled,
+        Format::R8G8Uint,
+        Format::R8G8Sint,
+        Format::R8G8Srgb,
+        Format::R8G8B8Unorm,
+        Format::R8G8B8Snorm,
+        Format::R8G8B8Uscaled,
+        Format::R8G8B8Sscaled,
+        Format::R8G8B8Uint,
+        Format::R8G8B8Sint,
+        Format::R8G8B8Srgb,
+        Format::B8G8R8Unorm,
+        Format::B8G8R8Snorm,
+        Format::B8G8R8Uscaled,
+        Format::B8G8R8Sscaled,
+        Format::B8G8R8Uint,
+        Format::B8G8R8Sint,
+        Format::B8G8R8Srgb,
+        Format::R8G8B8A8Unorm,
+        Format::R8G8B8A8Snorm,
+        Format::R8G8B8A8Uscaled,
+        Format::R8G8B8A8Sscaled,
+        Format::R8G8B8A8Uint,
+        Format::R8G8B8A8Sint,
+        Format::R8G8B8A8Srgb,
+        Format::B8G8R8A8Unorm,
+        Format::B8G8R8A8Snorm,
+        Format::B8G8R8A8Uscaled,
+        Format::B8G8R8A8Sscaled,
+        Format::B8G8R8A8Uint,
+        Format::B8G8R8A8Sint,
+        Format::B8G8R8A8Srgb,
+        Format::A8B8G8R8UnormPack32,
+        Format::A8B8G8R8SnormPack32,
+        Format::A8B8G8R8UscaledPack32,
+        Format::A8B8G8R8SscaledPack32,
+        Format::A8B8G8R8UintPack32,
+        Format::A8B8G8R8SintPack32,
+        Format::A8B8G8R8SrgbPack32,
+        Format::A2R10G10B10UnormPack32,
+        Format::A2R10G10B10SnormPack32,
+        Format::A2R10G10B10UscaledPack32,
+        Format::A2R10G10B10SscaledPack32,
+        Format::A2R10G10B10UintPack32,
+        Format::A2R10G10B10SintPack32,
+        Format::A2B10G10R10UnormPack32,
+        Format::A2B10G10R10SnormPack32,
+        Format::A2B10G10R10UscaledPack32,
+        Format::A2B10G10R10SscaledPack32,
+        Format::A2B10G10R10UintPack32,
+        Format::A2B10G10R10SintPack32,
+        Format::R16Unorm,
+        Format::R16Snorm,
+        Format::R16Uscaled,
+        Format::R16Sscaled,
+        Format::R16Uint,
+        Format::R16Sint,
+        Format::R16Sfloat,
+        Format::R16G16Unorm,
+        Format::R16G16Snorm,
+        Format::R16G16Uscaled,
+        Format::R16G16Sscaled,
+        Format::R16G16Uint,
+        Format::R16G16Sint,
+        Format::R16G16Sfloat,
+        Format::R16G16B16Unorm,
+        Format::R16G16B16Snorm,
+        Format::R16G16B16Uscaled,
+        Format::R16G16B16Sscaled,
+        Format::R16G16B16Uint,
+        Format::R16G16B16Sint,
+        Format::R16G16B16Sfloat,
+        Format::R16G16B16A16Unorm,
+        Format::R16G16B16A16Snorm,
+        Format::R16G16B16A16Uscaled,
+        Format::R16G16B16A16Sscaled,
+        Format::R16G16B16A16Uint,
+        Format::R16G16B16A16Sint,
+        Format::R16G16B16A16Sfloat,
+        Format::R32Uint,
+        Format::R32Sint,
+        Format::R32Sfloat,
+        Format::R32G32Uint,
+        Format::R32G32Sint,
+        Format::R32G32Sfloat,
+        Format::R32G32B32Uint,
+        Format::R32G32B32Sint,
+        Format::R32G32B32Sfloat,
+        Format::R32G32B32A32Uint,
+        Format::R32G32B32A32Sint,
+        Format::R32G32B32A32Sfloat,
+        Format::R64Uint,
+        Format::R64Sint,
+        Format::R64Sfloat,
+        Format::R64G64Uint,
+        Format::R64G64Sint,
+        Format::R64G64Sfloat,
+        Format::R64G64B64Uint,
+        Format::R64G64B64Sint,
+        Format::R64G64B64Sfloat,
+        Format::R64G64B64A64Uint,
+        Format::R64G64B64A64Sint,
+        Format::R64G64B64A64Sfloat,
+        Format::B10G11R11UfloatPack32,
+        Format::E5B9G9R9UfloatPack32,
+        Format::D16Unorm,
+        Format::X8_D24UnormPack32,
+        Format::D32Sfloat,
+        Format::S8Uint,
+        Format::D16Unorm_S8Uint,
+        Format::D24Unorm_S8Uint,
+        Format::D32Sfloat_S8Uint,
+        Format::BC1_RGBUnormBlock,
+        Format::BC1_RGBSrgbBlock,
+        Format::BC1_RGBAUnormBlock,
+        Format::BC1_RGBASrgbBlock,
+        Format::BC2UnormBlock,
+        Format::BC2SrgbBlock,
+        Format::BC3UnormBlock,
+        Format::BC3SrgbBlock,
+        Format::BC4UnormBlock,
+        Format::BC4SnormBlock,
+        Format::BC5UnormBlock,
+        Format::BC5SnormBlock,
+        Format::BC6HUfloatBlock,
+        Format::BC6HSfloatBlock,
+        Format::BC7UnormBlock,
+        Format::BC7SrgbBlock,
+        Format::ETC2_R8G8B8UnormBlock,
+        Format::ETC2_R8G8B8SrgbBlock,
+        Format::ETC2_R8G8B8A1UnormBlock,
+        Format::ETC2_R8G8B8A1SrgbBlock,
+        Format::ETC2_R8G8B8A8UnormBlock,
+        Format::ETC2_R8G8B8A8SrgbBlock,
+        Format::EAC_R11UnormBlock,
+        Format::EAC_R11SnormBlock,
+        Format::EAC_R11G11UnormBlock,
+        Format::EAC_R11G11SnormBlock,
+        Format::ASTC_4x4UnormBlock,
+        Format::ASTC_4x4SrgbBlock,
+        Format::ASTC_5x4UnormBlock,
+        Format::ASTC_5x4SrgbBlock,
+        Format::ASTC_5x5UnormBlock,
+        Format::ASTC_5x5SrgbBlock,
+        Format::ASTC_6x5UnormBlock,
+        Format::ASTC_6x5SrgbBlock,
+        Format::ASTC_6x6UnormBlock,
+        Format::ASTC_6x6SrgbBlock,
+        Format::ASTC_8x5UnormBlock,
+        Format::ASTC_8x5SrgbBlock,
+        Format::ASTC_8x6UnormBlock,
+        Format::ASTC_8x6SrgbBlock,
+        Format::ASTC_8x8UnormBlock,
+        Format::ASTC_8x8SrgbBlock,
+        Format::ASTC_10x5UnormBlock,
+        Format::ASTC_10x5SrgbBlock,
+        Format::ASTC_10x6UnormBlock,
+        Format::ASTC_10x6SrgbBlock,
+        Format::ASTC_10x8UnormBlock,
+        Format::ASTC_10x8SrgbBlock,
+        Format::ASTC_10x10UnormBlock,
+        Format::ASTC_10x10SrgbBlock,
+        Format::ASTC_12x10UnormBlock,
+        Format::ASTC_12x10SrgbBlock,
+        Format::ASTC_12x12UnormBlock,
+        Format::ASTC_12x12SrgbBlock,
+        Format::G8B8R8_3PLANE420Unorm,
+        Format::G8B8R8_2PLANE420Unorm,
+    ]
+}
+
+impl PrettyRow for Format {
+    fn to_format() -> prettytable::format::TableFormat {
+        *prettytable::format::consts::FORMAT_CLEAN
+    }
+
+    fn to_head() -> prettytable::Row {
+        row![Fy => "Format", "DataType", "Size(Bytes)", "BlockDimn", "Planes", "Aspects" ]
+    }
+
+    fn to_row(&self) -> prettytable::Row {
+        row![
+            format!("{:?}", self),
+            format!("{:?}", self.ty()),
+            self.size()
+                .map(|a| a.to_string())
+                .unwrap_or("-".to_string()),
+            format!("{:?}", self.block_dimensions()),
+            self.planes(),
+            image_aspects(self.aspects()),
+        ]
+    }
+}
+
+fn image_aspects(val: ImageAspects) -> String {
+    let ss: Vec<&str> = make_list![
+        (val, color),
+        (val, depth),
+        (val, stencil),
+        (val, metadata),
+        (val, plane0),
+        (val, plane1),
+        (val, plane2),
+        (val, memory_plane0),
+        (val, memory_plane1),
+        (val, memory_plane2),
     ]
     .into_iter()
     .filter(|s| s.len() > 0)

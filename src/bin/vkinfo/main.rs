@@ -2,7 +2,9 @@ use colored::Colorize;
 use prettytable::{cell, row, Row, Table};
 use structopt::StructOpt;
 use vulkano::{
+    device::{Device, DeviceExtensions},
     format::FormatProperties,
+    image::ImageCreateFlags,
     instance::{MemoryHeap, MemoryType, PhysicalDevice, QueueFamily},
 };
 use vulkano_win::VkSurfaceBuild;
@@ -10,6 +12,8 @@ use winit::event_loop::EventLoop;
 use winit::window::WindowBuilder;
 
 use cgi::vulkan::{info::PrettyRow, Vulkan};
+
+const DEFAULT_PHYDEV: usize = 0;
 
 #[derive(Debug, Clone, StructOpt)]
 #[structopt(name = "vkinfo", version = "0.0.1")]
@@ -24,7 +28,7 @@ pub struct Opt {
     formats: bool,
 
     #[structopt(long = "phydev")]
-    phydev: usize,
+    phydev: Option<usize>,
 }
 
 fn main() {
@@ -55,7 +59,7 @@ fn info_surface(_opts: Opt) {
     match pds.len() {
         0 => (),
         _ => {
-            let caps = surface_capabilities(pds[0], &surface);
+            let caps = surface_capabilities(pds[DEFAULT_PHYDEV], &surface);
             let mut table = make_table(&caps);
             table.set_titles(row![Fy => "Surface-capability", "Value"]);
             table.print_tty(force_color);
@@ -64,12 +68,15 @@ fn info_surface(_opts: Opt) {
 }
 
 fn info_formats(opts: Opt) {
-    use cgi::vulkan::info::format_list;
+    use cgi::vulkan::info::{
+        format_list, image_tiling_list, image_type_list, image_usage_list, ImageFormat,
+    };
 
     let force_color = false;
+    let phydev = opts.phydev.unwrap_or(DEFAULT_PHYDEV);
 
     let vobj = Vulkan::new();
-    let pd = vobj.as_physical_devices()[opts.phydev];
+    let pd = vobj.as_physical_devices()[phydev];
 
     // format attributes
     make_table(&format_list()).print_tty(force_color);
@@ -100,6 +107,40 @@ fn info_formats(opts: Opt) {
     table.set_titles(FormatProperties::to_head());
     table.set_format(FormatProperties::to_format());
     table.print_tty(force_color);
+    println!();
+
+    let (device, _iter) = {
+        let features = pd.supported_features();
+        let extens = DeviceExtensions::supported_by_device(pd);
+        let qfs = pd.queue_families().map(|q| (q, 1.0));
+        Device::new(pd, &features, &extens, qfs).unwrap()
+    };
+
+    println!("{}", "ImageFormat properties".red());
+    let create_flags = ImageCreateFlags::none();
+    let mut image_formats = vec![];
+    for format in format_list().into_iter() {
+        for ty in image_type_list().into_iter() {
+            for tiling in image_tiling_list().into_iter() {
+                for usage in image_usage_list().into_iter() {
+                    let props = device.image_format_properties(
+                        format,
+                        ty,
+                        tiling,
+                        usage,
+                        create_flags,
+                    );
+                    match props {
+                        Ok(props) => image_formats
+                            .push(ImageFormat::new(format, ty, tiling, usage, props)),
+                        Err(_) => (),
+                    }
+                }
+            }
+        }
+    }
+    filter_empty_rows(make_table(&image_formats)).print_tty(force_color);
+    println!();
 }
 
 fn info_device(_opts: Opt) {
@@ -122,7 +163,7 @@ fn info_device(_opts: Opt) {
 
     make_table_pdlimits(&pds).print_tty(force_color);
     println!();
-    make_table_pdfeatures(&pds).print_tty(force_color);
+    make_table_pdfeatures(&vobj).print_tty(force_color);
     println!();
 
     print_physical_devices(&pds, force_color);
@@ -156,7 +197,9 @@ fn make_table_pdlimits(pds: &[PhysicalDevice]) -> prettytable::Table {
     match pds.len() {
         0 => table,
         _ => {
-            let titles = row![Fy => "Limit-name", format!("Device-{}", pds[0].index()) ];
+            let titles = row![
+                Fy => "Limit-name", format!("Device-{}", pds[DEFAULT_PHYDEV].index())
+            ];
 
             let mut lists: Vec<Vec<LimitItem>> =
                 pds.iter().map(|pd| physical_device_limits(&pd)).collect();
@@ -183,27 +226,23 @@ fn make_table_pdlimits(pds: &[PhysicalDevice]) -> prettytable::Table {
     }
 }
 
-fn make_table_pdfeatures(pds: &[PhysicalDevice]) -> prettytable::Table {
-    use cgi::vulkan::info::{physical_device_features, ChecklistItem};
+fn make_table_pdfeatures(vobj: &Vulkan) -> prettytable::Table {
+    use cgi::vulkan::info::{device_features, ChecklistItem};
 
+    let mut pds = vobj.as_physical_devices().to_vec();
     let mut table = prettytable::Table::new();
+
+    let titles = row![Fy => "Feature-name", format!("Device-0")];
 
     match pds.len() {
         0 => table,
         _ => {
-            let titles =
-                row![Fy => "Feature-name", format!("Device-{}", pds[0].index()) ];
-
-            let mut lists: Vec<Vec<ChecklistItem>> =
-                pds.iter().map(|pd| physical_device_features(&pd)).collect();
-            let list = lists.remove(0);
-
-            for l in list.iter() {
+            for l in device_features(pds.remove(0)).iter() {
                 table.add_row(l.to_row());
             }
-
-            for list in lists.into_iter() {
-                for (i, l) in list.iter().enumerate() {
+            for (mut i, pd) in pds.into_iter().enumerate() {
+                i += 1;
+                for l in device_features(pd).iter() {
                     table
                         .get_mut_row(i)
                         .unwrap()
@@ -212,7 +251,6 @@ fn make_table_pdfeatures(pds: &[PhysicalDevice]) -> prettytable::Table {
             }
 
             table.set_titles(titles);
-
             table.set_format(ChecklistItem::to_format());
             table
         }
@@ -241,4 +279,14 @@ fn print_physical_devices(pds: &[PhysicalDevice], force_color: bool) {
         make_table(&queues).print_tty(force_color);
         println!();
     }
+}
+
+fn filter_empty_rows(table: Table) -> Table {
+    let mut packed_table = table.clone();
+    for (i, row) in table.row_iter().enumerate() {
+        if row.is_empty() {
+            packed_table.remove_row(i)
+        }
+    }
+    packed_table
 }

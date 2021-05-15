@@ -3,7 +3,9 @@ use prettytable::{cell, row, Row};
 use vk_sys as vk;
 use vulkano::{
     format::{Format, FormatProperties},
-    image::{ImageAspects, ImageUsage},
+    image::{
+        Extent, ImageAspects, ImageFormatProperties, ImageTiling, ImageType, ImageUsage,
+    },
     instance::{
         LayerProperties, MemoryHeap, MemoryType, PhysicalDevice, PhysicalDeviceType,
         QueueFamily,
@@ -504,8 +506,8 @@ pub fn physical_device_limits<'a>(pd: &PhysicalDevice<'a>) -> Vec<LimitItem> {
 }
 
 pub struct ChecklistItem {
-    name: String,
-    supported: bool,
+    pub(super) name: String,
+    pub(super) supported: bool,
 }
 
 impl PrettyRow for ChecklistItem {
@@ -539,7 +541,7 @@ macro_rules! make_check_list {
     );
 }
 
-pub fn physical_device_features<'a>(pd: &PhysicalDevice<'a>) -> Vec<ChecklistItem> {
+pub fn device_features<'a>(pd: PhysicalDevice<'a>) -> Vec<ChecklistItem> {
     let f = pd.supported_features();
 
     make_check_list![
@@ -655,6 +657,16 @@ macro_rules! make_list {
             )*
         ]
     );
+    ($(($items:ident, $field:ident, $val:expr),)*) => (
+        vec![
+            $(
+                match $items.$field {
+                    true => $val,
+                    false => "",
+                },
+            )*
+        ]
+    );
 }
 
 fn surface_transforms(val: SupportedSurfaceTransforms) -> String {
@@ -760,7 +772,7 @@ impl PrettyRow for FormatProperties {
             "Format", "sai", "sti", "sia", "utb", "stb", "stba",
             "vtb", "cra", "cab", "dsa", "bts", "btd", "sifl",
             "txs", "txd", "mcs", "ycl", "ycs", "ycc", "ycf",
-            "disj", "ccs", "fmm", "cubc", "asvb", "fdm"
+            "disj", "ccs", "sifm", "sifc", "asvb", "fdm"
         ]
     }
 
@@ -798,6 +810,116 @@ impl PrettyRow for FormatProperties {
         ];
 
         Row::from_iter(cells.into_iter())
+    }
+}
+
+impl PrettyRow for Format {
+    fn to_format() -> prettytable::format::TableFormat {
+        *prettytable::format::consts::FORMAT_CLEAN
+    }
+
+    fn to_head() -> prettytable::Row {
+        row![Fy => "Format", "DataType", "Size(Bytes)", "BlockDimn", "Planes", "Aspects" ]
+    }
+
+    fn to_row(&self) -> prettytable::Row {
+        row![
+            format!("{:?}", self),
+            format!("{:?}", self.ty()),
+            self.size()
+                .map(|a| a.to_string())
+                .unwrap_or("-".to_string()),
+            format!("{:?}", self.block_dimensions()),
+            self.planes(),
+            image_aspects(self.aspects()),
+        ]
+    }
+}
+
+fn image_aspects(val: ImageAspects) -> String {
+    let ss: Vec<&str> = make_list![
+        (val, color),
+        (val, depth),
+        (val, stencil),
+        (val, metadata),
+        (val, plane0),
+        (val, plane1),
+        (val, plane2),
+        (val, memory_plane0),
+        (val, memory_plane1),
+        (val, memory_plane2),
+    ]
+    .into_iter()
+    .filter(|s| s.len() > 0)
+    .collect();
+    ss.join(", ")
+}
+
+pub struct ImageFormat {
+    format: Format,
+    ty: ImageType,
+    tiling: ImageTiling,
+    usage: ImageUsage,
+    props: ImageFormatProperties,
+}
+
+impl PrettyRow for ImageFormat {
+    fn to_format() -> prettytable::format::TableFormat {
+        *prettytable::format::consts::FORMAT_CLEAN
+    }
+
+    fn to_head() -> prettytable::Row {
+        row![Fy =>
+            "Format", "Type", "Tiling", "Usage",
+            "max_extent", "max_mip_levels", "max_array_layers", "sample_counts",
+            "max_resource_size"
+        ]
+    }
+
+    fn to_row(&self) -> prettytable::Row {
+        let sample_val = self.props.sample_counts;
+        let sample_counts: Vec<&str> = make_list![
+            (sample_val, sample1, "1"),
+            (sample_val, sample2, "2"),
+            (sample_val, sample4, "4"),
+            (sample_val, sample8, "8"),
+            (sample_val, sample16, "16"),
+            (sample_val, sample32, "32"),
+            (sample_val, sample64, "64"),
+        ]
+        .into_iter()
+        .filter(|s| s.len() > 0)
+        .collect();
+
+        row![
+            format!("{:?}", self.format),
+            format!("{:?}", self.ty),
+            format!("{:?}", self.tiling),
+            image_usage(self.usage),
+            format!("{:?}", self.props.max_extent),
+            format!("{:?}", self.props.max_mip_levels),
+            self.props.max_array_layers,
+            sample_counts.join(","),
+            self.props.max_resource_size,
+        ]
+    }
+}
+
+impl ImageFormat {
+    pub fn new(
+        format: Format,
+        ty: ImageType,
+        tiling: ImageTiling,
+        usage: ImageUsage,
+        props: ImageFormatProperties,
+    ) -> Self {
+        ImageFormat {
+            format,
+            ty,
+            tiling,
+            usage,
+            props,
+        }
     }
 }
 
@@ -992,44 +1114,49 @@ pub fn format_list() -> Vec<Format> {
     ]
 }
 
-impl PrettyRow for Format {
-    fn to_format() -> prettytable::format::TableFormat {
-        *prettytable::format::consts::FORMAT_CLEAN
-    }
-
-    fn to_head() -> prettytable::Row {
-        row![Fy => "Format", "DataType", "Size(Bytes)", "BlockDimn", "Planes", "Aspects" ]
-    }
-
-    fn to_row(&self) -> prettytable::Row {
-        row![
-            format!("{:?}", self),
-            format!("{:?}", self.ty()),
-            self.size()
-                .map(|a| a.to_string())
-                .unwrap_or("-".to_string()),
-            format!("{:?}", self.block_dimensions()),
-            self.planes(),
-            image_aspects(self.aspects()),
-        ]
-    }
+pub fn image_type_list() -> Vec<ImageType> {
+    vec![ImageType::Dim1d, ImageType::Dim2d, ImageType::Dim3d]
 }
 
-fn image_aspects(val: ImageAspects) -> String {
-    let ss: Vec<&str> = make_list![
-        (val, color),
-        (val, depth),
-        (val, stencil),
-        (val, metadata),
-        (val, plane0),
-        (val, plane1),
-        (val, plane2),
-        (val, memory_plane0),
-        (val, memory_plane1),
-        (val, memory_plane2),
+pub fn image_tiling_list() -> Vec<ImageTiling> {
+    vec![ImageTiling::Optimal, ImageTiling::Linear]
+}
+
+pub fn image_usage_list() -> Vec<ImageUsage> {
+    let none = ImageUsage::none();
+    vec![
+        ImageUsage::all(),
+        ImageUsage::color_attachment(),
+        ImageUsage::depth_stencil_attachment(),
+        ImageUsage::transient_color_attachment(),
+        ImageUsage::transient_depth_stencil_attachment(),
+        ImageUsage {
+            input_attachment: true,
+            ..none
+        },
+        ImageUsage {
+            sampled: true,
+            ..none
+        },
+        ImageUsage {
+            storage: true,
+            ..none
+        },
+        ImageUsage {
+            transfer_source: true,
+            ..none
+        },
+        ImageUsage {
+            transfer_destination: true,
+            ..none
+        },
     ]
-    .into_iter()
-    .filter(|s| s.len() > 0)
-    .collect();
-    ss.join(", ")
+}
+
+pub fn format_extent(extent: Extent) -> String {
+    match extent {
+        Extent::E1D(val) => format!("{:?}", val),
+        Extent::E2D(val) => format!("{:?}", val),
+        Extent::E3D(val) => format!("{:?}", val),
+    }
 }

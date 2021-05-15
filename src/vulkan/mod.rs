@@ -21,7 +21,7 @@ pub struct Vulkan<'a> {
     layers: Vec<LayerProperties>,
     extens: Vec<info::ExtensionProperties>,
     instance: Box<Arc<Instance>>,
-    phys_devices: Vec<PhysicalDevice<'a>>,
+    phydevs: Vec<PhysicalDevice<'a>>,
 }
 
 impl<'a> Vulkan<'a> {
@@ -69,7 +69,7 @@ impl<'a> Vulkan<'a> {
             layers,
             extens,
             instance,
-            phys_devices: pds,
+            phydevs: pds,
         }
     }
 
@@ -82,7 +82,7 @@ impl<'a> Vulkan<'a> {
     }
 
     pub fn as_physical_devices(&self) -> &[PhysicalDevice<'a>] {
-        &self.phys_devices
+        &self.phydevs
     }
 
     pub fn as_layers(&self) -> &[LayerProperties] {

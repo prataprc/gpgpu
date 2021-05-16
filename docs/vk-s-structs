@@ -274,6 +274,9 @@ VkResult vkGetSwapchainImagesKHR(               VkResult*                pResult
                                                                                                     }
 
 
+==== VkImage
+
+
 ==== VkDevice
 
 typedef struct VkDeviceCreateInfo {

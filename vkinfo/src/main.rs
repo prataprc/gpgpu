@@ -11,7 +11,12 @@ use vulkano_win::VkSurfaceBuild;
 use winit::event_loop::EventLoop;
 use winit::window::WindowBuilder;
 
-use cgi::vulkan::{info::PrettyRow, Vulkan};
+use vgi::{
+    pp::{make_table, PrettyRow},
+    vulkan::Vulkan,
+};
+
+mod info;
 
 const DEFAULT_PHYDEV: usize = 0;
 
@@ -44,7 +49,7 @@ fn main() {
 }
 
 fn info_surface(_opts: Opt) {
-    use cgi::vulkan::info::surface_capabilities;
+    use crate::info::surface_capabilities;
 
     let force_color = false;
 
@@ -68,7 +73,7 @@ fn info_surface(_opts: Opt) {
 }
 
 fn info_formats(opts: Opt) {
-    use cgi::vulkan::info::{
+    use info::{
         format_list, image_tiling_list, image_type_list, image_usage_list, ImageFormat,
     };
 
@@ -170,27 +175,8 @@ fn info_device(_opts: Opt) {
     println!();
 }
 
-fn make_table<R>(rows: &[R]) -> prettytable::Table
-where
-    R: PrettyRow,
-{
-    let mut table = prettytable::Table::new();
-
-    match rows.len() {
-        0 => table,
-        _ => {
-            table.set_titles(R::to_head());
-            rows.iter().for_each(|r| {
-                table.add_row(r.to_row());
-            });
-            table.set_format(R::to_format());
-            table
-        }
-    }
-}
-
 fn make_table_pdlimits(pds: &[PhysicalDevice]) -> prettytable::Table {
-    use cgi::vulkan::info::{physical_device_limits, LimitItem};
+    use info::{physical_device_limits, LimitItem};
 
     let mut table = prettytable::Table::new();
 
@@ -227,7 +213,7 @@ fn make_table_pdlimits(pds: &[PhysicalDevice]) -> prettytable::Table {
 }
 
 fn make_table_pdfeatures(vobj: &Vulkan) -> prettytable::Table {
-    use cgi::vulkan::info::{device_features, ChecklistItem};
+    use info::{device_features, ChecklistItem};
 
     let mut pds = vobj.as_physical_devices().to_vec();
     let mut table = prettytable::Table::new();

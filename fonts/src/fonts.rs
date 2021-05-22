@@ -214,7 +214,7 @@ impl<'a> PrettyRow for GlyphParam<'a> {
 
     fn to_head() -> prettytable::Row {
         row![Fy =>
-            "Codepoint", "hor_adv", "ver_adv", "hor_side_bear",
+            "Codepoint", "glyph_id", "hor_adv", "ver_adv", "hor_side_bear",
             "ver_side_bear", "y_origin", "class", "ma_class", "mark", "bounding_box",
         ]
     }
@@ -225,20 +225,9 @@ impl<'a> PrettyRow for GlyphParam<'a> {
         let e = "✗".to_string();
         let (face, g, codepoint) = (self.face, self.g, self.codepoint);
 
-        println!(
-            "width:{}, height:{}, rec:{}",
-            face.glyph_bounding_box(g)
-                .map(|rec| rec.width())
-                .unwrap_or(0),
-            face.glyph_bounding_box(g)
-                .map(|rec| rec.height())
-                .unwrap_or(0),
-            face.glyph_bounding_box(g)
-                .map(|rec| rect_to_string(rec))
-                .unwrap_or(e.clone())
-        );
         row![
             Fg -> format!("{:?}/0x{:x}", std::char::from_u32(codepoint), codepoint),
+            self.g.0,
             format_unwrap_or!(face.glyph_hor_advance(g), e),
             format_unwrap_or!(face.glyph_ver_advance(g), e),
             format_unwrap_or!(face.glyph_hor_side_bearing(g), e),

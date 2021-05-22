@@ -33,4 +33,3 @@ VkResult vkQueueWaitIdle(VkQueue queue);                    }
 Before a fence or semaphore is signaled, it is guaranteed that any previously submitted queue operations have completed execution,
 and that memory writes from those queue operations are available to future queue operations. Waiting on a signaled semaphore or
 fence guarantees that previous writes that are available are also visible to subsequent commands.
-

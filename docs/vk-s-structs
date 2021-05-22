@@ -1,11 +1,9 @@
 Simple types
 ------------
 
-VkExtent2D VkExtent3D { width, height, depth },
-VkOffset2D VkOffset3D { x, y, z },
-VkRect2D { VkOffset2D, VkExtent2D }
-
 typedef uint64_t VkDeviceSize;
+
+VkExtent2D VkExtent3D { width, height, depth }     |    VkOffset2D VkOffset3D { x, y, z }    |    VkRect2D { VkOffset2D, VkExtent2D }
 
 typedef struct VkMemoryType {
     VkMemoryPropertyFlags    propertyFlags;                                                     typedef enum VkMemoryPropertyFlags {
@@ -25,6 +23,11 @@ typedef enum VkPhysicalDeviceType {                                             
     VK_PHYSICAL_DEVICE_TYPE_CPU,
 }
 
+Fragment:
+    composed-of -> raster-position, color, texture-coordinates, depth, alpha, stencil, scissor, window-id
+    ops -> discard-rectangle, scissor, exclusive-scissor, sample-mask, fragment-shading, multisample-coverage, depth-bounds,
+           stencil, depth, representative-fragment, sample-couting, coverage-to-color, coverage-reduction, coverage-modulation
+
 VkFormat:
     RGBA/E/DS/X
     UNORM/SNORM/USCALED/SSCALED/UINT/SINT/UFLOAT/SFLOAT
@@ -33,14 +36,20 @@ VkFormat:
     2BPP/4BPP/SRGB, 2PLANE/3PLANE, 422/420/444
 
 Image
-    Format -> Size, DataType, Plane, Block, Aspects, Properties(Phydev)
     ImageType -> 1D, 2D, 3D
     ImageTiling -> Linear, Optimal
-    ImageDimensions -> Extent
+    ImageDimensions -> {w, array_layers}, {w, h, array_layers}, {w, h, d }
     ImageAspects -> Color, Depth, Stencil, Metadata, Plane0, Plane1, Plane2, MemoryPlane0, MemoryPlane1, MemoryPlane2,
-    ImageLayout ->
-    ImageUsage -> sampled, storage, tx_source, tx_dest, color_attach, depth_stencil_attach, trans_attch, input_attach
+    ImageUsage -> tx_source, tx_dest, sampled, storage, color_attach, depth_stencil_attach, transient_attch, input_attach
+    ImageCreate ->
+    Format -> Size, DataType, Plane, Block, Aspects, Properties(Phydev)
     ImageFormatProperties -> max_extent, max_mip_levels, max_array_layers, sample_counts, max_resource_size
+    ImageLayout -> undefined, general, preinitialized
+                   tx_src_optimal, tx_dst_optimal,
+                   attach_optimal, ro_optimal, color_attach_optimal, depth_attach_optimal, stencil_attach_optimal, depth_ro_optimal, stencil_ro_optimal,
+                   depth_stencil_attach_optimal, depth_stencil_ro_optimal, depth_ro_stencil_attach_optimal, depth_attach_stencil_ro_optimal,
+                   video_encode_src, video_encode_dst, video_encode_dpb, video_decode_src, video_decode_dst, video_decode_dpb,
+                   shader_ro_optimal, present_src, shared_present,
 
 
 Dispatchable and Non-Dispatchable Handles
@@ -77,6 +86,12 @@ VkInstance
     +-> VkSurface
     +-> VkDisplay
     +-> VkDisplayMode
+
+vkCreateDescriptorPool,
+vkResetDescriptorPool
+vkDestroyDescriptorPool,
+
+VkDescriptorSetAllocateInfo,
 
 ==== VkInstance
 
@@ -121,6 +136,7 @@ VkResult vkEnumerateDeviceExtensionProperties(
     const char*             pLayerName,
     uint32_t*               pPropertyCount,
     VkExtensionProperties*  pProperties);
+
 VkResult vkEnumerateDeviceLayerProperties(
     VkPhysicalDevice        physicalDevice,
     uint32_t*               pPropertyCount,

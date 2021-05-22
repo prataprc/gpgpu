@@ -1,0 +1,168 @@
+Types:
+
+  * Basic types
+
+    void bool int uint float double
+    vec2 vec3 vec4; dvec2 dvec3 dvec4; ivec2 ivec3 ivec4; uvec2 uvec3 uvec4; bvec2 bvec3 bvec4
+    mat2 mat3 mat4; mat2x2 mat2x3 mat2x4; mat3x2 mat3x3 mat3x4; mat4x2 mat4x3 mat4x4
+    dmat2 dmat3 dmat4; dmat2x2 dmat2x3 dmat2x4; dmat3x2 dmat3x3 dmat3x4; dmat4x2 dmat4x3 dmat4x4
+
+  * Aggregate types
+
+    array struct
+
+    - When an array size is specified in a declaration, it must be an integral constant expression.
+    - Array size can alos be deduced from the context, like in array construction.
+
+  * Opaque type
+
+    - The internal structure of the type is hidden from the language.
+    - Specified only as function parameters or uniform variables.
+
+    sampler texture image
+
+    variants: 1D 2D 3D Shadow Array ArrayShadow MS Rect RectShadow Cube CubeShadow CubeArray CubeArrayShadow Buffer Input InputMS
+
+
+  * integers are 32-bit, signed integers are 32-bit 2's complement.
+  * Composites: Aggregates, vectors, matrices.
+
+
+Qualifiers:
+
+  - Any restrictions on the usage of a type or qualifier also apply to any structure that contains a member of that type or qualifier, recursively.
+
+                Class       Types
+
+    const
+    in
+    out                     [1]
+    inout                   [1]
+    attribute
+    uniform
+    varying
+    buffer
+    shared
+    centroid
+    sample
+    patch
+
+    coherent    memory      [2]
+    volatile    memory
+    restrict    memory
+    readonly    memory
+    writeonly   memory
+
+  [1] Opaque variables cannot be treated as l-values; hence cannot be used as out or inout function parameters.
+  [2] The only opaque types that take memory qualifiers are the image types.
+
+
+
+Vector construction:
+
+  vec3(float)                   // initializes each component of the vec3 with the float
+  vec4(ivec4)                   // makes a vec4 with component-wise conversion
+  vec4(mat2)                    // the vec4 is column 0 followed by column 1
+  vec2(float, float)            // initializes a vec2 with 2 floats
+  ivec3(int, int, int)          // initializes an ivec3 with 3 ints
+  bvec4(int, int, float, float) // uses 4 Boolean conversions
+  vec2(vec3)                    // drops the third component of a vec3
+  vec3(vec4)                    // drops the fourth component of a vec4
+  vec3(vec2, float)             // vec3.x = vec2.x, vec3.y = vec2.y, vec3.z = float
+  vec3(float, vec2)             // vec3.x = float, vec3.y = vec2.x, vec3.z = vec2.y
+  vec4(vec3, float)
+  vec4(float, vec3)
+  vec4(vec2, vec2)
+
+
+Matrix construction:
+
+  mat2(float)   // result[i][j] is set to the float argument for all i=ji=j and set to 0 for all i≠ji≠j.
+  mat3(float)   // result[i][j] is set to the float argument for all i=ji=j and set to 0 for all i≠ji≠j.
+  mat4(float)   // result[i][j] is set to the float argument for all i=ji=j and set to 0 for all i≠ji≠j.
+
+  mat2(vec2, vec2);                 // one column per argument
+  mat3(vec3, vec3, vec3);           // one column per argument
+  mat4(vec4, vec4, vec4, vec4);     // one column per argument
+  mat3x2(vec2, vec2, vec2);         // one column per argument
+  dmat2(dvec2, dvec2);
+  dmat3(dvec3, dvec3, dvec3);
+  dmat4(dvec4, dvec4, dvec4, dvec4);
+  mat2(float, float,                // first column
+       float, float);               // second column
+  mat3(float, float, float,         // first column
+       float, float, float,         // second column
+       float, float, float);        // third column
+  mat4(float, float, float, float,  // first column
+       float, float, float, float,  // second column
+       float, float, float, float,  // third column
+       float, float, float, float); // fourth column
+  mat2x3(vec2, float,               // first column
+         vec2, float);              // second column
+  dmat2x4(dvec3, double,            // first column
+          double, dvec3);           // second column
+
+  mat3x3(mat4x4); // takes the upper-left 3x3 of the mat4x4
+  mat2x3(mat4x2); // takes the upper-left 2x2 of the mat4x4, last row is 0,0
+  mat4x4(mat3x3); // puts the mat3x3 in the upper-left, sets the lower right
+                  // component to 1, and the rest to 0
+
+
+  // using composite construction
+  mat2x2 a = mat2(  vec2( 1.0, 0.0 ), vec2( 0.0, 1.0 ) );
+  mat2x2 b =      { vec2( 1.0, 0.0 ), vec2( 0.0, 1.0 ) };
+  mat2x2 c =      {     { 1.0, 0.0 },     { 0.0, 1.0 } };
+
+
+
+Implicit Conversions:
+
+    From                To
+
+    int                 uint
+    int uint            float
+    int uint float      double
+    ivec2               uvec2
+    ivec3               uvec3
+    ivec4               uvec4
+    ivec2 uvec2         vec2
+    ivec3 uvec3         vec3
+    ivec4 uvec4         vec4
+    ivec2 uvec2 vec2    dvec2
+    ivec3 uvec3 vec3    dvec3
+    ivec4 uvec4 vec4    dvec4
+    mat2                dmat2
+    mat3                dmat3
+    mat4                dmat4
+    mat2x3              dmat2x3
+    mat2x4              dmat2x4
+    mat3x2              dmat3x2
+    mat3x4              dmat3x4
+    mat4x2              dmat4x2
+    mat4x3              dmat4x3
+
+  - There are no implicit array or structure conversions.
+  - Priority of conversion: floating-point, unsigned-integer, signed-integer.
+
+  Conversion of scalar types
+
+    int(uint)     // preserves the bit pattern in the argument
+    int(bool)     // true->1; false->0;
+    int(float)    // fractional part is dropped
+    int(double)   // fractional part is dropped
+    uint(int)     // preserves the bit pattern in the argument
+    uint(bool)    // true->1; false->0;
+    uint(float)   // fractional part is dropped, undefined if negative
+    uint(double)  // fractional part is dropped, undefined if negative
+    bool(int)     // 0->false; (> 0) -> true
+    bool(uint)    // 0->false; (> 0) -> true
+    bool(float)   // 0.0->false; (> 0.0) -> true
+    bool(double)  // 0.0->false; (> 0.0) -> true
+    float(int)    // may loose precision
+    float(uint)   // may loose precision
+    float(bool)   // true->1.0; false->0.0
+    float(double)
+    double(int)   // may loose precision
+    double(uint)  // may loose precision
+    double(bool)  // true->1.0; false->0.0
+    double(float)

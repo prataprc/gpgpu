@@ -1,9 +1,40 @@
+* A shader specifies programmable operations that execute for each
+
+  * vertex,               Vertex Shader
+  * control point,        Tessellation Control Shader
+  * tessellated vertex,   Tessellation Evaluation Shader
+  * primitive,            Geometry Shader
+  * fragment,             Fragment Shader
+  * workgroup             Compute Shader
+
+  in the corresponding stage(s) of the graphics and compute pipelines.
+
+* Execution environment for shaders provides constants that describe capabilities.
+* Shader modules contain shader code and one or more entry points.
+* Shader invocations may complete in a different order than that in which the primitives they originated from were drawn or dispatched by the application
+* Orders of execution
+
+  * primitive order
+  * dispatch order
+  * rasterization order
+* Data is passed into and out of shaders using variables with 'input' or 'output' storage class.
+
+* Vertex Shader:
+
+  * Each vertex shader invocation operates on ONE vertex and its associated vertex attribute data, and outputs ONE vertex and associated data.
+  * If the subpass includes multiple views in its view mask, the shader may be invoked separately for each view.
+  * Shader code is presented with the index of the vertex and instance for which it has been invoked.
+  * Input variables declared are filled by the implementation with the values of vertex attributes.
+
+
+
+Type1 - Graphics pimitive pipeline
+Type2 - Graphics mesh pipeline (NV)
+Type3 - Compute pipeline
                                                               Type1 Type2 Type3
 VK_PIPELINE_STAGE_2_NONE_KHR
 VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT                               x     x     x
 VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT                             x     x     x
-VK_PIPELINE_STAGE_TASK_SHADER_BIT_NV                                  x
-VK_PIPELINE_STAGE_MESH_SHADER_BIT_NV                                  x
 VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT_KHR                         x
 VK_PIPELINE_STAGE_2_VERTEX_ATTRIBUTE_INPUT_BIT_KHR              x
 VK_PIPELINE_STAGE_VERTEX_INPUT_BIT
@@ -11,7 +42,6 @@ VK_PIPELINE_STAGE_VERTEX_SHADER_BIT                             x
 VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT               x
 VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT            x
 VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT                           x
-VK_PIPELINE_STAGE_TRANSFORM_FEEDBACK_BIT_EXT                    x
 VK_PIPELINE_STAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR      x     x
 VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT                      x     x
 VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT                           x     x
@@ -25,11 +55,8 @@ VK_PIPELINE_STAGE_2_COPY_BIT_KHR
 VK_PIPELINE_STAGE_2_RESOLVE_BIT_KHR
 VK_PIPELINE_STAGE_2_BLIT_BIT_KHR
 VK_PIPELINE_STAGE_2_CLEAR_BIT_KHR
-VK_PIPELINE_STAGE_CONDITIONAL_RENDERING_BIT_EXT
-VK_PIPELINE_STAGE_COMMAND_PREPROCESS_BIT_NV
 VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR
 VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR
-VK_PIPELINE_STAGE_FRAGMENT_DENSITY_PROCESS_BIT_EXT
 VK_PIPELINE_STAGE_2_VIDEO_DECODE_BIT_KHR
 VK_PIPELINE_STAGE_2_VIDEO_ENCODE_BIT_KHR
 
@@ -38,6 +65,248 @@ VK_PIPELINE_STAGE_2_PRE_RASTERIZATION_SHADERS_BIT_KHR
 VK_PIPELINE_STAGE_ALL_COMMANDS_BIT
 VK_PIPELINE_STAGE_2_ALL_TRANSFER_BIT_KHR
 
-Type1 - Graphics pimitive pipeline
-Type2 - Graphics mesh pipeline (NV)
-Type3 - Compute pipeline
+* To destroy a shader module, call vkDestroyShaderModule.
+
+VkResult vkCreateShaderModule(                              typedef struct VkShaderModuleCreateInfo {
+    VkDevice                         device,                    VkStructureType              sType;
+    const VkShaderModuleCreateInfo*  pCreateInfo,               const void*                  pNext;
+    const VkAllocationCallbacks*     pAllocator,              s VkShaderModuleCreateFlags    flags;
+    VkShaderModule*                  pShaderModule);            size_t                       codeSize;
+                                                                const uint32_t*              pCode;
+                                                            }
+
+
+
+VkResult vkCreatePipelineCache(                                 typedef struct VkPipelineCacheCreateInfo {
+    VkDevice                            device,                     VkStructureType               sType;
+    const VkPipelineCacheCreateInfo*    pCreateInfo,                const void*                   pNext;
+    const VkAllocationCallbacks*        pAllocator,               x VkPipelineCacheCreateFlags    flags;
+    VkPipelineCache*                    pPipelineCache);            size_t                        initialDataSize;
+                                                                    const void*                   pInitialData;
+                                                                }
+
+
+
+VkResult vkCreateGraphicsPipelines(                             typedef struct VkGraphicsPipelineCreateInfo {
+    VkDevice                            device,                     VkStructureType                                  sType;
+    VkPipelineCache                     pipelineCache,              const void*                                      pNext;
+    uint32_t                            createInfoCount,            VkPipelineCreateFlags                            flags;
+    const VkGraphicsPipelineCreateInfo* pCreateInfos,               uint32_t                                         stageCount;
+    const VkAllocationCallbacks*        pAllocator,                 const VkPipelineShaderStageCreateInfo*           pStages;
+    VkPipeline*                         pPipelines);                const VkPipelineVertexInputStateCreateInfo*      pVertexInputState;
+                                                                    const VkPipelineInputAssemblyStateCreateInfo*    pInputAssemblyState;
+    typedef enum VkPipelineCreateFlagBits {                         const VkPipelineTessellationStateCreateInfo*     pTessellationState;
+        VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT,                const VkPipelineViewportStateCreateInfo*         pViewportState;
+        VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT,                   const VkPipelineRasterizationStateCreateInfo*    pRasterizationState;
+        VK_PIPELINE_CREATE_DERIVATIVE_BIT,                          const VkPipelineMultisampleStateCreateInfo*      pMultisampleState;
+        VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT,        const VkPipelineDepthStencilStateCreateInfo*     pDepthStencilState;
+        VK_PIPELINE_CREATE_DISPATCH_BASE_BIT,                       const VkPipelineColorBlendStateCreateInfo*       pColorBlendState;
+    }                                                               const VkPipelineDynamicStateCreateInfo*          pDynamicState;
+                                                                    VkPipelineLayout                                 layout;
+                                                                    VkRenderPass                                     renderPass;
+                                                                    uint32_t                                         subpass;
+                                                                    VkPipeline                                       basePipelineHandle;
+                                                                    int32_t                                          basePipelineIndex;
+                                                                }
+
+
+    typedef struct VkPipelineShaderStageCreateInfo {            typedef enum VkShaderStageFlagBits {                typedef struct VkSpecializationInfo {
+        VkStructureType                     sType;                  VK_SHADER_STAGE_VERTEX_BIT,                         uint32_t                           mapEntryCount;
+        const void*                         pNext;                  VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,           const VkSpecializationMapEntry*    pMapEntries;
+      x VkPipelineShaderStageCreateFlags    flags;                  VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,        size_t                             dataSize;
+        VkShaderStageFlagBits               stage;                  VK_SHADER_STAGE_GEOMETRY_BIT,                       const void*                        pData;
+        VkShaderModule                      module;                 VK_SHADER_STAGE_FRAGMENT_BIT,                   }
+        const char*                         pName;                  VK_SHADER_STAGE_COMPUTE_BIT,                    typedef struct VkSpecializationMapEntry {
+        const VkSpecializationInfo*         pSpecializationInfo;    VK_SHADER_STAGE_ALL_GRAPHICS,                       uint32_t    constantID;
+    }                                                               VK_SHADER_STAGE_ALL,                                uint32_t    offset;
+                                                                    VK_SHADER_STAGE_RAYGEN_BIT_KHR,                     size_t      size;
+                                                                    VK_SHADER_STAGE_ANY_HIT_BIT_KHR,                }
+                                                                    VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR,
+                                                                    VK_SHADER_STAGE_MISS_BIT_KHR,
+                                                                    VK_SHADER_STAGE_INTERSECTION_BIT_KHR,
+                                                                    VK_SHADER_STAGE_CALLABLE_BIT_KHR,
+                                                                }
+
+
+    typedef struct VkPipelineVertexInputStateCreateInfo {                           typedef struct VkVertexInputBindingDescription {
+        VkStructureType                          sType;                                 uint32_t          binding;
+        const void*                              pNext;                                 uint32_t          stride;
+      x VkPipelineVertexInputStateCreateFlags    flags;                                 VkVertexInputRate inputRate;
+        uint32_t                                 vertexBindingDescriptionCount;     }
+        const VkVertexInputBindingDescription*   pVertexBindingDescriptions;        typedef enum VkVertexInputRate {       typedef struct VkVertexInputAttributeDescription {
+        uint32_t                                 vertexAttributeDescriptionCount;       VK_VERTEX_INPUT_RATE_VERTEX,           uint32_t    location;
+        const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;          VK_VERTEX_INPUT_RATE_INSTANCE,         uint32_t    binding;
+    }                                                                               }                                          VkFormat    format;
+                                                                                                                               uint32_t    offset;
+                                                                                                                           }
+
+
+    typedef struct VkPipelineInputAssemblyStateCreateInfo {                         typedef enum VkPrimitiveTopology {
+        VkStructureType                            sType;                               VK_PRIMITIVE_TOPOLOGY_POINT_LIST,
+        const void*                                pNext;                               VK_PRIMITIVE_TOPOLOGY_LINE_LIST,
+      x VkPipelineInputAssemblyStateCreateFlags    flags;                               VK_PRIMITIVE_TOPOLOGY_LINE_STRIP,
+        VkPrimitiveTopology                        topology;                            VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+        VkBool32                                   primitiveRestartEnable;              VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
+    }                                                                                   VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN,
+                                                                                        VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY,
+                                                                                        VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY,
+                                                                                        VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY,
+                                                                                        VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY,
+                                                                                        VK_PRIMITIVE_TOPOLOGY_PATCH_LIST,
+                                                                                    }
+
+
+
+    typedef struct VkPipelineTessellationStateCreateInfo {
+        VkStructureType                           sType;
+        const void*                               pNext;
+      x VkPipelineTessellationStateCreateFlags    flags;
+        uint32_t                                  patchControlPoints;
+    }
+
+
+    typedef struct VkPipelineViewportStateCreateInfo {              typedef struct VkViewport {
+        VkStructureType                       sType;                    float    x;
+        const void*                           pNext;                    float    y;
+      x VkPipelineViewportStateCreateFlags    flags;                    float    width;
+        uint32_t                              viewportCount;            float    height;
+        const VkViewport*                     pViewports;               float    minDepth;
+        uint32_t                              scissorCount;             float    maxDepth;
+        const VkRect2D*                       pScissors;            }
+    }
+
+
+    typedef struct VkPipelineRasterizationStateCreateInfo {                     typedef enum VkPolygonMode {
+        VkStructureType                            sType;                           VK_POLYGON_MODE_FILL,
+        const void*                                pNext;                           VK_POLYGON_MODE_LINE,
+      x VkPipelineRasterizationStateCreateFlags    flags;                           VK_POLYGON_MODE_POINT,
+        VkBool32                                   depthClampEnable;            }
+        VkBool32                                   rasterizerDiscardEnable;     typedef enum VkCullModeFlagBits {
+        VkPolygonMode                              polygonMode;                     VK_CULL_MODE_NONE,
+        VkCullModeFlags                            cullMode;                        VK_CULL_MODE_FRONT_BIT,
+        VkFrontFace                                frontFace;                       VK_CULL_MODE_BACK_BIT,
+        VkBool32                                   depthBiasEnable;                 VK_CULL_MODE_FRONT_AND_BACK,
+        float                                      depthBiasConstantFactor;     }
+        float                                      depthBiasClamp;              typedef enum VkFrontFace {
+        float                                      depthBiasSlopeFactor;            VK_FRONT_FACE_COUNTER_CLOCKWISE,
+        float                                      lineWidth;                       VK_FRONT_FACE_CLOCKWISE,
+    }                                                                           }
+
+
+
+    typedef struct VkPipelineMultisampleStateCreateInfo {                   typedef enum VkSampleCountFlagBits {
+        VkStructureType                          sType;                         VK_SAMPLE_COUNT_1_BIT,
+        const void*                              pNext;                         VK_SAMPLE_COUNT_2_BIT,
+      x VkPipelineMultisampleStateCreateFlags    flags;                         VK_SAMPLE_COUNT_4_BIT,
+        VkSampleCountFlagBits                    rasterizationSamples;          VK_SAMPLE_COUNT_8_BIT,
+        VkBool32                                 sampleShadingEnable;           VK_SAMPLE_COUNT_16_BIT,
+        float                                    minSampleShading;              VK_SAMPLE_COUNT_32_BIT,
+        const VkSampleMask*                      pSampleMask;                   VK_SAMPLE_COUNT_64_BIT,
+        VkBool32                                 alphaToCoverageEnable;     }
+        VkBool32                                 alphaToOneEnable;
+    }
+
+    typedef struct VkPipelineDepthStencilStateCreateInfo {                      typedef struct VkStencilOpState {               typedef enum VkCompareOp {
+        VkStructureType                           sType;                            VkStencilOp    failOp;                          VK_COMPARE_OP_NEVER,
+        const void*                               pNext;                            VkStencilOp    passOp;                          VK_COMPARE_OP_LESS,
+        VkPipelineDepthStencilStateCreateFlags    flags;                            VkStencilOp    depthFailOp;                     VK_COMPARE_OP_EQUAL,
+        VkBool32                                  depthTestEnable;                  VkCompareOp    compareOp;                       VK_COMPARE_OP_LESS_OR_EQUAL,
+        VkBool32                                  depthWriteEnable;                 uint32_t       compareMask;                     VK_COMPARE_OP_GREATER,
+        VkCompareOp                               depthCompareOp;                   uint32_t       writeMask;                       VK_COMPARE_OP_NOT_EQUAL,
+        VkBool32                                  depthBoundsTestEnable;            uint32_t       reference;                       VK_COMPARE_OP_GREATER_OR_EQUAL,
+        VkBool32                                  stencilTestEnable;            }                                                   VK_COMPARE_OP_ALWAYS,
+        VkStencilOpState                          front;                        typedef enum VkStencilOp {                      }
+        VkStencilOpState                          back;                             VK_STENCIL_OP_KEEP,
+        float                                     minDepthBounds;                   VK_STENCIL_OP_ZERO,
+        float                                     maxDepthBounds;                   VK_STENCIL_OP_REPLACE,
+    }                                                                               VK_STENCIL_OP_INCREMENT_AND_CLAMP,
+                                                                                    VK_STENCIL_OP_DECREMENT_AND_CLAMP,
+                                                                                    VK_STENCIL_OP_INVERT,
+                                                                                    VK_STENCIL_OP_INCREMENT_AND_WRAP,
+                                                                                    VK_STENCIL_OP_DECREMENT_AND_WRAP,
+                                                                                }
+
+
+    typedef struct VkPipelineColorBlendStateCreateInfo {                    typedef enum VkLogicOp {                            typedef enum VkBlendFactor {
+        VkStructureType                             sType;                      VK_LOGIC_OP_CLEAR,                                  VK_BLEND_FACTOR_ZERO,
+        const void*                                 pNext;                      VK_LOGIC_OP_AND,                                    VK_BLEND_FACTOR_ONE,
+        VkPipelineColorBlendStateCreateFlags        flags;                      VK_LOGIC_OP_AND_REVERSE,                            VK_BLEND_FACTOR_SRC_COLOR,
+        VkBool32                                    logicOpEnable;              VK_LOGIC_OP_COPY,                                   VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR,
+        VkLogicOp                                   logicOp;                    VK_LOGIC_OP_AND_INVERTED,                           VK_BLEND_FACTOR_DST_COLOR,
+        uint32_t                                    attachmentCount;            VK_LOGIC_OP_NO_OP,                                  VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR,
+        const VkPipelineColorBlendAttachmentState*  pAttachments;               VK_LOGIC_OP_XOR,                                    VK_BLEND_FACTOR_SRC_ALPHA,
+        float                                       blendConstants[4];          VK_LOGIC_OP_OR,                                     VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+    }                                                                           VK_LOGIC_OP_NOR,                                    VK_BLEND_FACTOR_DST_ALPHA,
+    typedef struct VkPipelineColorBlendAttachmentState {                        VK_LOGIC_OP_EQUIVALENT,                             VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA,
+        VkBool32                 blendEnable;                                   VK_LOGIC_OP_INVERT,                                 VK_BLEND_FACTOR_CONSTANT_COLOR,
+        VkBlendFactor            srcColorBlendFactor;                           VK_LOGIC_OP_OR_REVERSE,                             VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR,
+        VkBlendFactor            dstColorBlendFactor;                           VK_LOGIC_OP_COPY_INVERTED,                          VK_BLEND_FACTOR_CONSTANT_ALPHA,
+        VkBlendOp                colorBlendOp;                                  VK_LOGIC_OP_OR_INVERTED,                            VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA,
+        VkBlendFactor            srcAlphaBlendFactor;                           VK_LOGIC_OP_NAND,                                   VK_BLEND_FACTOR_SRC_ALPHA_SATURATE,
+        VkBlendFactor            dstAlphaBlendFactor;                           VK_LOGIC_OP_SET,                                    VK_BLEND_FACTOR_SRC1_COLOR,
+        VkBlendOp                alphaBlendOp;                              }                                                       VK_BLEND_FACTOR_ONE_MINUS_SRC1_COLOR,
+        VkColorComponentFlags    colorWriteMask;                                                                                    VK_BLEND_FACTOR_SRC1_ALPHA,
+    }                                                                       typedef enum VkColorComponentFlagBits {                 VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA,
+                                                                                VK_COLOR_COMPONENT_R_BIT,                       }
+                                                                                VK_COLOR_COMPONENT_G_BIT,                       typedef enum VkBlendOp {
+                                                                                VK_COLOR_COMPONENT_B_BIT,                           VK_BLEND_OP_ADD = 0,
+                                                                                VK_COLOR_COMPONENT_A_BIT,                           VK_BLEND_OP_SUBTRACT = 1,
+                                                                            }                                                       VK_BLEND_OP_REVERSE_SUBTRACT = 2,
+                                                                                                                                    VK_BLEND_OP_MIN = 3,
+                                                                                                                                    VK_BLEND_OP_MAX = 4,
+                                                                                                                                }
+
+    typedef struct VkPipelineDynamicStateCreateInfo {               typedef enum VkDynamicState {
+        VkStructureType                      sType;                     VK_DYNAMIC_STATE_VIEWPORT = 0,
+        const void*                          pNext;                     VK_DYNAMIC_STATE_SCISSOR = 1,
+      x VkPipelineDynamicStateCreateFlags    flags;                     VK_DYNAMIC_STATE_LINE_WIDTH = 2,
+        uint32_t                             dynamicStateCount;         VK_DYNAMIC_STATE_DEPTH_BIAS = 3,
+        const VkDynamicState*                pDynamicStates;            VK_DYNAMIC_STATE_BLEND_CONSTANTS = 4,
+    }                                                                   VK_DYNAMIC_STATE_DEPTH_BOUNDS = 5,
+                                                                        VK_DYNAMIC_STATE_STENCIL_COMPARE_MASK = 6,
+                                                                        VK_DYNAMIC_STATE_STENCIL_WRITE_MASK = 7,
+                                                                        VK_DYNAMIC_STATE_STENCIL_REFERENCE = 8,
+                                                                    }
+
+
+
+
+vkCmdBindPipeline
+vkCmdPipelineBarrier
+vkCmdPipelineBarrier2KHR
+
+vkCreatePipelineLayout
+vkCreateComputePipelines
+
+vkGetPipelineExecutableInternalRepresentationsKHR
+vkGetPipelineExecutablePropertiesKHR
+vkGetPipelineExecutableStatisticsKHR
+vkMergePipelineCaches
+
+VkComputePipelineCreateInfo
+VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR
+VkPipelineBindPoint
+VkPipelineCacheHeaderVersion
+VkPipelineColorBlendAttachmentState
+VkPipelineColorBlendStateCreateFlags
+VkPipelineColorBlendStateCreateInfo
+VkPipelineExecutableInfoKHR
+VkPipelineExecutableInternalRepresentationKHR
+VkPipelineExecutablePropertiesKHR
+VkPipelineExecutableStatisticFormatKHR
+VkPipelineExecutableStatisticKHR
+VkPipelineExecutableStatisticValueKHR
+VkPipelineFragmentShadingRateStateCreateInfoKHR
+VkPipelineInfoKHR
+VkPipelineLayout
+VkPipelineLayoutCreateFlags
+VkPipelineLayoutCreateInfo
+VkPipelineLibraryCreateInfoKHR
+VkPipelineStageFlagBits
+VkPipelineStageFlagBits2KHR
+VkPipelineStageFlags
+VkPipelineStageFlags2KHR
+VkPipelineTessellationDomainOriginStateCreateInfo
+VkPipelineTessellationDomainOriginStateCreateInfoKHR
+VkQueryPipelineStatisticFlagBits
+VkQueryPipelineStatisticFlags

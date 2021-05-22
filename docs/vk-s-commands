@@ -1,72 +1,58 @@
 
 Commands recorded in command buffers either perform
- - actions
-   draw, dispatch, clear, copy, query/timestamp operations, begin/end subpass operations.
-   alter framebuffer attachments, read/write buffer or image memory, or write to query pools.
- - set state
-   bind pipelines, bind descriptor sets, bind buffers, set dynamic state, push constants, set render pass/subpass state.
- - perform synchronization
-   set/wait events, pipeline barrier, render pass/subpass dependencies.
+* actions
+  draw, dispatch, clear, copy, query/timestamp operations, begin/end subpass operations.
+  alter framebuffer attachments, read/write buffer or image memory, or write to query pools.
+* set state
+  bind pipelines, bind descriptor sets, bind buffers, set dynamic state, push constants, set render pass/subpass state.
+* perform synchronization
+  set/wait events, pipeline barrier, render pass/subpass dependencies.
 
 * Each command buffer manages state independently of other command buffers.
 * There is no inheritance of state across primary and secondary command buffers, or between secondary command buffers.
 * All state of the primary command buffer is undefined after an execute secondary command buffer command is recorded.
 * If the primary command buffer is inside a render pass instance, then the render pass and subpass state is not disturbed by executing secondary command buffers.
 
-VkResult vkCreateCommandPool(                                       VkResult vkResetCommandPool(
-    VkDevice                        device,                             VkDevice                 device,
-    const VkCommandPoolCreateInfo*  pCreateInfo,                        VkCommandPool            commandPool,
-    const VkAllocationCallbacks*    pAllocator,                         VkCommandPoolResetFlags  flags);
-    VkCommandPool*                  pCommandPool);
-                                                                    enum VkCommandPoolResetFlagBits {
-    typedef struct VkCommandPoolCreateInfo {                            VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT
-        VkCommandPoolCreateFlags    flags;                          }
-        uint32_t                    queueFamilyIndex;               vkTrimCommandPool
-    }
+==== VkCommandPool
 
-    enum VkCommandPoolCreateFlagBits {
-        VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,
-        VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-        VK_COMMAND_POOL_CREATE_PROTECTED_BIT,
-    }
+VkResult vkCreateCommandPool(                          typedef struct VkCommandPoolCreateInfo {             enum VkCommandPoolCreateFlagBits {
+    VkDevice                        device,                VkCommandPoolCreateFlagBits flags;                   VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,
+    const VkCommandPoolCreateInfo*  pCreateInfo,           uint32_t                    queueFamilyIndex;        VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+    const VkAllocationCallbacks*    pAllocator,        }                                                        VK_COMMAND_POOL_CREATE_PROTECTED_BIT,
+    VkCommandPool*                  pCommandPool);                                                          }
 
-------
 
-VkResult vkAllocateCommandBuffers(                                  VkResult vkResetCommandBuffer(
-    VkDevice                            device,                         VkCommandBuffer            commandBuffer,
-    const VkCommandBufferAllocateInfo*  pAllocateInfo,                  VkCommandBufferResetFlags  flags);
-    VkCommandBuffer*                    pCommandBuffers);
-                                                                        typedef enum VkCommandBufferResetFlagBits {
-    typedef struct VkCommandBufferAllocateInfo {                            VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT = 0x00000001,
-        VkCommandPool           commandPool;                            }
-        VkCommandBufferLevel    level;
-        uint32_t                commandBufferCount;
-    }                                                               void vkFreeCommandBuffers(
-                                                                        VkDevice                device,
-    enum VkCommandBufferLevel {                                         VkCommandPool           commandPool,
-        VK_COMMAND_BUFFER_LEVEL_PRIMARY,                                uint32_t                commandBufferCount,
-        VK_COMMAND_BUFFER_LEVEL_SECONDARY,                              const VkCommandBuffer*  pCommandBuffers);
-    }
+VkResult vkResetCommandPool(                        enum VkCommandPoolResetFlagBits {
+    VkDevice                    device,                 VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT
+    VkCommandPool               commandPool,        }
+    VkCommandPoolResetFlagBits  flags);
 
-VkResult vkBeginCommandBuffer(
-        VkCommandBuffer                  commandBuffer,
-        const VkCommandBufferBeginInfo*  pBeginInfo);               typedef struct VkCommandBufferInheritanceInfo {
-                                                                        VkRenderPass                     renderPass;
-    typedef struct VkCommandBufferBeginInfo {                           uint32_t                         subpass;
-        VkCommandBufferUsageFlags               flags;                  VkFramebuffer                    framebuffer;
-        const VkCommandBufferInheritanceInfo*   pInheritanceInfo;       VkBool32                         occlusionQueryEnable;
-    }                                                                   VkQueryControlFlags              queryFlags;
-                                                                        VkQueryPipelineStatisticFlags    pipelineStatistics;
-    typedef enum VkCommandBufferUsageFlagBits {                     }
-        VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-        VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT,           VkResult vkEndCommandBuffer(VkCommandBuffer   commandBuffer);
-        VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT,
-    }
 
-void vkCmdExecuteCommands(
-    VkCommandBuffer          commandBuffer,
-    uint32_t                 commandBufferCount,
-    const VkCommandBuffer*   pCommandBuffers);
+void vkTrimCommandPool(
+    VkDevice                    device,
+    VkCommandPool               commandPool,
+  x VkCommandPoolTrimFlagBits   flags);
+
+
+==== VkCommandBuffer
+
+VkResult vkAllocateCommandBuffers(                          typedef struct VkCommandBufferAllocateInfo {            enum VkCommandBufferLevel {
+    VkDevice                            device,                 VkCommandPool           commandPool;                    VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+    const VkCommandBufferAllocateInfo*  pAllocateInfo,          VkCommandBufferLevel    level;                          VK_COMMAND_BUFFER_LEVEL_SECONDARY,
+    VkCommandBuffer*                    pCommandBuffers);       uint32_t                commandBufferCount;         }
+                                                            }
+
+
+VkResult vkResetCommandBuffer(                          typedef enum VkCommandBufferResetFlagBits {
+    VkCommandBuffer                 commandBuffer,          VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT = 0x00000001,
+    VkCommandBufferResetFlagBits    flags);             }
+
+
+void vkFreeCommandBuffers(
+    VkDevice                device,
+    VkCommandPool           commandPool,
+    uint32_t                commandBufferCount,
+    const VkCommandBuffer*  pCommandBuffers);
 
 
 Command Properties

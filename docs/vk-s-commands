@@ -48,6 +48,28 @@ VkResult vkResetCommandBuffer(                          typedef enum VkCommandBu
     VkCommandBufferResetFlagBits    flags);             }
 
 
+VkResult vkBeginCommandBuffer(                          typedef struct VkCommandBufferBeginInfo {                       typedef enum VkCommandBufferUsageFlagBits {
+    VkCommandBuffer                  commandBuffer,         VkStructureType                          sType;                 VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+    const VkCommandBufferBeginInfo*  pBeginInfo);           const void*                              pNext;                 VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT,
+                                                            VkCommandBufferUsageFlags                flags;                 VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT,
+                                                            const VkCommandBufferInheritanceInfo*    pInheritanceInfo;  }
+                                                        }                                                               typedef enum VkQueryControlFlagBits {
+                            typedef enum VkQueryPipelineStatisticFlagBits {                                                 VK_QUERY_CONTROL_PRECISE_BIT
+                                VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT,                                }
+                                VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_PRIMITIVES_BIT,                  typedef struct VkCommandBufferInheritanceInfo {
+                                VK_QUERY_PIPELINE_STATISTIC_VERTEX_SHADER_INVOCATIONS_BIT,                      VkStructureType               sType;
+                                VK_QUERY_PIPELINE_STATISTIC_GEOMETRY_SHADER_INVOCATIONS_BIT,                    const void*                   pNext;
+                                VK_QUERY_PIPELINE_STATISTIC_GEOMETRY_SHADER_PRIMITIVES_BIT,                     VkRenderPass                  renderPass;
+                                VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT,                           uint32_t                      subpass;
+                                VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT,                            VkFramebuffer                 framebuffer;
+                                VK_QUERY_PIPELINE_STATISTIC_FRAGMENT_SHADER_INVOCATIONS_BIT,                    VkBool32                      occlusionQueryEnable;
+                                VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_CONTROL_SHADER_PATCHES_BIT,            VkQueryControlFlagBits        queryFlags;
+                                VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_EVALUATION_SHADER_INVOCATIONS_BIT,     VkQueryPipelineStatisticFlags pipelineStatistics;
+                                VK_QUERY_PIPELINE_STATISTIC_COMPUTE_SHADER_INVOCATIONS_BIT,                 }
+                            }
+
+VkResult vkEndCommandBuffer(VkCommandBuffer commandBuffer);
+
 void vkFreeCommandBuffers(
     VkDevice                device,
     VkCommandPool           commandPool,

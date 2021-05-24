@@ -6,7 +6,7 @@ typedef uint64_t VkDeviceSize;
 VkExtent2D VkExtent3D { width, height, depth }     |    VkOffset2D VkOffset3D { x, y, z }    |    VkRect2D { VkOffset2D, VkExtent2D }
 
 typedef struct VkMemoryType {
-    VkMemoryPropertyFlags    propertyFlags;                                                     typedef enum VkMemoryPropertyFlags {
+    VkMemoryPropertyFlagBits propertyFlags;                                                     typedef enum VkMemoryPropertyFlagBits {
     uint32_t                 heapIndex;                                                             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 }                                                                                                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
                                                                                                     VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,

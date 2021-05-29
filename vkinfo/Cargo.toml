@@ -10,7 +10,7 @@ edition = "2018"
 structopt = "*"
 prettytable-rs = "0.8.0"
 colored = "2.0.0"
-winit = "0.24.0"
+winit = "0.25.0"
 vgi = { version = "0.1.0", path = "../vgi" }
 
 

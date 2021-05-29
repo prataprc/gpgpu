@@ -1,4 +1,3 @@
-use prettytable::{cell, row};
 use vk_sys as vk;
 use vulkano::{
     instance::{Instance, InstanceExtensions, LayerProperties, PhysicalDevice},
@@ -23,6 +22,8 @@ pub struct Vulkan<'a> {
 
 impl<'a> Vulkan<'a> {
     pub fn new() -> Self {
+        use vulkano::instance::Version;
+
         let layers = layers().unwrap();
 
         let mut extens = extensions(None).unwrap();
@@ -42,7 +43,8 @@ impl<'a> Vulkan<'a> {
             let ok_layers = enable_layers(&layers);
             let inst_extns = enable_extensions(&extens);
             let app_info = vulkano::app_info_from_cargo_toml!();
-            Box::new(Instance::new(Some(&app_info), &inst_extns, ok_layers).unwrap())
+            let ver = Version::major_minor(1, 1);
+            Box::new(Instance::new(Some(&app_info), ver, &inst_extns, ok_layers).unwrap())
         };
 
         let inst = unsafe {
@@ -221,10 +223,14 @@ impl PrettyRow for ExtensionProperties {
     }
 
     fn to_head() -> prettytable::Row {
+        use prettytable::{cell, row};
+
         row![Fy => "Extension Name", "Version", "Core", "Devices", "Layers"]
     }
 
     fn to_row(&self) -> prettytable::Row {
+        use prettytable::{cell, row};
+
         let devices = self
             .physical_devices
             .iter()

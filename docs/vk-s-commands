@@ -1,180 +1,147 @@
-
-Commands recorded in command buffers either perform
-* actions
-  draw, dispatch, clear, copy, query/timestamp operations, begin/end subpass operations.
-  alter framebuffer attachments, read/write buffer or image memory, or write to query pools.
-* set state
-  bind pipelines, bind descriptor sets, bind buffers, set dynamic state, push constants, set render pass/subpass state.
-* perform synchronization
-  set/wait events, pipeline barrier, render pass/subpass dependencies.
-
-* Each command buffer manages state independently of other command buffers.
-* There is no inheritance of state across primary and secondary command buffers, or between secondary command buffers.
-* All state of the primary command buffer is undefined after an execute secondary command buffer command is recorded.
-* If the primary command buffer is inside a render pass instance, then the render pass and subpass state is not disturbed by executing secondary command buffers.
-
-==== VkCommandPool
-
-VkResult vkCreateCommandPool(                          typedef struct VkCommandPoolCreateInfo {             enum VkCommandPoolCreateFlagBits {
-    VkDevice                        device,                VkCommandPoolCreateFlagBits flags;                   VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,
-    const VkCommandPoolCreateInfo*  pCreateInfo,           uint32_t                    queueFamilyIndex;        VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-    const VkAllocationCallbacks*    pAllocator,        }                                                        VK_COMMAND_POOL_CREATE_PROTECTED_BIT,
-    VkCommandPool*                  pCommandPool);                                                          }
+void vkCmdExecuteCommands(
+    VkCommandBuffer          commandBuffer,
+    uint32_t                 commandBufferCount,
+    const VkCommandBuffer*   pCommandBuffers);
 
 
-VkResult vkResetCommandPool(                        enum VkCommandPoolResetFlagBits {
-    VkDevice                    device,                 VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT
-    VkCommandPool               commandPool,        }
-    VkCommandPoolResetFlagBits  flags);
+vkCmdSetEvent, vkCmdResetEvent
+
+void vkCmdWaitEvents(
+    VkCommandBuffer               commandBuffer,
+    uint32_t                      eventCount,
+    const VkEvent*                pEvents,
+    VkPipelineStageFlagBits       srcStageMask,
+    VkPipelineStageFlagBits       dstStageMask,
+    uint32_t                      memoryBarrierCount,
+    const VkMemoryBarrier*        pMemoryBarriers,
+    uint32_t                      bufferMemoryBarrierCount,
+    const VkBufferMemoryBarrier*  pBufferMemoryBarriers,
+    uint32_t                      imageMemoryBarrierCount,
+    const VkImageMemoryBarrier*   pImageMemoryBarriers);
+
+void vkCmdPipelineBarrier(
+    VkCommandBuffer                 commandBuffer,
+    VkPipelineStageFlagBits         srcStageMask,
+    VkPipelineStageFlagBits         dstStageMask,
+    VkDependencyFlags               dependencyFlags,
+    uint32_t                        memoryBarrierCount,
+    const VkMemoryBarrier*          pMemoryBarriers,
+    uint32_t                        bufferMemoryBarrierCount,
+    const VkBufferMemoryBarrier*    pBufferMemoryBarriers,
+    uint32_t                        imageMemoryBarrierCount,
+    const VkImageMemoryBarrier*     pImageMemoryBarriers);
 
 
-void vkTrimCommandPool(
-    VkDevice                    device,
-    VkCommandPool               commandPool,
-  x VkCommandPoolTrimFlagBits   flags);
 
-
-==== VkCommandBuffer
-
-VkResult vkAllocateCommandBuffers(                          typedef struct VkCommandBufferAllocateInfo {            enum VkCommandBufferLevel {
-    VkDevice                            device,                 VkCommandPool           commandPool;                    VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-    const VkCommandBufferAllocateInfo*  pAllocateInfo,          VkCommandBufferLevel    level;                          VK_COMMAND_BUFFER_LEVEL_SECONDARY,
-    VkCommandBuffer*                    pCommandBuffers);       uint32_t                commandBufferCount;         }
-                                                            }
-
-
-VkResult vkResetCommandBuffer(                          typedef enum VkCommandBufferResetFlagBits {
-    VkCommandBuffer                 commandBuffer,          VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT = 0x00000001,
-    VkCommandBufferResetFlagBits    flags);             }
-
-
-VkResult vkBeginCommandBuffer(                          typedef struct VkCommandBufferBeginInfo {                       typedef enum VkCommandBufferUsageFlagBits {
-    VkCommandBuffer                  commandBuffer,         VkStructureType                          sType;                 VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-    const VkCommandBufferBeginInfo*  pBeginInfo);           const void*                              pNext;                 VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT,
-                                                            VkCommandBufferUsageFlags                flags;                 VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT,
-                                                            const VkCommandBufferInheritanceInfo*    pInheritanceInfo;  }
-                                                        }                                                               typedef enum VkQueryControlFlagBits {
-                            typedef enum VkQueryPipelineStatisticFlagBits {                                                 VK_QUERY_CONTROL_PRECISE_BIT
-                                VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT,                                }
-                                VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_PRIMITIVES_BIT,                  typedef struct VkCommandBufferInheritanceInfo {
-                                VK_QUERY_PIPELINE_STATISTIC_VERTEX_SHADER_INVOCATIONS_BIT,                      VkStructureType               sType;
-                                VK_QUERY_PIPELINE_STATISTIC_GEOMETRY_SHADER_INVOCATIONS_BIT,                    const void*                   pNext;
-                                VK_QUERY_PIPELINE_STATISTIC_GEOMETRY_SHADER_PRIMITIVES_BIT,                     VkRenderPass                  renderPass;
-                                VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT,                           uint32_t                      subpass;
-                                VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT,                            VkFramebuffer                 framebuffer;
-                                VK_QUERY_PIPELINE_STATISTIC_FRAGMENT_SHADER_INVOCATIONS_BIT,                    VkBool32                      occlusionQueryEnable;
-                                VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_CONTROL_SHADER_PATCHES_BIT,            VkQueryControlFlagBits        queryFlags;
-                                VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_EVALUATION_SHADER_INVOCATIONS_BIT,     VkQueryPipelineStatisticFlags pipelineStatistics;
-                                VK_QUERY_PIPELINE_STATISTIC_COMPUTE_SHADER_INVOCATIONS_BIT,                 }
-                            }
-
-VkResult vkEndCommandBuffer(VkCommandBuffer commandBuffer);
-
-void vkFreeCommandBuffers(
-    VkDevice                device,
-    VkCommandPool           commandPool,
-    uint32_t                commandBufferCount,
-    const VkCommandBuffer*  pCommandBuffers);
+void vkCmdBeginRenderPass(                                  typedef struct VkRenderPassBeginInfo {          typedef union VkClearValue {
+    VkCommandBuffer                 commandBuffer,              VkStructureType        sType;                   VkClearColorValue           color;
+    const VkRenderPassBeginInfo*    pRenderPassBegin,           const void*            pNext;                   VkClearDepthStencilValue    depthStencil;
+    VkSubpassContents               contents);                  VkRenderPass           renderPass;          }
+                                                                VkFramebuffer          framebuffer;         typedef union VkClearColorValue {
+                                                                VkRect2D               renderArea;              float       float32[4];
+                                                                uint32_t               clearValueCount;         int32_t     int32[4];
+                                                                const VkClearValue*    pClearValues;            uint32_t    uint32[4];
+                                                            }                                               }
+                                                                                                            typedef struct VkClearDepthStencilValue {
+                                                                                                                float       depth;
+                                                                                                                uint32_t    stencil;
+                                                                                                            }
 
 
 Command Properties
 ------------------
 
- Comamnd                   | CB-levels   | Renderpass scope |  Queue-types      |  pipeline-types
----------------------------+-------------+------------------+-------------------+-----------------
-vkQueueSubmit                -             -                  Any                  -
-vkQueueSubmit2               -             -                  Any                  -
-vkQueueBindSparse            -             -                  SparseBinding        -
-vkQueuePresentKHR            -             -                  Any                  -
-vkQueueWaitIdle              -             -                  Any                  -
+ Comamnd                                      | CB-levels   | Renderpass scope |  Queue-types      |  pipeline-types
+----------------------------------------------+-------------+------------------+-------------------+-----------------
+vkQueueSubmit                                   -             -                  Any                  -
+vkQueueSubmit2                                  -             -                  Any                  -
+vkQueueBindSparse                               -             -                  SparseBinding        -
+vkQueuePresentKHR                               -             -                  Any                  -
+vkQueueWaitIdle                                 -             -                  Any                  -
 
-vkCmdExecuteCommands         Primary       Both               Trans/Graph/Comp     -
+vkCmdExecuteCommands                            Primary       Both               Trans/Graph/Comp     -
 
-vkCmdSetDeviceMask           Prim/Secnd    Both               Trans/Graph/Comp     -
-vkCmdSetEvent                Primary       Outside            Graphics/Compute     -
-vkCmdSetEvent2KHR            Primary       Outside            Graphics/Compute     -
-vkCmdResetEvent2KHR          Prim/Secnd    Outside            Graphics/Compute     -
-vkCmdResetEvent              Prim/Secnd    Outside            Graphics/Compute     -
-vkCmdWaitEvents2KHR          Prim/Secnd    Both               Graphics/Compute     -
-vkCmdWaitEvents              Prim/Secnd    Both               Graphics/Compute     -
-vkCmdPipelineBarrier         Prim/Secnd    Both               Trans/Graph/Comp     -
-vkCmdPipelineBarrier2KHR     Prim/Secnd    Both               Trans/Graph/Comp     -
+vkCmdSetDeviceMask                              Prim/Secnd    Both               Trans/Graph/Comp     -
+vkCmdSetEvent                                   Primary       Outside            Graphics/Compute     -
+vkCmdSetEvent2KHR                               Primary       Outside            Graphics/Compute     -
+vkCmdResetEvent2KHR                             Prim/Secnd    Outside            Graphics/Compute     -
+vkCmdResetEvent                                 Prim/Secnd    Outside            Graphics/Compute     -
+vkCmdWaitEvents2KHR                             Prim/Secnd    Both               Graphics/Compute     -
+vkCmdWaitEvents                                 Prim/Secnd    Both               Graphics/Compute     -
+vkCmdPipelineBarrier                            Prim/Secnd    Both               Trans/Graph/Comp     -
+vkCmdPipelineBarrier2KHR                        Prim/Secnd    Both               Trans/Graph/Comp     -
 
-vkCmdBeginRenderPass         Primary       Outside            Graphics             Graphics
-vkCmdBeginRenderPass2        Primary       Outside            Graphics             Graphics
-vkCmdNextSubpass             Primary       Inside             Graphics             Graphics
-vkCmdNextSubpass2            Primary       Inside             Graphics             Graphics
-vkCmdEndRenderPass           Primary       Inside             Graphics             Graphics
-vkCmdEndRenderPass2          Primary       Inside             Graphics             Graphics
+vkCmdBeginRenderPass                            Primary       Outside            Graphics             Graphics
+vkCmdBeginRenderPass2                           Primary       Outside            Graphics             Graphics
+vkCmdNextSubpass                                Primary       Inside             Graphics             Graphics
+vkCmdNextSubpass2                               Primary       Inside             Graphics             Graphics
+vkCmdEndRenderPass                              Primary       Inside             Graphics             Graphics
+vkCmdEndRenderPass2                             Primary       Inside             Graphics             Graphics
 
-vkCmdSetRayTracing           Prim/Secnd    Outside            Compute              -
-    PipelineStackSizeKHR
-vkCmdBindPipeline            Prim/Secnd    Both               Graphics/Compute     -
-vkCmdBindDescriptorSets      Prim/Secnd    Both               Graphics/Compute     -
-vkCmdPushDescriptorSetKHR    Prim/Secnd    Both               Graphics/Compute     -
-vkCmdPushDescriptorSet       Prim/Secnd    Both               Graphics/Compute     -
-    WithTemplateKHR
-vkCmdPushConstants           Prim/Secnd    Both               Graphics/Compute     -
-vkCmdResetQueryPool          Prim/Secnd    Outside            Graphics/Compute     -
-vkCmdBeginQuery              Prim/Secnd    Both               Graphics/Compute     -
-vkCmdEndQuery                Prim/Secnd    Both               Graphics/Compute     -
+vkCmdSetRayTracingPipelineStackSizeKHR          Prim/Secnd    Outside            Compute              -
+vkCmdBindPipeline                               Prim/Secnd    Both               Graphics/Compute     -
+vkCmdBindDescriptorSets                         Prim/Secnd    Both               Graphics/Compute     -
+vkCmdPushDescriptorSetKHR                       Prim/Secnd    Both               Graphics/Compute     -
+vkCmdPushDescriptorSetWithTemplateKHR           Prim/Secnd    Both               Graphics/Compute     -
+vkCmdPushConstants                              Prim/Secnd    Both               Graphics/Compute     -
 
-vkCmdCopyQueryPoolResults    Prim/Secnd    Outside            Graphics/Compute     Transfer
-vkCmdWriteTimestamp2KHR      Prim/Secnd    Both               Trans/Graph/Comp     Transfer
-vkCmdWriteTimestamp          Prim/Secnd    Both               Trans/Graph/Comp     Transfer
-vkCmdClearColorImage         Prim/Secnd    Outside            Graphics/Compute     Transfer
-vkCmdClearDepthStencilImage  Prim/Secnd    Outside            Graphics             Transfer
-vkCmdClearAttachments        Prim/Secnd    Inside             Graphics             Graphics
-vkCmdFillBuffer              Prim/Secnd    Outside            Trans/Graph/Comp     Transfer
-vkCmdUpdateBuffer            Prim/Secnd    Outside            Trans/Graph/Comp     Transfer
-vkCmdCopyBuffer              Prim/Secnd    Outside            Trans/Graph/Comp     Transfer
-vkCmdCopyBuffer2KHR          Prim/Secnd    Outside            Trans/Graph/Comp     Transfer
-vkCmdCopyImage               Prim/Secnd    Outside            Trans/Graph/Comp     Transfer
-vkCmdCopyImage2KHR           Prim/Secnd    Outside            Trans/Graph/Comp     Transfer
-vkCmdCopyBufferToImage       Prim/Secnd    Outside            Trans/Graph/Comp     Transfer
-vkCmdCopyImageToBuffer       Prim/Secnd    Outside            Trans/Graph/Comp     Transfer
-vkCmdCopyBufferToImage2KHR   Prim/Secnd    Outside            Trans/Graph/Comp     Transfer
-vkCmdCopyImageToBuffer2KHR   Prim/Secnd    Outside            Trans/Graph/Comp     Transfer
-vkCmdBlitImage               Prim/Secnd    Outside            Graphics             Transfer
-vkCmdBlitImage2KHR           Prim/Secnd    Outside            Graphics             Transfer
-vkCmdResolveImage            Prim/Secnd    Outside            Graphics             Transfer
-vkCmdResolveImage2KHR        Prim/Secnd    Outside            Graphics             Transfer
-vkCmdBindIndexBuffer         Prim/Secnd    Both               Graphics             -
-vkCmdDraw                    Prim/Secnd    Inside             Graphics             Graphics
-vkCmdDrawIndirect            Prim/Secnd    Inside             Graphics             Graphics
-vkCmdDrawIndexed             Prim/Secnd    Inside             Graphics             Graphics
-vkCmdDrawIndexedIndirect     Prim/Secnd    Inside             Graphics             Graphics
-vkCmdBindVertexBuffers       Prim/Secnd    Both               Graphics             -
-vkCmdSetViewport             Prim/Secnd    Both               Graphics             -
-vkCmdSet                     Prim/Secnd    Both               Graphics             -
-    FragmentShadingRateKHR
-vkCmdSetLineWidth            Prim/Secnd    Both               Graphics             -
-vkCmdSetDepthBias            Prim/Secnd    Both               Graphics             -
-vkCmdSetScissor              Prim/Secnd    Both               Graphics             -
-vkCmdSetDepthBounds          Prim/Secnd    Both               Graphics             -
-vkCmdSetStencilCompareMask   Prim/Secnd    Both               Graphics             -
-vkCmdSetStencilWriteMask     Prim/Secnd    Both               Graphics             -
-vkCmdSetStencilReference     Prim/Secnd    Both               Graphics             -
-vkCmdSetBlendConstants       Prim/Secnd    Both               Graphics             -
-vkCmdDispatch                Prim/Secnd    Outside            Compute              Compute
-vkCmdDispatchIndirect        Prim/Secnd    Outside            Compute              Compute
-vkCmdDispatchBase            Prim/Secnd    Outside            Compute              -
-vkCmdBuild                   Prim/Secnd    Outside            Compute              -
-    AccelerationStructuresKHR
-vkCmdBuild                   Prim/Secnd    Outside            Compute              -
-    AccelerationStructuresIndirectKHR
-vkCmdWrite                   Prim/Secnd    Outside            Compute              -
-    AccelerationStructuresPropertiesKHR
-vkCmdCopy                    Prim/Secnd    Outside            Compute              -
-    AccelerationStructureKHR
-vkCmdCopy                    Prim/Secnd    Outside            Compute              -
-    AccelerationStructureToMemoryKHR
-vkCmdCopy                    Prim/Secnd    Outside            Compute              -
-    MemoryToAccelerationStructureKHR
-vkCmdTraceRaysKHR            Prim/Secnd    Outside            Compute              -
-vkCmdTraceRaysIndirectKHR    Prim/Secnd    Outside            Compute              -
-vkCmdBeginVideoCodingKHR     Primary       Outside            Encode/Decode        -
-vkCmdEndVideoCodingKHR       Primary       Outside            Encode/Decode        -
-vkCmdControlVideoCodingKHR   Primary       Outside            Encode/Decode        -
-vkCmdDecodeVideoKHR          Primary       Outside            Decode               -
-vkCmdEncodeVideoKHR          Primary       Outside            Encode               -
+vkCmdBeginQuery                                 Prim/Secnd    Both               Graphics/Compute     -
+vkCmdResetQueryPool                             Prim/Secnd    Outside            Graphics/Compute     -
+vkCmdCopyQueryPoolResults                       Prim/Secnd    Outside            Graphics/Compute     Transfer
+vkCmdEndQuery                                   Prim/Secnd    Both               Graphics/Compute     -
+
+vkCmdWriteTimestamp                             Prim/Secnd    Both               Trans/Graph/Comp     Transfer
+vkCmdWriteTimestamp2KHR                         Prim/Secnd    Both               Trans/Graph/Comp     Transfer
+vkCmdFillBuffer                                 Prim/Secnd    Outside            Trans/Graph/Comp     Transfer
+vkCmdUpdateBuffer                               Prim/Secnd    Outside            Trans/Graph/Comp     Transfer
+vkCmdCopyBuffer                                 Prim/Secnd    Outside            Trans/Graph/Comp     Transfer
+vkCmdCopyBuffer2KHR                             Prim/Secnd    Outside            Trans/Graph/Comp     Transfer
+vkCmdCopyImage                                  Prim/Secnd    Outside            Trans/Graph/Comp     Transfer
+vkCmdCopyImage2KHR                              Prim/Secnd    Outside            Trans/Graph/Comp     Transfer
+vkCmdCopyBufferToImage                          Prim/Secnd    Outside            Trans/Graph/Comp     Transfer
+vkCmdCopyImageToBuffer                          Prim/Secnd    Outside            Trans/Graph/Comp     Transfer
+vkCmdCopyBufferToImage2KHR                      Prim/Secnd    Outside            Trans/Graph/Comp     Transfer
+vkCmdCopyImageToBuffer2KHR                      Prim/Secnd    Outside            Trans/Graph/Comp     Transfer
+
+vkCmdBindIndexBuffer                            Prim/Secnd    Both               Graphics             -
+vkCmdDraw                                       Prim/Secnd    Inside             Graphics             Graphics
+vkCmdDrawIndirect                               Prim/Secnd    Inside             Graphics             Graphics
+vkCmdDrawIndexed                                Prim/Secnd    Inside             Graphics             Graphics
+vkCmdDrawIndexedIndirect                        Prim/Secnd    Inside             Graphics             Graphics
+vkCmdBindVertexBuffers                          Prim/Secnd    Both               Graphics             -
+vkCmdClearColorImage                            Prim/Secnd    Outside            Graphics/Compute     Transfer
+vkCmdClearDepthStencilImage                     Prim/Secnd    Outside            Graphics             Transfer
+vkCmdClearAttachments                           Prim/Secnd    Inside             Graphics             Graphics
+vkCmdBlitImage                                  Prim/Secnd    Outside            Graphics             Transfer
+vkCmdBlitImage2KHR                              Prim/Secnd    Outside            Graphics             Transfer
+vkCmdResolveImage                               Prim/Secnd    Outside            Graphics             Transfer
+vkCmdResolveImage2KHR                           Prim/Secnd    Outside            Graphics             Transfer
+
+vkCmdSetViewport                                Prim/Secnd    Both               Graphics             -
+vkCmdSetFragmentShadingRateKHR                  Prim/Secnd    Both               Graphics             -
+vkCmdSetLineWidth                               Prim/Secnd    Both               Graphics             -
+vkCmdSetDepthBias                               Prim/Secnd    Both               Graphics             -
+vkCmdSetScissor                                 Prim/Secnd    Both               Graphics             -
+vkCmdSetDepthBounds                             Prim/Secnd    Both               Graphics             -
+vkCmdSetStencilCompareMask                      Prim/Secnd    Both               Graphics             -
+vkCmdSetStencilWriteMask                        Prim/Secnd    Both               Graphics             -
+vkCmdSetStencilReference                        Prim/Secnd    Both               Graphics             -
+vkCmdSetBlendConstants                          Prim/Secnd    Both               Graphics             -
+
+vkCmdDispatch                                   Prim/Secnd    Outside            Compute              Compute
+vkCmdDispatchIndirect                           Prim/Secnd    Outside            Compute              Compute
+vkCmdDispatchBase                               Prim/Secnd    Outside            Compute              -
+
+vkCmdBuildAccelerationStructuresKHR             Prim/Secnd    Outside            Compute              -
+vkCmdBuildAccelerationStructuresIndirectKHR     Prim/Secnd    Outside            Compute              -
+vkCmdWriteAccelerationStructuresPropertiesKHR   Prim/Secnd    Outside            Compute              -
+vkCmdCopyAccelerationStructureKHR               Prim/Secnd    Outside            Compute              -
+vkCmdCopyAccelerationStructureToMemoryKHR       Prim/Secnd    Outside            Compute              -
+vkCmdCopyMemoryToAccelerationStructureKHR       Prim/Secnd    Outside            Compute              -
+vkCmdTraceRaysKHR                               Prim/Secnd    Outside            Compute              -
+vkCmdTraceRaysIndirectKHR                       Prim/Secnd    Outside            Compute              -
+vkCmdBeginVideoCodingKHR                        Primary       Outside            Encode/Decode        -
+vkCmdEndVideoCodingKHR                          Primary       Outside            Encode/Decode        -
+vkCmdControlVideoCodingKHR                      Primary       Outside            Encode/Decode        -
+vkCmdDecodeVideoKHR                             Primary       Outside            Decode               -
+vkCmdEncodeVideoKHR                             Primary       Outside            Encode               -

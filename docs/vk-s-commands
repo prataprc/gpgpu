@@ -1,35 +1,276 @@
+* There are at least as many vertex input attributes as there are vertex input bindings.
+
+Command buffer state:
+
+- Bound Pipeline, Bound Descriptor sets.
+- Bound Vertex buffer, Bound Index buffer.
+- Push constants.
+- For Graphics pipeline:
+
+  * Shader info
+  * Vertex input state
+  * Input assembly state
+  * Tessellation state
+  * Viewport state
+  * Rasterization state
+  * Multisample state
+  * Depth stencil state
+  * Color blend state
+  * Dynamic state
+
+
+
+VkResult vkQueueSubmit(                     typedef struct VkSubmitInfo {
+    VkQueue               queue,                VkStructureType                sType;
+    uint32_t              submitCount,          const void*                    pNext;
+    const VkSubmitInfo*   pSubmits,             uint32_t                       waitSemaphoreCount;
+    VkFence               fence);               const VkSemaphore*             pWaitSemaphores;
+                                                const VkPipelineStageFlagBits* pWaitDstStageMask;
+                                                uint32_t                       commandBufferCount;
+                                                const VkCommandBuffer*         pCommandBuffers;
+                                                uint32_t                       signalSemaphoreCount;
+                                                const VkSemaphore*             pSignalSemaphores;
+                                            }
+
+
+
+
+
+
+
+vkQueueSubmit2
+vkQueueBindSparse
+vkQueuePresentKHR
+vkQueueWaitIdle
+
+void vkCmdBindIndexBuffer(                  typedef enum VkIndexType {
+    VkCommandBuffer  commandBuffer,             VK_INDEX_TYPE_UINT16,
+    VkBuffer         buffer,                    VK_INDEX_TYPE_UINT32,
+    VkDeviceSize     offset,                }
+    VkIndexType      indexType);
+
+void vkCmdBindVertexBuffers(
+    VkCommandBuffer      commandBuffer,
+    uint32_t             firstBinding,
+    uint32_t             bindingCount,
+    const VkBuffer*      pBuffers,
+    const VkDeviceSize*  pOffsets);
+
+void vkCmdDraw(
+    VkCommandBuffer  commandBuffer,
+    uint32_t         vertexCount,
+    uint32_t         instanceCount,
+    uint32_t         firstVertex,
+    uint32_t         firstInstance);
+
+void vkCmdDrawIndexed(
+    VkCommandBuffer  commandBuffer,
+    uint32_t         indexCount,
+    uint32_t         instanceCount,
+    uint32_t         firstIndex,
+    int32_t          vertexOffset,
+    uint32_t         firstInstance);
+
+void vkCmdDrawIndirect(                     typedef struct VkDrawIndirectCommand {
+    VkCommandBuffer  commandBuffer,             uint32_t    vertexCount;
+    VkBuffer         buffer,                    uint32_t    instanceCount;
+    VkDeviceSize     offset,                    uint32_t    firstVertex;
+    uint32_t         drawCount,                 uint32_t    firstInstance;
+    uint32_t         stride);               }
+
+void vkCmdDrawIndirectCount(
+    VkCommandBuffer  commandBuffer,
+    VkBuffer         buffer,
+    VkDeviceSize     offset,
+    VkBuffer         countBuffer,
+    VkDeviceSize     countBufferOffset,
+    uint32_t         maxDrawCount,
+    uint32_t         stride);
+
+void vkCmdDrawIndexedIndirect(              typedef struct VkDrawIndexedIndirectCommand {
+    VkCommandBuffer  commandBuffer,             uint32_t    indexCount;
+    VkBuffer         buffer,                    uint32_t    instanceCount;
+    VkDeviceSize     offset,                    uint32_t    firstIndex;
+    uint32_t         drawCount,                 int32_t     vertexOffset;
+    uint32_t         stride);                   uint32_t    firstInstance;
+                                            }
+void vkCmdDrawIndexedIndirectCount(
+    VkCommandBuffer  commandBuffer,
+    VkBuffer         buffer,
+    VkDeviceSize     offset,
+    VkBuffer         countBuffer,
+    VkDeviceSize     countBufferOffset,
+    uint32_t         maxDrawCount,
+    uint32_t         stride);
+
+
+
 void vkCmdExecuteCommands(
-    VkCommandBuffer          commandBuffer,
-    uint32_t                 commandBufferCount,
-    const VkCommandBuffer*   pCommandBuffers);
+    VkCommandBuffer         commandBuffer,
+    uint32_t                commandBufferCount,
+    const VkCommandBuffer*  pCommandBuffers);
 
 
-vkCmdSetEvent, vkCmdResetEvent
 
-void vkCmdWaitEvents(
-    VkCommandBuffer               commandBuffer,
-    uint32_t                      eventCount,
-    const VkEvent*                pEvents,
-    VkPipelineStageFlagBits       srcStageMask,
-    VkPipelineStageFlagBits       dstStageMask,
-    uint32_t                      memoryBarrierCount,
-    const VkMemoryBarrier*        pMemoryBarriers,
-    uint32_t                      bufferMemoryBarrierCount,
-    const VkBufferMemoryBarrier*  pBufferMemoryBarriers,
-    uint32_t                      imageMemoryBarrierCount,
-    const VkImageMemoryBarrier*   pImageMemoryBarriers);
+void vkCmdSetDeviceMask(
+    VkCommandBuffer         commandBuffer,
+    uint32_t                deviceMask);
 
-void vkCmdPipelineBarrier(
-    VkCommandBuffer                 commandBuffer,
-    VkPipelineStageFlagBits         srcStageMask,
-    VkPipelineStageFlagBits         dstStageMask,
-    VkDependencyFlags               dependencyFlags,
-    uint32_t                        memoryBarrierCount,
-    const VkMemoryBarrier*          pMemoryBarriers,
-    uint32_t                        bufferMemoryBarrierCount,
-    const VkBufferMemoryBarrier*    pBufferMemoryBarriers,
-    uint32_t                        imageMemoryBarrierCount,
+void vkCmdSetEvent(
+    VkCommandBuffer         commandBuffer,
+    VkEvent                 event,
+    VkPipelineStageFlagBits stageMask);
+
+void vkCmdResetEvent(
+    VkCommandBuffer         commandBuffer,
+    VkEvent                 event,
+    VkPipelineStageFlagBits stageMask);
+
+void vkCmdWaitEvents(                                               typedef enum VkPipelineStageFlagBits {
+    VkCommandBuffer               commandBuffer,                        VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+    uint32_t                      eventCount,                           VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT,
+    const VkEvent*                pEvents,                              VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
+    VkPipelineStageFlagBits       srcStageMask,                         VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
+    VkPipelineStageFlagBits       dstStageMask,                         VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT,
+    uint32_t                      memoryBarrierCount,                   VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT,
+    const VkMemoryBarrier*        pMemoryBarriers,                      VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT,
+    uint32_t                      bufferMemoryBarrierCount,             VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+    const VkBufferMemoryBarrier*  pBufferMemoryBarriers,                VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+    uint32_t                      imageMemoryBarrierCount,              VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+    const VkImageMemoryBarrier*   pImageMemoryBarriers);                VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                                                        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+void vkCmdPipelineBarrier(                                              VK_PIPELINE_STAGE_TRANSFER_BIT,
+    VkCommandBuffer                 commandBuffer,                      VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+    VkPipelineStageFlagBits         srcStageMask,                       VK_PIPELINE_STAGE_HOST_BIT,
+    VkPipelineStageFlagBits         dstStageMask,                       VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+    VkDependencyFlags               dependencyFlags,                    VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+    uint32_t                        memoryBarrierCount,                 VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
+    const VkMemoryBarrier*          pMemoryBarriers,                    VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,
+    uint32_t                        bufferMemoryBarrierCount,           VK_PIPELINE_STAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR,
+    const VkBufferMemoryBarrier*    pBufferMemoryBarriers,              VK_PIPELINE_STAGE_NONE_KHR = 0,
+    uint32_t                        imageMemoryBarrierCount,        }
     const VkImageMemoryBarrier*     pImageMemoryBarriers);
+
+
+
+void vkCmdBeginRenderPass(                                          typedef struct VkRenderPassBeginInfo {              typedef enum VkSubpassContents {
+    VkCommandBuffer                 commandBuffer,                      VkStructureType        sType;                       VK_SUBPASS_CONTENTS_INLINE,
+    const VkRenderPassBeginInfo*    pRenderPassBegin,                   const void*            pNext;                       VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS,
+    VkSubpassContents               contents);                          VkRenderPass           renderPass;              }
+                                                                        VkFramebuffer          framebuffer;             typedef union VkClearColorValue {
+                                                                        VkRect2D               renderArea;                  float       float32[4];
+                                                                        uint32_t               clearValueCount;             int32_t     int32[4];
+                                                                        const VkClearValue*    pClearValues;                uint32_t    uint32[4];
+                                                                    }                                                   }
+                                                                    typedef union VkClearValue {                        typedef union VkClearValue {
+                                                                        VkClearColorValue           color;                  VkClearColorValue           color;
+                                                                        VkClearDepthStencilValue    depthStencil;           VkClearDepthStencilValue    depthStencil;
+                                                                    }                                                   }
+
+
+void vkCmdBeginRenderPass2(                                         typedef struct VkSubpassBeginInfo {
+    VkCommandBuffer                 commandBuffer,                      VkStructureType      sType;
+    const VkRenderPassBeginInfo*    pRenderPassBegin,                   const void*          pNext;
+    const VkSubpassBeginInfo*       pSubpassBeginInfo);                 VkSubpassContents    contents;
+                                                                    }
+void vkCmdNextSubpass(
+    VkCommandBuffer                 commandBuffer,
+    VkSubpassContents               contents);
+
+void vkCmdNextSubpass2(                                             typedef struct VkSubpassEndInfo {
+    VkCommandBuffer                 commandBuffer,                      VkStructureType    sType;
+    const VkSubpassBeginInfo*       pSubpassBeginInfo,                  const void*        pNext;
+    const VkSubpassEndInfo*         pSubpassEndInfo);               }
+
+void vkCmdEndRenderPass(VkCommandBuffer commandBuffer);
+
+void vkCmdEndRenderPass2(
+    VkCommandBuffer                 commandBuffer,
+    const VkSubpassEndInfo*         pSubpassEndInfo);
+
+
+
+void vkCmdPushConstants(
+    VkCommandBuffer                 commandBuffer,
+    VkPipelineLayout                layout,
+    VkShaderStageFlags              stageFlags,
+    uint32_t                        offset,
+    uint32_t                        size,
+    const void*                     pValues);
+
+void vkCmdPushDescriptorSetWithTemplateKHR(
+    VkCommandBuffer                 commandBuffer,
+    VkDescriptorUpdateTemplate      descriptorUpdateTemplate,
+    VkPipelineLayout                layout,
+    uint32_t                        set,
+    const void*                     pData);
+
+void vkCmdPushDescriptorSetKHR(                                         typedef enum VkPipelineBindPoint {
+    VkCommandBuffer                 commandBuffer,                          VK_PIPELINE_BIND_POINT_GRAPHICS,
+    VkPipelineBindPoint             pipelineBindPoint,                      VK_PIPELINE_BIND_POINT_COMPUTE,
+    VkPipelineLayout                layout,                                 VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR,
+    uint32_t                        set,                                }
+    uint32_t                        descriptorWriteCount,
+    const VkWriteDescriptorSet*     pDescriptorWrites);
+
+typedef struct VkWriteDescriptorSet {
+    VkStructureType                  sType;
+    const void*                      pNext;
+    VkDescriptorSet                  dstSet;
+    uint32_t                         dstBinding;
+    uint32_t                         dstArrayElement;
+    uint32_t                         descriptorCount;
+    VkDescriptorType                 descriptorType;
+    const VkDescriptorImageInfo*     pImageInfo;
+    const VkDescriptorBufferInfo*    pBufferInfo;
+    const VkBufferView*              pTexelBufferView;
+}
+
+
+
+
+
+
+vkCmdBindPipeline
+vkCmdBindDescriptorSets
+vkCmdPushDescriptorSetKHR
+
+vkCmdBeginQuery
+vkCmdResetQueryPool
+vkCmdCopyQueryPoolResults
+vkCmdEndQuery
+
+vkCmdWriteTimestamp
+vkCmdWriteTimestamp2KHR
+vkCmdFillBuffer
+vkCmdUpdateBuffer
+vkCmdCopyBuffer
+vkCmdCopyBuffer2KHR
+vkCmdCopyImage
+vkCmdCopyImage2KHR
+vkCmdCopyBufferToImage
+vkCmdCopyImageToBuffer
+vkCmdCopyBufferToImage2KHR
+vkCmdCopyImageToBuffer2KHR
+
+vkCmdClearColorImage
+vkCmdClearDepthStencilImage
+vkCmdClearAttachments
+vkCmdBlitImage
+vkCmdBlitImage2KHR
+vkCmdResolveImage
+vkCmdResolveImage2KHR
+
+vkCmdSetViewport
+vkCmdSetFragmentShadingRateKHR
+vkCmdSetLineWidth
+vkCmdSetDepthBias
+vkCmdSetScissor
+vkCmdSetDepthBounds
+vkCmdSetStencilCompareMask
+vkCmdSetStencilWriteMask
+vkCmdSetStencilReference
+vkCmdSetBlendConstants
 
 
 

@@ -17,6 +17,9 @@
   * primitive order
   * dispatch order
   * rasterization order
+  * submission order
+  * pipeline order
+
 * Data is passed into and out of shaders using variables with 'input' or 'output' storage class.
 
 * Vertex Shader:
@@ -65,17 +68,23 @@ VK_PIPELINE_STAGE_2_PRE_RASTERIZATION_SHADERS_BIT_KHR
 VK_PIPELINE_STAGE_ALL_COMMANDS_BIT
 VK_PIPELINE_STAGE_2_ALL_TRANSFER_BIT_KHR
 
-* To destroy a shader module, call vkDestroyShaderModule.
+
+===== VkShaderModule
 
 VkResult vkCreateShaderModule(                              typedef struct VkShaderModuleCreateInfo {
     VkDevice                         device,                    VkStructureType              sType;
     const VkShaderModuleCreateInfo*  pCreateInfo,               const void*                  pNext;
-    const VkAllocationCallbacks*     pAllocator,              s VkShaderModuleCreateFlags    flags;
+    const VkAllocationCallbacks*     pAllocator,              x VkShaderModuleCreateFlags    flags;
     VkShaderModule*                  pShaderModule);            size_t                       codeSize;
                                                                 const uint32_t*              pCode;
                                                             }
+void vkDestroyShaderModule(
+    VkDevice                         device,
+    VkShaderModule                   shaderModule,
+    const VkAllocationCallbacks*     pAllocator);
 
 
+===== VkPipelineCache
 
 VkResult vkCreatePipelineCache(                                 typedef struct VkPipelineCacheCreateInfo {
     VkDevice                            device,                     VkStructureType               sType;
@@ -84,13 +93,102 @@ VkResult vkCreatePipelineCache(                                 typedef struct V
     VkPipelineCache*                    pPipelineCache);            size_t                        initialDataSize;
                                                                     const void*                   pInitialData;
                                                                 }
+VkResult vkGetPipelineCacheData(
+    VkDevice                            device,
+    VkPipelineCache                     pipelineCache,
+    size_t*                             pDataSize,
+    void*                               pData);
+
+VkResult vkMergePipelineCaches(
+    VkDevice                            device,
+    VkPipelineCache                     dstCache,
+    uint32_t                            srcCacheCount,
+    const VkPipelineCache*              pSrcCaches);
 
 
+===== VkPipelineLayout
+
+
+VkResult vkCreatePipelineLayout(                                typedef struct VkPipelineLayoutCreateInfo {                     typedef struct VkPushConstantRange {
+    VkDevice                            device,                     VkStructureType                 sType;                          VkShaderStageFlagBits     stageFlags;
+    const VkPipelineLayoutCreateInfo*   pCreateInfo,                const void*                     pNext;                          uint32_t                  offset;
+    const VkAllocationCallbacks*        pAllocator,               x VkPipelineLayoutCreateFlags     flags;                          uint32_t                  size;
+    VkPipelineLayout*                   pPipelineLayout);           uint32_t                        setLayoutCount;             }
+                                                                    const VkDescriptorSetLayout*    pSetLayouts;
+                                                                    uint32_t                        pushConstantRangeCount;
+                                                                    const VkPushConstantRange*      pPushConstantRanges;
+                                                                }
+
+void vkDestroyPipelineLayout(
+    VkDevice                            device,
+    VkPipelineLayout                    pipelineLayout,
+    const VkAllocationCallbacks*        pAllocator);
+
+
+
+
+===== VkPipeline
+
+vkCreateComputePipelines
+vkCreateGraphicsPipelines
+vkCmdBindPipeline
+vkCmdPipelineBarrier
+vkCmdPipelineBarrier2KHR
+vkDestroyPipeline
+
+
+VkComputePipelineCreateInfo
+VkGraphicsPipelineCreateInfo
+VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR
+VkPipeline
+VkPipelineBindPoint
+VkPipelineColorBlendAttachmentState
+VkPipelineColorBlendStateCreateFlags
+VkPipelineColorBlendStateCreateInfo
+VkPipelineCreateFlagBits
+VkPipelineCreateFlags
+VkPipelineDepthStencilStateCreateFlags
+VkPipelineDepthStencilStateCreateInfo
+VkPipelineDynamicStateCreateFlags
+VkPipelineDynamicStateCreateInfo
+VkPipelineExecutableInfoKHR
+VkPipelineExecutableInternalRepresentationKHR
+VkPipelineExecutablePropertiesKHR
+VkPipelineExecutableStatisticFormatKHR
+VkPipelineExecutableStatisticKHR
+VkPipelineExecutableStatisticValueKHR
+VkPipelineFragmentShadingRateStateCreateInfoKHR
+VkPipelineInfoKHR
+VkPipelineInputAssemblyStateCreateFlags
+VkPipelineInputAssemblyStateCreateInfo
+VkPipelineLayout
+VkPipelineLayoutCreateFlags
+VkPipelineLayoutCreateInfo
+VkPipelineLibraryCreateInfoKHR
+VkPipelineMultisampleStateCreateFlags
+VkPipelineMultisampleStateCreateInfo
+VkPipelineRasterizationStateCreateFlags
+VkPipelineRasterizationStateCreateInfo
+VkPipelineShaderStageCreateFlagBits
+VkPipelineShaderStageCreateFlags
+VkPipelineShaderStageCreateInfo
+VkPipelineStageFlagBits
+VkPipelineStageFlagBits2KHR
+VkPipelineStageFlags
+VkPipelineStageFlags2KHR
+VkPipelineTessellationDomainOriginStateCreateInfo
+VkPipelineTessellationDomainOriginStateCreateInfoKHR
+VkPipelineTessellationStateCreateFlags
+VkPipelineTessellationStateCreateInfo
+VkPipelineVertexInputStateCreateFlags
+VkPipelineVertexInputStateCreateInfo
+VkPipelineViewportStateCreateFlags
+VkPipelineViewportStateCreateInfo
 
 VkResult vkCreateGraphicsPipelines(                             typedef struct VkGraphicsPipelineCreateInfo {
     VkDevice                            device,                     VkStructureType                                  sType;
     VkPipelineCache                     pipelineCache,              const void*                                      pNext;
-    uint32_t                            createInfoCount,            VkPipelineCreateFlags                            flags;
+    uint32_t                            createInfoCount,            VkPipelineCreateFlagBits                         flags;
     const VkGraphicsPipelineCreateInfo* pCreateInfos,               uint32_t                                         stageCount;
     const VkAllocationCallbacks*        pAllocator,                 const VkPipelineShaderStageCreateInfo*           pStages;
     VkPipeline*                         pPipelines);                const VkPipelineVertexInputStateCreateInfo*      pVertexInputState;
@@ -154,7 +252,6 @@ VkResult vkCreateGraphicsPipelines(                             typedef struct V
                                                                                         VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY,
                                                                                         VK_PRIMITIVE_TOPOLOGY_PATCH_LIST,
                                                                                     }
-
 
 
     typedef struct VkPipelineTessellationStateCreateInfo {
@@ -268,45 +365,3 @@ VkResult vkCreateGraphicsPipelines(                             typedef struct V
                                                                         VK_DYNAMIC_STATE_STENCIL_REFERENCE = 8,
                                                                     }
 
-
-
-
-vkCmdBindPipeline
-vkCmdPipelineBarrier
-vkCmdPipelineBarrier2KHR
-
-vkCreatePipelineLayout
-vkCreateComputePipelines
-
-vkGetPipelineExecutableInternalRepresentationsKHR
-vkGetPipelineExecutablePropertiesKHR
-vkGetPipelineExecutableStatisticsKHR
-vkMergePipelineCaches
-
-VkComputePipelineCreateInfo
-VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR
-VkPipelineBindPoint
-VkPipelineCacheHeaderVersion
-VkPipelineColorBlendAttachmentState
-VkPipelineColorBlendStateCreateFlags
-VkPipelineColorBlendStateCreateInfo
-VkPipelineExecutableInfoKHR
-VkPipelineExecutableInternalRepresentationKHR
-VkPipelineExecutablePropertiesKHR
-VkPipelineExecutableStatisticFormatKHR
-VkPipelineExecutableStatisticKHR
-VkPipelineExecutableStatisticValueKHR
-VkPipelineFragmentShadingRateStateCreateInfoKHR
-VkPipelineInfoKHR
-VkPipelineLayout
-VkPipelineLayoutCreateFlags
-VkPipelineLayoutCreateInfo
-VkPipelineLibraryCreateInfoKHR
-VkPipelineStageFlagBits
-VkPipelineStageFlagBits2KHR
-VkPipelineStageFlags
-VkPipelineStageFlags2KHR
-VkPipelineTessellationDomainOriginStateCreateInfo
-VkPipelineTessellationDomainOriginStateCreateInfoKHR
-VkQueryPipelineStatisticFlagBits
-VkQueryPipelineStatisticFlags

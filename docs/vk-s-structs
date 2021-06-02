@@ -52,6 +52,14 @@ Image
                    video_encode_src, video_encode_dst, video_encode_dpb, video_decode_src, video_decode_dst, video_decode_dpb,
                    shader_ro_optimal, present_src, shared_present,
 
+Family of types
+
+`Vk*CreateInfo`, `Vk*Flags`, `Vk*FlagBit`,
+
+Family of functions
+
+`vkQueue*`, `vkCreate*`, `vkAllocate*`, `vkDestroy*`, `vkFree*`
+`vkGet*`, `vkEnumerate*`, `vkCmd*`
 
 Dispatchable and Non-Dispatchable Handles
 -----------------------------------------
@@ -154,7 +162,7 @@ void vkGetPhysicalDeviceProperties(                                 char        
     VkPhysicalDeviceProperties* pProperties);                       VkPhysicalDeviceLimits            limits;
                                                                     VkPhysicalDeviceSparseProperties  sparseProperties;
                                                                 }
-void vkGetPhysicalDeviceMemoryProperties(                       typedef struct VkPhysicalDeviceMemoryProperties {           typedef enum VkQueueFlags {
+void vkGetPhysicalDeviceMemoryProperties(                       typedef struct VkPhysicalDeviceMemoryProperties {           typedef enum VkQueueFlagBits {
     VkPhysicalDevice                    physicalDevice,             uint32_t        memoryTypeCount;                            VK_QUEUE_GRAPHICS_BIT,
     VkPhysicalDeviceMemoryProperties*   pMemoryProperties);         VkMemoryType    memoryTypes[VK_MAX_MEMORY_TYPES];           VK_QUEUE_COMPUTE_BIT,
                                                                     uint32_t        memoryHeapCount;                            VK_QUEUE_TRANSFER_BIT,
@@ -162,7 +170,7 @@ void vkGetPhysicalDeviceMemoryProperties(                       typedef struct V
                                                                 }                                                               VK_QUEUE_PROTECTED_BIT,
                                                                                                                                 VK_QUEUE_VIDEO_DECODE_BIT_KHR,
 void vkGetPhysicalDeviceQueueFamilyProperties(                  typedef struct VkQueueFamilyProperties {                        VK_QUEUE_VIDEO_ENCODE_BIT_KHR,
-    VkPhysicalDevice            physicalDevice,                     VkQueueFlags    queueFlags;                             }
+    VkPhysicalDevice            physicalDevice,                     VkQueueFlagBits queueFlags;                             }
     uint32_t*                   pQueueFamilyPropertyCount,          uint32_t        queueCount;
     VkQueueFamilyProperties*    pQueueFamilyProperties);            uint32_t        timestampValidBits;
                                                                     VkExtent3D      minImageTransferGranularity;
@@ -308,6 +316,44 @@ VkResult vkCreateFramebuffer(                           typedef struct VkFramebu
                                                             uint32_t                    layers;
                                                         }
 
+
+
+
+===== VkQueue
+
+* Before an application can present an image, the image’s layout must be transitioned to the VK_IMAGE_LAYOUT_PRESENT_SRC_KHR layout,
+  or for ashared presentable image the VK_IMAGE_LAYOUT_SHARED_PRESENT_KHR layout.
+
+VkQueue
+  enum VkDeviceQueueCreateFlagBits {
+    VK_DEVICE_QUEUE_CREATE_PROTECTED_BIT
+  }
+  queue-family
+  queue-index
+  queue-priority
+
+Before a fence or semaphore is signaled, it is guaranteed that any previously submitted queue operations have completed execution,
+and that memory writes from those queue operations are available to future queue operations. Waiting on a signaled semaphore or
+fence guarantees that previous writes that are available are also visible to subsequent commands.
+
+void vkGetDeviceQueue(
+    VkDevice     device,
+    uint32_t     queueFamilyIndex,
+    uint32_t     queueIndex,
+    VkQueue*     pQueue);
+
+VkResult vkQueuePresentKHR(                     typedef struct VkPresentInfoKHR {                   typedef struct VkSubmitInfo {
+    VkQueue                  queue,                 VkStructureType          sType;                     VkStructureType                sType;
+    const VkPresentInfoKHR*  pPresentInfo);         const void*              pNext;                     const void*                    pNext;
+                                                    uint32_t                 waitSemaphoreCount;        uint32_t                       waitSemaphoreCount;
+VkResult vkQueueSubmit(                             const VkSemaphore*       pWaitSemaphores;           const VkSemaphore*             pWaitSemaphores;
+    VkQueue               queue,                    uint32_t                 swapchainCount;            const VkPipelineStageFlagBits* pWaitDstStageMask;
+    uint32_t              submitCount,              const VkSwapchainKHR*    pSwapchains;               uint32_t                       commandBufferCount;
+    const VkSubmitInfo*   pSubmits,                 const uint32_t*          pImageIndices;             const VkCommandBuffer*         pCommandBuffers;
+    VkFence               fence);                   VkResult*                pResults;                  uint32_t                       signalSemaphoreCount;
+                                                }                                                       const VkSemaphore*             pSignalSemaphores;
+                                                                                                    }
+VkResult vkQueueWaitIdle(VkQueue   queue);
 
 
 
@@ -507,21 +553,19 @@ VkResult vkBeginCommandBuffer(                          typedef struct VkCommand
                                         VK_QUERY_CONTROL_PRECISE_BIT                                VK_QUERY_PIPELINE_STATISTIC_COMPUTE_SHADER_INVOCATIONS_BIT,
                                     }                                                           }
 
+VkResult vkEndCommandBuffer(VkCommandBuffer commandBuffer);
 
 void vkCmdExecuteCommands(
     VkCommandBuffer            commandBuffer,
     uint32_t                   commandBufferCount,
     const VkCommandBuffer*     pCommandBuffers);
 
-
-VkResult vkEndCommandBuffer(VkCommandBuffer commandBuffer);
-
-
 void vkFreeCommandBuffers(
     VkDevice                device,
     VkCommandPool           commandPool,
     uint32_t                commandBufferCount,
     const VkCommandBuffer*  pCommandBuffers);
+
 
 
 ===== VkBuffer
@@ -751,6 +795,44 @@ VkResult vkCreateImageView(                                 typedef struct VkIma
 void vkDestroyImageView(                                                                                            }
     VkDevice                       device,
     VkImageView                    imageView,
+    const VkAllocationCallbacks*   pAllocator);
+
+
+
+===== VkSampler
+
+VkResult vkCreateSampler(                           typedef struct VkSamplerCreateInfo {                        typedef enum VkFilter {
+    VkDevice                       device,              VkStructureType         sType;                              VK_FILTER_NEAREST,
+    const VkSamplerCreateInfo*     pCreateInfo,         const void*             pNext;                              VK_FILTER_LINEAR,
+    const VkAllocationCallbacks*   pAllocator,        x VkSamplerCreateFlags    flags;                          }
+    VkSampler*                     pSampler);           VkFilter                magFilter;                      typedef enum VkSamplerMipmapMode {
+                                                        VkFilter                minFilter;                          VK_SAMPLER_MIPMAP_MODE_NEAREST,
+                                                        VkSamplerMipmapMode     mipmapMode;                         VK_SAMPLER_MIPMAP_MODE_LINEAR,
+                                                        VkSamplerAddressMode    addressModeU;                   }
+                                                        VkSamplerAddressMode    addressModeV;                   typedef enum VkSamplerAddressMode {
+                                                        VkSamplerAddressMode    addressModeW;                       VK_SAMPLER_ADDRESS_MODE_REPEAT,
+                                                        float                   mipLodBias;                         VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT,
+                                                        VkBool32                anisotropyEnable;                   VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+                                                        float                   maxAnisotropy;                      VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
+                                                        VkBool32                compareEnable;                      VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE,
+                                                        VkCompareOp             compareOp;                      }
+                                                        float                   minLod;                         typedef enum VkCompareOp {
+                                                        float                   maxLod;                             VK_COMPARE_OP_NEVER,
+                                                        VkBorderColor           borderColor;                        VK_COMPARE_OP_LESS,
+                                                        VkBool32                unnormalizedCoordinates;            VK_COMPARE_OP_EQUAL,
+                                                    }                                                               VK_COMPARE_OP_LESS_OR_EQUAL,
+                                                    typedef enum VkBorderColor {                                    VK_COMPARE_OP_GREATER,
+                                                        VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK,                    VK_COMPARE_OP_NOT_EQUAL,
+                                                        VK_BORDER_COLOR_INT_TRANSPARENT_BLACK,                      VK_COMPARE_OP_GREATER_OR_EQUAL,
+                                                        VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK,                         VK_COMPARE_OP_ALWAYS,
+                                                        VK_BORDER_COLOR_INT_OPAQUE_BLACK,                       }
+                                                        VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE,
+                                                        VK_BORDER_COLOR_INT_OPAQUE_WHITE,
+                                                    }
+
+void vkDestroySampler(
+    VkDevice                       device,
+    VkSampler                      sampler,
     const VkAllocationCallbacks*   pAllocator);
 
 

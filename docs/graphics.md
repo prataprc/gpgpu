@@ -38,3 +38,21 @@ In linear algebra,
   a basis is set of linearly independent vectors.
   in a linear combination (aka span) can represent a plan (2-axes) or space (3-axes)
 psuedo-vectors and surface-normals.
+
+
+GPU
+---
+
+* vertice-op -> primitive-assembly -> rasterization - fragment-op - composition
+  * and, one or more light-source.
+  * and, viewer's position and orientation.
+
+* hardware spritting (TBD)
+* scaneline rendering (TBD)
+* tiled rendering (TBD)
+* forward rendering (TBD)
+* deferred rendering (TBD)
+* feed-forward graphics pipeline (TBD)
+* SPMD - Single-program-multiple-data
+* SPIRV - Intermediate IR for GPU.
+* GLSL - C like Graphics Library Shader Language

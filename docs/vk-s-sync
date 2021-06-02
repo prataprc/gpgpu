@@ -5,9 +5,11 @@ Semaphore signal operation                  two sets of operations defined by th
 Fence wait operation
 Fence signal operation
 
+Primitive order
 Submission order
 Pipeline order
 Rasterization order
+Dispatch order
 
 A memory dependency is an execution dependency which includes availability and visibility operations such that:
 * The first set of operations happens-before the availability operation.

@@ -1,0 +1,246 @@
+Instance, Device, Queue
+=======================
+
+VkDevice                                                    | vkAcquireProfilingLockKHR
+vkReleaseProfilingLockKHR
+vkGetQueryPoolResults
+
+vkCreateDevice
+vkCreateInstance
+vkDeviceWaitIdle
+vkEnumerateDeviceExtensionProperties
+vkEnumerateDeviceLayerProperties
+vkEnumerateInstanceExtensionProperties
+vkEnumerateInstanceLayerProperties
+vkEnumerateInstanceVersion
+vkEnumeratePhysicalDeviceGroups
+vkEnumeratePhysicalDeviceGroupsKHR
+vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR
+vkEnumeratePhysicalDevices
+vkGetBufferDeviceAddressKHR
+vkGetDeviceMemoryCommitment
+vkGetDeviceMemoryOpaqueCaptureAddress
+vkGetDeviceMemoryOpaqueCaptureAddressKHR
+vkGetDeviceQueue
+vkGetDeviceQueue2
+vkGetInstanceProcAddr
+vkGetPhysicalDeviceFeatures
+vkGetPhysicalDeviceFeatures2
+vkGetPhysicalDeviceFormatProperties
+vkGetPhysicalDeviceFormatProperties2
+vkGetPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR
+vkGetPhysicalDeviceQueueFamilyProperties
+vkGetPhysicalDeviceQueueFamilyProperties2
+vkGetPhysicalDeviceQueueFamilyProperties2KHR
+
+vkGetPhysicalDeviceFragmentShadingRatesKHR
+vkGetPhysicalDeviceImageFormatProperties
+vkGetPhysicalDeviceImageFormatProperties2
+vkGetPhysicalDeviceMemoryProperties
+vkGetPhysicalDeviceMemoryProperties2
+vkGetPhysicalDeviceMemoryProperties2KHR
+vkGetPhysicalDevicePresentRectanglesKHR
+vkGetPhysicalDeviceProperties
+vkGetPhysicalDeviceProperties2
+vkGetPhysicalDeviceProperties2KHR
+vkGetRenderAreaGranularity
+vkGetSemaphoreCounterValue
+
+vkQueuePresentKHR
+vkQueueSubmit
+vkQueueSubmit2KHR
+vkQueueWaitIdle
+
+vkCreateQueryPool
+vkResetQueryPool
+
+Memory and resources
+====================
+
+VkDevice                                                            | vkAllocateMemory              VkDeviceMemory
+
+vkCreateBuffer
+vkCreateBufferView
+vkCreateImage
+vkCreateImageView
+vkUnmapMemory
+vkFlushMappedMemoryRanges
+vkFreeMemory
+vkGetBufferDeviceAddress
+vkGetBufferMemoryRequirements
+vkGetBufferMemoryRequirements2
+vkGetBufferMemoryRequirements2KHR
+vkGetBufferOpaqueCaptureAddress
+vkGetBufferOpaqueCaptureAddressKHR
+vkGetImageMemoryRequirements
+vkGetImageMemoryRequirements2
+vkGetImageSubresourceLayout
+vkInvalidateMappedMemoryRanges
+vkMapMemory
+
+VkDevice, VkBuffer, VkDeviceMemory                                  | vkBindBufferMemory
+VkDevice, VkImage, VkDeviceMemory                                   | vkBindImageMemory
+vkBindBufferMemory2
+vkBindImageMemory2
+
+Presentations
+=============
+
+VkDevice, VkSwapchain   ->S  ->F                        | vkAcquireNextImage2KHR        VkImage
+VkDevice, VkSwapchain   ->S  ->F                        | vkAcquireNextImageKHR         VkImage
+
+vkGetSwapchainImagesKHR
+vkGetSwapchainStatusKHR
+vkCreateSwapchainKHR
+vkGetPhysicalDeviceSurfaceCapabilities2KHR
+vkGetPhysicalDeviceSurfaceCapabilitiesKHR
+vkGetPhysicalDeviceSurfaceFormats2KHR
+vkGetPhysicalDeviceSurfaceFormatsKHR
+vkGetPhysicalDeviceSurfacePresentModesKHR
+vkGetPhysicalDeviceSurfaceSupportKHR
+
+vkCreateFramebuffer
+
+DescriptorSets
+==============
+
+VkDevice, VkDescriptorPool, Vec<VkDescriptorSetLayout>  | vkAllocateDescriptorSets      Vec<VkDescriptorSetLayout>
+
+vkCreateDescriptorPool
+vkCreateDescriptorSetLayout
+vkCreateDescriptorUpdateTemplate
+vkGetDescriptorSetLayoutSupport
+vkGetDescriptorSetLayoutSupportKHR
+vkResetDescriptorPool
+vkUpdateDescriptorSetWithTemplate
+vkUpdateDescriptorSets
+vkFreeDescriptorSets
+
+Pipelines
+=========
+
+vkCreateComputePipelines
+vkCreateGraphicsPipelines
+vkCreatePipelineCache
+vkCreatePipelineLayout
+vkCreateRenderPass
+vkCreateRenderPass2
+vkCreateSampler
+vkCreateSamplerYcbcrConversion
+vkCreateShaderModule
+vkGetPipelineCacheData
+vkGetPipelineExecutableInternalRepresentationsKHR
+vkGetPipelineExecutablePropertiesKHR
+vkGetPipelineExecutableStatisticsKHR
+vkMergePipelineCaches
+
+Synchronisation
+===============
+
+vkCreateSemaphore
+vkSignalSemaphore
+vkWaitSemaphores
+vkWaitSemaphoresKHR
+vkCreateEvent
+vkGetEventStatus
+vkResetEvent
+vkSetEvent
+vkCreateFence
+vkGetFenceFdKHR
+vkGetFenceStatus
+vkResetFences
+vkWaitForFences
+
+CommandBuffer
+=============
+
+VkDevice, queue-family                                      | vkCreateCommandPool           VkCommandPool
+VkDevice, VkCommandPool                                     | vkResetCommandPool
+VkDevice, VkCommandPool                                     | vkTrimCommandPool
+
+VkDevice, VkCommandPool                                     | vkAllocateCommandBuffers      Vec<VkCommandBuffer>
+VkCommandBuffer, [VkRenderPass, subpass], [VkFramebuffer]   | vkBeginCommandBuffer
+VkCommandBuffer, VkQueryPool                                | vkCmdBeginQuery
+VkCommandBuffer, VkRenderPass, VkFramebuffer                | vkCmdBeginRenderPass
+VkCommandBuffer                                             | vkCmdSetBlendConstants
+VkCommandBuffer                                             | vkCmdSetDepthBias
+VkCommandBuffer                                             | vkCmdSetDepthBounds
+VkCommandBuffer                                             | vkCmdSetDeviceMask
+VkCommandBuffer                                             | vkCmdSetLineWidth
+VkCommandBuffer                                             | vkCmdSetScissor
+VkCommandBuffer                                             | vkCmdSetStencilCompareMask
+VkCommandBuffer                                             | vkCmdSetStencilReference
+VkCommandBuffer                                             | vkCmdSetStencilWriteMask
+VkCommandBuffer                                             | vkCmdSetViewport
+VkCommandBuffer, VkPipelineLayout, Vec<VkDescriptorSet>     | vkCmdBindDescriptorSets
+VkCommandBuffer, VkPipeline                                 | vkCmdBindPipeline
+VkCommandBuffer, VkBuffer                                   | vkCmdBindIndexBuffer
+VkCommandBuffer, Vec<VkBuffer>                              | vkCmdBindVertexBuffers
+VkCommandBuffer, VkImage, VkImage                           | vkCmdBlitImage
+VkCommandBuffer, Vec<VkClearAttachment>, Vec<VkClearRect>   | vkCmdClearAttachments
+VkCommandBuffer, VkImage                                    | vkCmdClearColorImage
+VkCommandBuffer, VkImage                                    | vkCmdClearDepthStencilImage
+VkCommandBuffer, VkBuffer                                   | vkCmdFillBuffer
+VkCommandBuffer, VkBuffer                                   | vkCmdUpdateBuffer
+VkCommandBuffer, VkBuffer, VkBuffer                         | vkCmdCopyBuffer
+VkCommandBuffer, VkBuffer, VkImage                          | vkCmdCopyBufferToImage
+VkCommandBuffer, VkImage, VkImage                           | vkCmdCopyImage
+VkCommandBuffer, VkImage, VkBuffer                          | vkCmdCopyImageToBuffer
+VkCommandBuffer, VkQueryPool, VkBuffer                      | vkCmdCopyQueryPoolResults
+VkCommandBuffer, VkQueryPool                                | vkCmdResetQueryPool
+VkCommandBuffer, VkQueryPool                                | vkCmdWriteTimestamp
+VkCommandBuffer, VkQueryPool                                | vkCmdEndQuery
+VkCommandBuffer                                             | vkCmdDraw
+VkCommandBuffer                                             | vkCmdDrawIndexed
+VkCommandBuffer, VkBuffer                                   | vkCmdDrawIndexedIndirect
+VkCommandBuffer, VkBuffer, VkBuffer                         | vkCmdDrawIndexedIndirectCount
+VkCommandBuffer, VkBuffer                                   | vkCmdDrawIndirect
+VkCommandBuffer, VkBuffer, VkBuffer                         | vkCmdDrawIndirectCount
+VkCommandBuffer                                             | vkCmdEndRenderPass
+VkCommandBuffer, Vec<VkCommandBuffer>                       | vkCmdExecuteCommands
+VkCommandBuffer                                             | vkCmdNextSubpass
+VkCommandBuffer                                             | vkCmdPipelineBarrier
+VkCommandBuffer, VkPipelineLayout                           | vkCmdPushConstants
+VkCommandBuffer, VkPipelineLayout, VkDescriptorSet          | vkCmdPushDescriptorSetKHR
+VkCommandBuffer, VkDescriptorUpdateTemplate, VkPipelineLayout | vkCmdPushDescriptorSetWithTemplateKHR
+VkCommandBuffer, VkEvent                                    | vkCmdResetEvent
+VkCommandBuffer, VkEvent                                    | vkCmdSetEvent
+VkCommandBuffer, VkEvent                                    | vkCmdWaitEvents
+VkCommandBuffer, VkImage, VkImage                           | vkCmdResolveImage
+VkCommandBuffer                                             | vkEndCommandBuffer
+VkCommandBuffer                                             | vkResetCommandBuffer
+VkDevice, VkCommandPool, Vec<VkCommandBuffer>               | vkFreeCommandBuffers
+
+------------------
+
+vkDestroyBuffer
+vkDestroyBufferView
+vkDestroyCommandPool
+vkDestroyDescriptorPool
+vkDestroyDescriptorSetLayout
+vkDestroyDescriptorUpdateTemplate
+vkDestroyDescriptorUpdateTemplateKHR
+vkDestroyDevice
+vkDestroyEvent
+vkDestroyFence
+vkDestroyFramebuffer
+vkDestroyImage
+vkDestroyImageView
+vkDestroyInstance
+vkDestroyPipeline
+vkDestroyPipelineCache
+vkDestroyPipelineLayout
+vkDestroyQueryPool
+vkDestroyRenderPass
+vkDestroySampler
+vkDestroySamplerYcbcrConversion
+vkDestroySemaphore
+vkDestroyShaderModule
+vkDestroySurfaceKHR
+vkDestroySwapchainKHR
+
+vkCreateDeferredOperationKHR
+vkDeferredOperationJoinKHR
+vkDestroyDeferredOperationKHR
+vkGetDeferredOperationMaxConcurrencyKHR
+vkGetDeferredOperationResultKHR

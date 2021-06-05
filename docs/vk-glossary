@@ -1,3 +1,13 @@
+Vulkan Dispatchable object (VkInstance, VkPhysicalDevice, VkDevice, VkQueue, VkCommandBuffer)
+Vulkan object (VkDeviceMemory, VkSurface, VkSwapchain, VkSurface)
+Vulkan object (VkRenderPass, VkFrameBuffer)
+Vulkan object (VkBuffer, VkBufferView, VkImage, VkImageView, VkSampler)
+Vulkan object (VkCommanPool, VkQueryPool)
+Vulkan object (VkShaderModule, VkPipelineLayout, VkPipelineCache, VkPileline)
+Vulkan object (VkFence, VkSemaphore, VkEvent)
+Vulkan object (VkDescriptorLayout, VkDescriptorUpdateTemplate, VkDescriptorPool, VkDescriptorSet)
+Vulkan resources (Buffer, Image, ???)
+
 Accessible (Descriptor Binding)
 Acquire Operation (Resource)
 Adjacent Vertex

@@ -1,105 +1,112 @@
-Instance, Device, Queue
-=======================
+VkMemoryHeap, VkMemoryType, VkRect2D, VkOffset2D, VkExtent2D, VkExtent3D
 
-VkDevice                                                    | vkAcquireProfilingLockKHR
-vkReleaseProfilingLockKHR
-vkGetQueryPoolResults
+timeout - uint64
+layers, extensions - String
+qf - queue-family
+qc - queue-count
+qp - queue-priority
+qi - queue-index
+ext2 - VkExtent2D
+ext3 - VkExtent3D
+iCr - VkImageCreateFlagBits
+iUsg - VkImageUsageFlagBits
+iTyp - VkImageType
+iTil - VkImageTiling
+layout - VkImageLayout
+image-sub-range - VkImageSubresourceRange
+image-sub - VkImageSubresource
+lvls - mip-levels
+lyrs - array-layers
+sub-layout - VkSubresourceLayout
+smpl - VkSampleCountFlagBits
+cs - VkColorSpaceKHR
+ca - VkCompositeAlphaFlagBitsKHR
+shrg - VkSharingMode
+vCr - VkImageViewCreateFlagBits, VkBufferViewCreateFlagBits
+vTyp - VkBufferViewTyp, VkImageViewType
+swizzling - VkComponentMapping
+bCr - VkBufferCreateFlagBits
+bUsg - VkBufferUsageFlagBits
+present - VkPresentModeKHR
+trfm - VkSurfaceTransformFlagBitsKHR
 
-vkCreateDevice
-vkCreateInstance
-vkDeviceWaitIdle
-vkEnumerateDeviceExtensionProperties
-vkEnumerateDeviceLayerProperties
-vkEnumerateInstanceExtensionProperties
-vkEnumerateInstanceLayerProperties
-vkEnumerateInstanceVersion
-vkEnumeratePhysicalDeviceGroups
-vkEnumeratePhysicalDeviceGroupsKHR
-vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR
-vkEnumeratePhysicalDevices
-vkGetBufferDeviceAddressKHR
-vkGetDeviceMemoryCommitment
-vkGetDeviceMemoryOpaqueCaptureAddress
-vkGetDeviceMemoryOpaqueCaptureAddressKHR
-vkGetDeviceQueue
-vkGetDeviceQueue2
-vkGetInstanceProcAddr
-vkGetPhysicalDeviceFeatures
-vkGetPhysicalDeviceFeatures2
-vkGetPhysicalDeviceFormatProperties
-vkGetPhysicalDeviceFormatProperties2
-vkGetPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR
-vkGetPhysicalDeviceQueueFamilyProperties
-vkGetPhysicalDeviceQueueFamilyProperties2
-vkGetPhysicalDeviceQueueFamilyProperties2KHR
+Instance, PhysicalDevice
+========================
 
-vkGetPhysicalDeviceFragmentShadingRatesKHR
-vkGetPhysicalDeviceImageFormatProperties
-vkGetPhysicalDeviceImageFormatProperties2
-vkGetPhysicalDeviceMemoryProperties
-vkGetPhysicalDeviceMemoryProperties2
-vkGetPhysicalDeviceMemoryProperties2KHR
-vkGetPhysicalDevicePresentRectanglesKHR
-vkGetPhysicalDeviceProperties
-vkGetPhysicalDeviceProperties2
-vkGetPhysicalDeviceProperties2KHR
-vkGetRenderAreaGranularity
-vkGetSemaphoreCounterValue
+                                                                                            | vkEnumerateInstanceVersion                => Version
+                                                                                            | vkEnumerateInstanceLayerProperties        => Vec<VkLayerProperties>
+layer                                                                                       | vkEnumerateInstanceExtensionProperties    => Vec<VkExtensionProperties>
 
-vkQueuePresentKHR
-vkQueueSubmit
-vkQueueSubmit2KHR
-vkQueueWaitIdle
+ApplicationInfo, layers, extensions                                                         | vkCreateInstance                          => VkInstance
+VkInstance                                                                                  | vkEnumeratePhysicalDeviceGroups           => Vec<VkPhysicalDeviceGroupProperties>
+VkInstance, name                                                                            | vkGetInstanceProcAddr                     => *func
 
-vkCreateQueryPool
-vkResetQueryPool
+VkInstance                                                                                  | vkEnumeratePhysicalDevices                => Vec<VkPhysicalDevice>
+VkPhysicalDevice                                                                            | vkGetPhysicalDeviceProperties             => VkPhysicalDeviceProperties
+VkPhysicalDevice                                                                            | vkGetPhysicalDeviceFeatures               => VkPhysicalDeviceFeatures
+VkPhysicalDevice                                                                            | vkGetPhysicalDeviceMemoryProperties       => VkPhysicalDeviceMemoryProperties
+VkPhysicalDevice, layer                                                                     | vkEnumerateDeviceExtensionProperties      => Vec<VkExtensionProperties>
+VkPhysicalDevice                                                                            | vkEnumerateDeviceLayerProperties          => Vec<VkLayerProperties>
+VkPhysicalDevice                                                                            | vkGetPhysicalDeviceFormatProperties       => Vec<VkFormatProperties>
+VkPhysicalDevice                                                                            | vkGetPhysicalDeviceQueueFamilyProperties  => Vec<VkQueueFamilyProperties>
+VkPhysicalDevice, VkFormat, iTyp, iTil, iUsg, iCr                                           | vkGetPhysicalDeviceImageFormatProperties  => Vec<VkImageFormatProperties>
+VkPhysicalDevice, VkSurface                                                                 | vkGetPhysicalDevicePresentRectanglesKHR   => Vec<VkRect2D>
+
+VkDevice, VkQueue
+=================
+
+VkPhysicalDevice, Vec<(qf, qc, qp)>, layers, extensions, VkPhysicalDeviceFeatures           | vkCreateDevice                        => VkDevice
+VkDevice, VkDeviceMemory                                                                    | vkGetDeviceMemoryOpaqueCaptureAddress => uint64
+VkDevice, qf, qi                                                                            | vkGetDeviceQueue                      => VkQueue
+VkDevice                                                                                    | vkDeviceWaitIdle
+VkDevice, timeout                                                                           | vkAcquireProfilingLockKHR
+VkDevice                                                                                    | vkReleaseProfilingLockKHR
+VkDevice, VkQueryPool, (firstQ, count)                                                      | vkGetQueryPoolResults                 => pData
+VkDevice, VkBuffer                                                                          | vkGetBufferDeviceAddress              => VkDeviceAddress
+VkDevice, VkBuffer                                                                          | vkGetBufferOpaqueCaptureAddress       => uint64
+VkDevice, VkRenderPass                                                                      | vkGetRenderAreaGranularity            => VkExtent2D
+VkDevice, VkSemaphore                                                                       | vkGetSemaphoreCounterValue            => uint64
+VkDevice, VkQueryType, qc, VkQueryPipelineStatistic                                         | vkCreateQueryPool
+VkDevice, VkQueryPool, (firstQ, count)                                                      | vkResetQueryPool
+VkQueue, Vec<VkSempahore>, Vec<VkSwapchain>, Vec<image-index>                               | vkQueuePresentKHR
+VkQueue, Vec<(Vec<VkSemaphore>, pipe-stage, Vec<CommandBuffer>, Vec<VkSemaphore>)>, VkFence | vkQueueSubmit
 
 Memory and resources
 ====================
 
-VkDevice                                                            | vkAllocateMemory              VkDeviceMemory
+VkDevice  VkMemoryType, size                                                                | vkAllocateMemory              VkDeviceMemory
+VkDevice, VkDeviceMemory, offset, size                                                      | vkMapMemory                   void **
+VkDevice, VkDeviceMemory                                                                    | vkUnmapMemory
+VkDevice, Vec<(VkDeviceMemory, offset, size)>                                               | vkInvalidateMappedMemoryRanges
+VkDevice, Vec<(VkDeviceMemory, offset, size)>                                               | vkFlushMappedMemoryRanges
+VkDevice, VkDeviceMemory                                                                    | vkFreeMemory
 
-vkCreateBuffer
-vkCreateBufferView
-vkCreateImage
-vkCreateImageView
-vkUnmapMemory
-vkFlushMappedMemoryRanges
-vkFreeMemory
-vkGetBufferDeviceAddress
-vkGetBufferMemoryRequirements
-vkGetBufferMemoryRequirements2
-vkGetBufferMemoryRequirements2KHR
-vkGetBufferOpaqueCaptureAddress
-vkGetBufferOpaqueCaptureAddressKHR
-vkGetImageMemoryRequirements
-vkGetImageMemoryRequirements2
-vkGetImageSubresourceLayout
-vkInvalidateMappedMemoryRanges
-vkMapMemory
+VkDevice, bCr, bUsg, size                                                                   | vkCreateBuffer                VkBuffer
+VkDevice, VkFormat, iCr, iUsg, iTyp, iTil, ext3, smpl, shrg, lvls, lyrs, qf, layout         | vkCreateImage                 VkImage
+VkDevice, VkBuffer, vCr, VkFormat, offset, range                                            | vkCreateBufferView            BufferView
+VkDevice, VkImage, VkFormat, vCr, vTyp, swizzling, image-sub-range                          | vkCreateImageView
+VkDevice, VkBuffer, VkDeviceMemory, offset                                                  | vkBindBufferMemory
+VkDevice, VkImage, VkDeviceMemory, offset                                                   | vkBindImageMemory
 
-VkDevice, VkBuffer, VkDeviceMemory                                  | vkBindBufferMemory
-VkDevice, VkImage, VkDeviceMemory                                   | vkBindImageMemory
-vkBindBufferMemory2
-vkBindImageMemory2
+VkDevice, VkImage, image-sub                                                                | vkGetImageSubresourceLayout   sub-layout
+VkDevice, VkBuffer                                                                          | vkGetBufferMemoryRequirements (size, align, typ)
+VkDevice, VkImage                                                                           | vkGetImageMemoryRequirements  (size, align, typ)
+
 
 Presentations
 =============
 
-VkDevice, VkSwapchain   ->S  ->F                        | vkAcquireNextImage2KHR        VkImage
-VkDevice, VkSwapchain   ->S  ->F                        | vkAcquireNextImageKHR         VkImage
 
-vkGetSwapchainImagesKHR
-vkGetSwapchainStatusKHR
-vkCreateSwapchainKHR
-vkGetPhysicalDeviceSurfaceCapabilities2KHR
-vkGetPhysicalDeviceSurfaceCapabilitiesKHR
-vkGetPhysicalDeviceSurfaceFormats2KHR
-vkGetPhysicalDeviceSurfaceFormatsKHR
-vkGetPhysicalDeviceSurfacePresentModesKHR
-vkGetPhysicalDeviceSurfaceSupportKHR
+VkPhysicalDevice, VkSurface                                                                 | vkGetPhysicalDeviceSurfaceCapabilitiesKHR     VkSurfaceCapabilitiesKHR
+VkPhysicalDevice, VkSurface                                                                 | vkGetPhysicalDeviceSurfaceFormatsKHR          Vec<VkSurfaceFormatKHR>
+VkPhysicalDevice, VkSurface                                                                 | vkGetPhysicalDeviceSurfacePresentModesKHR     Vec<VkPresentModeKHR>
+VkPhysicalDevice, VkSurface, qf                                                             | vkGetPhysicalDeviceSurfaceSupportKHR          bool
+VkDevice, VkSurface, VkFormat, cs, present, ext2, iUsg, trfm, shrg, lyrs, minimg, qf, ca    | vkCreateSwapchainKHR                          VkSwapchain
+VkDevice, VkSwapchain                                                                       | vkGetSwapchainImagesKHR                       Vec<VkImage>
+VkDevice, VkSwapchain, VkSemaphore, VkFence, timeout                                        | vkAcquireNextImageKHR                         VkImage
 
-vkCreateFramebuffer
+VkDevice, VkRenderPass, flags, Vec<VkImageView>, width, height, layers                      | vkCreateFramebuffer                           Vec<VkFrameBuffer>
+
 
 DescriptorSets
 ==============
@@ -119,7 +126,8 @@ vkFreeDescriptorSets
 Pipelines
 =========
 
-vkCreateComputePipelines
+VkDevice, VkPipelineLayout, Vec<VkShaderModule>, parent-pipe                    | vkCreateComputePipelines      Vec<VkComputePipeline>
+
 vkCreateGraphicsPipelines
 vkCreatePipelineCache
 vkCreatePipelineLayout

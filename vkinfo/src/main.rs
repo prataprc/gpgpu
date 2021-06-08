@@ -49,12 +49,17 @@ fn main() {
 }
 
 fn info_surface(_opts: Opt) {
-    use crate::info::surface_capabilities;
+    use crate::info::{
+        image_tiling_list, image_type_list, image_usage_list, surface_capabilities,
+        ImageFormat,
+    };
+    use vulkano::format::Format;
 
     let force_color = false;
 
     let vobj = Vulkan::new();
     let pds = vobj.as_physical_devices();
+    let pd = pds[DEFAULT_PHYDEV];
 
     let event_loop = EventLoop::new();
     let surface = WindowBuilder::new()
@@ -64,12 +69,82 @@ fn info_surface(_opts: Opt) {
     match pds.len() {
         0 => (),
         _ => {
-            let caps = surface_capabilities(pds[DEFAULT_PHYDEV], &surface);
+            let caps = surface_capabilities(pd, &surface);
             let mut table = make_table(&caps);
             table.set_titles(row![Fy => "Surface-capability", "Value"]);
             table.print_tty(force_color);
         }
     }
+    println!();
+
+    let formats: Vec<Format> = surface
+        .capabilities(pd)
+        .unwrap()
+        .supported_formats
+        .iter()
+        .map(|(f, _)| f.clone())
+        .collect();
+
+    make_table(&formats).print_tty(force_color);
+    println!();
+
+    // format features
+    println!("{}", "Format supported features".red());
+    let rows: Vec<Row> = {
+        formats
+            .iter()
+            .map(|f| (f, f.properties(pd)))
+            .filter_map(|(f, p)| {
+                let mut row = p.to_row();
+                let mut iter = row.iter();
+                iter.next();
+                match iter.any(|c| c.get_content() != "-") {
+                    true => {
+                        row.insert_cell(0, From::from(&format!("{:?}", f)));
+                        Some(row)
+                    }
+                    false => None,
+                }
+            })
+            .collect()
+    };
+    let mut table = Table::init(rows);
+    table.set_titles(FormatProperties::to_head());
+    table.set_format(FormatProperties::to_format());
+    table.print_tty(force_color);
+    println!();
+
+    let (device, _iter) = {
+        let features = pd.supported_features();
+        let extens = DeviceExtensions::supported_by_device(pd);
+        let qfs = pd.queue_families().map(|q| (q, 1.0));
+        Device::new(pd, &features, &extens, qfs).unwrap()
+    };
+    println!("{}", "ImageFormat properties".red());
+    let create_flags = ImageCreateFlags::none();
+    let mut image_formats = vec![];
+    for format in formats.into_iter() {
+        for ty in image_type_list().into_iter() {
+            for tiling in image_tiling_list().into_iter() {
+                for usage in image_usage_list().into_iter() {
+                    let props = device.image_format_properties(
+                        format,
+                        ty,
+                        tiling,
+                        usage,
+                        create_flags,
+                    );
+                    match props {
+                        Ok(props) => image_formats
+                            .push(ImageFormat::new(format, ty, tiling, usage, props)),
+                        Err(_) => (),
+                    }
+                }
+            }
+        }
+    }
+    filter_empty_rows(make_table(&image_formats)).print_tty(force_color);
+    println!();
 }
 
 fn info_formats(opts: Opt) {

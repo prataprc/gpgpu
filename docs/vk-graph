@@ -1,9 +1,5 @@
 VkMemoryHeap, VkMemoryType, VkRect2D, VkOffset2D, VkExtent2D, VkExtent3D
 
-cs - VkColorSpaceKHR
-ca - VkCompositeAlphaFlagBitsKHR
-trfm - VkSurfaceTransformFlagBitsKHR
-
 Instance, PhysicalDevice
 ========================
 
@@ -21,25 +17,25 @@ VkPhysicalDevice                                                                
 VkPhysicalDevice                                                                                | vkGetPhysicalDeviceMemoryProperties       => VkPhysicalDeviceMemoryProperties
 VkPhysicalDevice, layer                                                                         | vkEnumerateDeviceExtensionProperties      => Vec<VkExtensionProperties>
 VkPhysicalDevice                                                                                | vkEnumerateDeviceLayerProperties          => Vec<VkLayerProperties>
-VkPhysicalDevice                                                                                | vkGetPhysicalDeviceFormatProperties       => Vec<VkFormatProperties>
 VkPhysicalDevice                                                                                | vkGetPhysicalDeviceQueueFamilyProperties  => Vec<VkQueueFamilyProperties>
-VkPhysicalDevice, VkFormat, VkImageType, VkImageTiling, VkImageUsageFlags, VkImageCreateFlags   | vkGetPhysicalDeviceImageFormatProperties  => Vec<VkImageFormatProperties>
+VkPhysicalDevice                                                                                | vkGetPhysicalDeviceFormatProperties       => VkFormatProperties
+VkPhysicalDevice, VkFormat, VkImageType, VkImageTiling, VkImageUsageFlag, VkImageCreateFlag     | vkGetPhysicalDeviceImageFormatProperties  => Vec<VkImageFormatProperties>
 VkPhysicalDevice, VkSurface                                                                     | vkGetPhysicalDevicePresentRectanglesKHR   => Vec<VkRect2D>
 
-typedef enum VkImageCreateFlags {                       typedef enum VkImageUsageFlags {                        typedef enum VkImageType {
-    VK_IMAGE_CREATE_SPARSE_BINDING_BIT,                     VK_IMAGE_USAGE_TRANSFER_SRC_BIT,                        VK_IMAGE_TYPE_1D,
-    VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT,                   VK_IMAGE_USAGE_TRANSFER_DST_BIT,                        VK_IMAGE_TYPE_2D,
-    VK_IMAGE_CREATE_SPARSE_ALIASED_BIT,                     VK_IMAGE_USAGE_SAMPLED_BIT,                             VK_IMAGE_TYPE_3D,
-    VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT,                     VK_IMAGE_USAGE_STORAGE_BIT,                         }
-    VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,                    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-    VK_IMAGE_CREATE_ALIAS_BIT,                              VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,        typedef enum VkImageTiling {
-    VK_IMAGE_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT,        VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT,                VK_IMAGE_TILING_OPTIMAL,
-    VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT,                VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,                    VK_IMAGE_TILING_LINEAR,
-    VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT,    }                                                       }
-    VK_IMAGE_CREATE_EXTENDED_USAGE_BIT,
-    VK_IMAGE_CREATE_PROTECTED_BIT,
-    VK_IMAGE_CREATE_DISJOINT_BIT,
-}
+typedef enum VkImageCreateFlag {                        typedef enum VkImageUsageFlag {                 typedef enum VkImageType {  typedef struct VkImageFormatProperties {
+    VK_IMAGE_CREATE_SPARSE_BINDING_BIT,                     VK_IMAGE_USAGE_TRANSFER_SRC_BIT,                VK_IMAGE_TYPE_1D,           VkExtent3D            maxExtent;
+    VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT,                   VK_IMAGE_USAGE_TRANSFER_DST_BIT,                VK_IMAGE_TYPE_2D,           uint32_t              maxMipLevels;
+    VK_IMAGE_CREATE_SPARSE_ALIASED_BIT,                     VK_IMAGE_USAGE_SAMPLED_BIT,                     VK_IMAGE_TYPE_3D,           uint32_t              maxArrayLayers;
+    VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT,                     VK_IMAGE_USAGE_STORAGE_BIT,                 }                               VkSampleCountFlags    sampleCounts;
+    VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,                    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,                                        VkDeviceSize          maxResourceSize;
+    VK_IMAGE_CREATE_ALIAS_BIT,                              VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,                            }
+    VK_IMAGE_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT,        VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT,
+    VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT,                VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
+    VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT,    }
+    VK_IMAGE_CREATE_EXTENDED_USAGE_BIT,                 typedef enum VkImageTiling {
+    VK_IMAGE_CREATE_PROTECTED_BIT,                          VK_IMAGE_TILING_OPTIMAL,
+    VK_IMAGE_CREATE_DISJOINT_BIT,                           VK_IMAGE_TILING_LINEAR,
+}                                                       }
 
 
 VkDevice, VkQueue
@@ -58,10 +54,10 @@ VkDevice, VkQueryPool, (firstQ, count)                                          
 VkQueue, Vec<VkSubmitInfo>, VkFence                                                         | vkQueueSubmit                         =>
 VkQueue, Vec<VkPresentInfoKHR>                                                              | vkQueuePresentKHR                     =>
 
-typedef struct VkSubmitInfo {                                   typedef enum VkPipelineStageFlags {
+typedef struct VkSubmitInfo {                                   typedef enum VkPipelineStageFlag {
     uint32_t                       waitSemaphoreCount;              VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
     const VkSemaphore*             pWaitSemaphores;                 VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT,
-    const VkPipelineStageFlags*    pWaitDstStageMask;               VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
+    const VkPipelineStageFlag*     pWaitDstStageMask;               VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
     uint32_t                       commandBufferCount;              VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
     const VkCommandBuffer*         pCommandBuffers;                 VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT,
     uint32_t                       signalSemaphoreCount;            VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT,
@@ -90,14 +86,14 @@ VkDevice, VkDeviceMemory                                                        
 VkDevice, Vec<(VkDeviceMemory, offset, size)>                                               | vkInvalidateMappedMemoryRanges        =>
 VkDevice, Vec<(VkDeviceMemory, offset, size)>                                               | vkFlushMappedMemoryRanges             =>
 
-VkDevice, VkBufferCreateFlags, size, VkBufferUsageFlags, VkSharingMode, queue-indexes       | vkCreateBuffer                        => VkBuffer
+VkDevice, VkBufferCreateFlag, size, VkBufferUsageFlag, VkSharingMode, queue-indexes         | vkCreateBuffer                        => VkBuffer
 VkDevice, VkBuffer, VkFormat, offset, range                                                 | vkCreateBufferView                    => VkBufferView
 VkDevice, VkBuffer, VkDeviceMemory, offset                                                  | vkBindBufferMemory                    =>
-VkDevice, VkBuffer                                                                          | vkGetBufferMemoryRequirements (size, align, typ)
+VkDevice, VkBuffer                                                                          | vkGetBufferMemoryRequirements         => (size, align, typ)
 VkDevice, VkBuffer                                                                          | vkGetBufferDeviceAddress              => VkDeviceAddress
 VkDevice, VkBuffer                                                                          | vkGetBufferOpaqueCaptureAddress       => uint64
 
-typedef enum VkBufferCreateFlags {                          typedef enum VkBufferUsageFlags {
+typedef enum VkBufferCreateFlag {                           typedef enum VkBufferUsageFlag {
     VK_BUFFER_CREATE_SPARSE_BINDING_BIT,                        VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
     VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT,                      VK_BUFFER_USAGE_TRANSFER_DST_BIT,
     VK_BUFFER_CREATE_SPARSE_ALIASED_BIT,                        VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT,
@@ -110,72 +106,167 @@ typedef enum VkSharingMode {                                    VK_BUFFER_USAGE_
     VK_SHARING_MODE_CONCURRENT,                                 VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
 }                                                           }
 
+
 VkDevice, VkImageCreateInfo                                                                 | vkCreateImage                         => VkImage
 VkDevice, VkImage, VkImageViewType, VkFormat, VkComponentMapping, VkImageSubresourceRange   | vkCreateImageView                     => VkImageView
 VkDevice, VkImage, VkDeviceMemory, offset                                                   | vkBindImageMemory                     =>
-VkDevice, VkImage                                                                           | vkGetImageMemoryRequirements  (size, align, typ)
+VkDevice, VkImage                                                                           | vkGetImageMemoryRequirements          => (size, align, typ)
 VkDevice, VkImage, VkImageSubresource                                                       | vkGetImageSubresourceLayout           => VkSubresourceLayout
 
 
-typedef struct VkImageCreateInfo {                  typedef enum VkImageLayout {                                        typedef enum VkSampleCountFlags {
-    VkImageCreateFlags  flags;                          VK_IMAGE_LAYOUT_UNDEFINED,                                          VK_SAMPLE_COUNT_1_BIT,
+typedef struct VkImageCreateInfo {                  typedef enum VkImageLayout {                                        typedef enum VkSampleCountFlag {
+    VkImageCreateFlag   flags;                          VK_IMAGE_LAYOUT_UNDEFINED,                                          VK_SAMPLE_COUNT_1_BIT,
     VkImageType         imageType;                      VK_IMAGE_LAYOUT_GENERAL,                                            VK_SAMPLE_COUNT_2_BIT,
     VkFormat            format;                         VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,                           VK_SAMPLE_COUNT_4_BIT,
     VkExtent3D          extent;                         VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,                   VK_SAMPLE_COUNT_8_BIT,
     uint32_t            mipLevels;                      VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,                    VK_SAMPLE_COUNT_16_BIT,
     uint32_t            arrayLayers;                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,                           VK_SAMPLE_COUNT_32_BIT,
-    VkSampleCountFlags  samples;                        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,                               VK_SAMPLE_COUNT_64_BIT,
+    VkSampleCountFlag   samples;                        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,                               VK_SAMPLE_COUNT_64_BIT,
     VkImageTiling       tiling;                         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,                           }
-    VkImageUsageFlags   usage;                          VK_IMAGE_LAYOUT_PREINITIALIZED,
-    VkSharingMode       sharingMode;                    VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL,     typedef struct VkImageSubresourceRange {
-    uint32_t            queueFamilyIndexCount;          VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL,         VkImageAspectFlags    aspectMask;
-    const uint32_t*     pQueueFamilyIndices;            VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,                           uint32_t              baseMipLevel;
-    VkImageLayout       initialLayout;                  VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL,                            uint32_t              levelCount;
-}                                                       VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL,                         uint32_t              baseArrayLayer;
-                                                        VK_IMAGE_LAYOUT_STENCIL_READ_ONLY_OPTIMAL,                          uint32_t              layerCount;
-                                                        VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,                                }
-                                                    }
+    VkImageUsageFlag    usage;                          VK_IMAGE_LAYOUT_PREINITIALIZED,                                 typedef enum VkImageAspectFlag {
+    VkSharingMode       sharingMode;                    VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL,         VK_IMAGE_ASPECT_COLOR_BIT,
+    uint32_t            queueFamilyIndexCount;          VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL,         VK_IMAGE_ASPECT_DEPTH_BIT,
+    const uint32_t*     pQueueFamilyIndices;            VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,                           VK_IMAGE_ASPECT_STENCIL_BIT,
+    VkImageLayout       initialLayout;                  VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL,                            VK_IMAGE_ASPECT_METADATA_BIT,
+}                                                       VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL,                         VK_IMAGE_ASPECT_PLANE_0_BIT,
+                                                        VK_IMAGE_LAYOUT_STENCIL_READ_ONLY_OPTIMAL,                          VK_IMAGE_ASPECT_PLANE_1_BIT,
+                                                        VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,                                    VK_IMAGE_ASPECT_PLANE_2_BIT,
+                                                    }                                                                   }
 
-typedef struct VkComponentMapping {     typedef enum VkComponentSwizzle {       typedef enum VkImageViewType {      typedef enum VkImageAspectFlagBits {
-    VkComponentSwizzle r;                   VK_COMPONENT_SWIZZLE_IDENTITY = 0,      VK_IMAGE_VIEW_TYPE_1D,              VK_IMAGE_ASPECT_COLOR_BIT,
-    VkComponentSwizzle g;                   VK_COMPONENT_SWIZZLE_ZERO = 1,          VK_IMAGE_VIEW_TYPE_2D,              VK_IMAGE_ASPECT_DEPTH_BIT,
-    VkComponentSwizzle b;                   VK_COMPONENT_SWIZZLE_ONE = 2,           VK_IMAGE_VIEW_TYPE_3D,              VK_IMAGE_ASPECT_STENCIL_BIT,
-    VkComponentSwizzle a;                   VK_COMPONENT_SWIZZLE_R = 3,             VK_IMAGE_VIEW_TYPE_CUBE,            VK_IMAGE_ASPECT_METADATA_BIT,
-}                                           VK_COMPONENT_SWIZZLE_G = 4,             VK_IMAGE_VIEW_TYPE_1D_ARRAY,        VK_IMAGE_ASPECT_PLANE_0_BIT,
-typedef struct VkImageSubresource {         VK_COMPONENT_SWIZZLE_B = 5,             VK_IMAGE_VIEW_TYPE_2D_ARRAY,        VK_IMAGE_ASPECT_PLANE_1_BIT,
-    VkImageAspectFlags aspectMask;          VK_COMPONENT_SWIZZLE_A = 6,             VK_IMAGE_VIEW_TYPE_CUBE_ARRAY,      VK_IMAGE_ASPECT_PLANE_2_BIT,
-    uint32_t           mipLevel;        }                                       }                                   }
-    uint32_t           arrayLayer;
-}
+typedef enum VkImageViewType {          typedef struct VkComponentMapping {     typedef enum VkComponentSwizzle {       typedef struct VkImageSubresourceRange {
+    VK_IMAGE_VIEW_TYPE_1D,                  VkComponentSwizzle r;                   VK_COMPONENT_SWIZZLE_IDENTITY,          VkImageAspectFlag     aspectMask;
+    VK_IMAGE_VIEW_TYPE_2D,                  VkComponentSwizzle g;                   VK_COMPONENT_SWIZZLE_ZERO,              uint32_t              baseMipLevel;
+    VK_IMAGE_VIEW_TYPE_3D,                  VkComponentSwizzle b;                   VK_COMPONENT_SWIZZLE_ONE,               uint32_t              levelCount;
+    VK_IMAGE_VIEW_TYPE_CUBE,                VkComponentSwizzle a;                   VK_COMPONENT_SWIZZLE_R,                 uint32_t              baseArrayLayer;
+    VK_IMAGE_VIEW_TYPE_1D_ARRAY,        }                                           VK_COMPONENT_SWIZZLE_G,                 uint32_t              layerCount;
+    VK_IMAGE_VIEW_TYPE_2D_ARRAY,                                                    VK_COMPONENT_SWIZZLE_B,             }
+    VK_IMAGE_VIEW_TYPE_CUBE_ARRAY,                                                  VK_COMPONENT_SWIZZLE_A,
+}                                                                               }
 
-typedef struct VkSubresourceLayout {
-    VkDeviceSize    offset;
-    VkDeviceSize    size;
-    VkDeviceSize    rowPitch;
-    VkDeviceSize    arrayPitch;
-    VkDeviceSize    depthPitch;
-}
+typedef struct VkImageSubresource {     typedef struct VkSubresourceLayout {
+    VkImageAspectFlag  aspectMask;          VkDeviceSize    offset;
+    uint32_t           mipLevel;            VkDeviceSize    size;
+    uint32_t           arrayLayer;          VkDeviceSize    rowPitch;
+}                                           VkDeviceSize    arrayPitch;
+                                            VkDeviceSize    depthPitch;
+                                        }
 
 
 Presentations
 =============
 
-VkPhysicalDevice, VkSurface                                                                 | vkGetPhysicalDeviceSurfaceCapabilitiesKHR     VkSurfaceCapabilitiesKHR
-VkPhysicalDevice, VkSurface                                                                 | vkGetPhysicalDeviceSurfaceFormatsKHR          Vec<VkSurfaceFormatKHR>
-VkPhysicalDevice, VkSurface                                                                 | vkGetPhysicalDeviceSurfacePresentModesKHR     Vec<VkPresentModeKHR>
-VkPhysicalDevice, VkSurface, qf                                                             | vkGetPhysicalDeviceSurfaceSupportKHR          bool
-VkDevice, VkSurface, VkFormat, cs, present, ext2, iUsg, trfm, shrg, lyrs, minimg, qf, ca    | vkCreateSwapchainKHR                          VkSwapchain
-VkDevice, VkSwapchain                                                                       | vkGetSwapchainImagesKHR                       Vec<VkImage>
-VkDevice, VkSwapchain, VkSemaphore, VkFence, timeout                                        | vkAcquireNextImageKHR                         VkImage
+VkPhysicalDevice, VkSurface                                                                 | vkGetPhysicalDeviceSurfaceCapabilitiesKHR     => VkSurfaceCapabilitiesKHR
+VkPhysicalDevice, VkSurface                                                                 | vkGetPhysicalDeviceSurfaceFormatsKHR          => Vec<VkSurfaceFormatKHR>
+VkPhysicalDevice, VkSurface                                                                 | vkGetPhysicalDeviceSurfacePresentModesKHR     => Vec<VkPresentModeKHR>
+VkPhysicalDevice, VkSurface, qf                                                             | vkGetPhysicalDeviceSurfaceSupportKHR          => bool
+VkDevice, VkSurface, VkSwapchainCreateInfoKHR                                               | vkCreateSwapchainKHR                          => VkSwapchain
+VkDevice, VkSwapchain                                                                       | vkGetSwapchainImagesKHR                       => Vec<VkImage>
+VkDevice, VkSwapchain, VkSemaphore, VkFence, timeout                                        | vkAcquireNextImageKHR                         => VkImage
 
-VkDevice, VkRenderPass, flags, Vec<VkImageView>, width, height, layers                      | vkCreateFramebuffer                           Vec<VkFrameBuffer>
+VkDevice, VkFramebufferCreateFlag, VkRenderPass, Vec<VkImageView>, width, height, layers    | vkCreateFramebuffer                           => VkFrameBuffer
 
-typedef enum VkPresentModeKHR {
-    VK_PRESENT_MODE_IMMEDIATE_KHR,
-    VK_PRESENT_MODE_MAILBOX_KHR,
-    VK_PRESENT_MODE_FIFO_KHR,
-    VK_PRESENT_MODE_FIFO_RELAXED_KHR,
+
+typedef struct VkSwapchainCreateInfoKHR {                   typedef enum VkPresentModeKHR {         typedef struct VkSurfaceFormatKHR {     typedef enum VkColorSpaceKHR {
+    VkSwapchainCreateFlag            flags;                     VK_PRESENT_MODE_IMMEDIATE_KHR,          VkFormat           format;              VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
+    VkSurfaceKHR                     surface;                   VK_PRESENT_MODE_MAILBOX_KHR,            VkColorSpaceKHR    colorSpace;      }
+ +  uint32_t                         minImageCount;             VK_PRESENT_MODE_FIFO_KHR,           }
+ +* VkFormat                         imageFormat;               VK_PRESENT_MODE_FIFO_RELAXED_KHR,
+ +  VkColorSpaceKHR                  imageColorSpace;       }
+ +* VkExtent2D                       imageExtent;           typedef enum VkFramebufferCreateFlag {
+ +* uint32_t                         imageArrayLayers;          VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT = 0x00000001,
+ +* VkImageUsageFlag                 imageUsage;            }
+  * VkSharingMode                    imageSharingMode;      typedef enum VkSurfaceTransformFlag {                           typedef enum VkCompositeAlphaFlag {
+  * uint32_t                         queueFamilyIndexCount;     VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR,                          VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+  * const uint32_t*                  pQueueFamilyIndices;       VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR,                         VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR,
+ +  VkSurfaceTransformFlag           preTransform;              VK_SURFACE_TRANSFORM_ROTATE_180_BIT_KHR,                        VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR,
+ +  VkCompositeAlphaFlag             compositeAlpha;            VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR,                        VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR,
+ +  VkPresentModeKHR                 presentMode;               VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_BIT_KHR,             }
+ +  VkBool32                         clipped;                   VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_90_BIT_KHR,
+    VkSwapchainKHR                   oldSwapchain;              VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_180_BIT_KHR,
+}                                                               VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_270_BIT_KHR,
+                                                                VK_SURFACE_TRANSFORM_INHERIT_BIT_KHR,
+                                                            }
+
+
+Renderpass, Sampler
+===================
+
+VkDevice, VkSamplerCreateInfo                                                                               | vkCreateSampler               => VkSampler
+
+typedef struct VkSamplerCreateInfo {            typedef enum VkSamplerAddressMode {                 typedef enum VkCompareOp {          typedef enum VkBorderColor {
+    VkSamplerCreateFlag     flags;                  VK_SAMPLER_ADDRESS_MODE_REPEAT,                     VK_COMPARE_OP_NEVER,                VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK,
+    VkFilter                magFilter;              VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT,            VK_COMPARE_OP_LESS,                 VK_BORDER_COLOR_INT_TRANSPARENT_BLACK,
+    VkFilter                minFilter;              VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,              VK_COMPARE_OP_EQUAL,                VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK,
+    VkSamplerMipmapMode     mipmapMode;             VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,            VK_COMPARE_OP_LESS_OR_EQUAL,        VK_BORDER_COLOR_INT_OPAQUE_BLACK,
+    VkSamplerAddressMode    addressModeU;           VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE,       VK_COMPARE_OP_GREATER,              VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE,
+    VkSamplerAddressMode    addressModeV;       }                                                       VK_COMPARE_OP_NOT_EQUAL,            VK_BORDER_COLOR_INT_OPAQUE_WHITE,
+    VkSamplerAddressMode    addressModeW;                                                               VK_COMPARE_OP_GREATER_OR_EQUAL, }
+    float                   mipLodBias;         typedef enum VkSamplerMipmapMode {                      VK_COMPARE_OP_ALWAYS,
+    VkBool32                anisotropyEnable;       VK_SAMPLER_MIPMAP_MODE_NEAREST,                 }
+    float                   maxAnisotropy;          VK_SAMPLER_MIPMAP_MODE_LINEAR,
+    VkBool32                compareEnable;      }
+    VkCompareOp             compareOp;          typedef enum VkFilter {     typedef enum VkSamplerCreateFlag {
+    float                   minLod;                 VK_FILTER_NEAREST,          VK_SAMPLER_CREATE_SUBSAMPLED_BIT_EXT,
+    float                   maxLod;                 VK_FILTER_LINEAR,           VK_SAMPLER_CREATE_SUBSAMPLED_COARSE_RECONSTRUCTION_BIT_EXT,
+    VkBorderColor           borderColor;        }                           }
+    VkBool32                unnormalizedCoordinates;
 }
+
+
+VkDevice, VkRenderPassCreateInfo                                                                            | vkCreateRenderPass            => VkRenderPass
+
+
+typedef struct VkRenderPassCreateInfo {                 typedef enum VkAttachmentDescriptionFlag {          typedef enum VkPipelineBindPoint {
+  x VkRenderPassCreateFlags         flags;                 VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT,            VK_PIPELINE_BIND_POINT_GRAPHICS,
+    uint32_t                        attachmentCount;    }                                                      VK_PIPELINE_BIND_POINT_COMPUTE,
+    const VkAttachmentDescription*  pAttachments;       typedef enum VkAttachmentLoadOp {                   }
+    uint32_t                        subpassCount;          VK_ATTACHMENT_LOAD_OP_LOAD,                      typedef struct VkAttachmentReference {
+    const VkSubpassDescription*     pSubpasses;            VK_ATTACHMENT_LOAD_OP_CLEAR,                        uint32_t         attachment;
+    uint32_t                        dependencyCount;       VK_ATTACHMENT_LOAD_OP_DONT_CARE,                    VkImageLayout    layout;
+    const VkSubpassDependency*      pDependencies;      }                                                   }
+}                                                       typedef enum VkAttachmentStoreOp {                  typedef enum VkDependencyFlags {
+                                                           VK_ATTACHMENT_STORE_OP_STORE = 0,                   VK_DEPENDENCY_BY_REGION_BIT,
+                                                           VK_ATTACHMENT_STORE_OP_DONT_CARE = 1,               VK_DEPENDENCY_DEVICE_GROUP_BIT,
+                                                        }                                                      VK_DEPENDENCY_VIEW_LOCAL_BIT,
+                                                                                                            }
+
+typedef struct VkAttachmentDescription {        typedef struct VkSubpassDescription {                       typedef struct VkSubpassDependency {
+    VkAttachmentDescriptionFlag flags;            x VkSubpassDescriptionFlags    flags;                         uint32_t                srcSubpass;
+    VkFormat                    format;             VkPipelineBindPoint          pipelineBindPoint;             uint32_t                dstSubpass;
+    VkSampleCountFlag           samples;            uint32_t                     inputAttachmentCount;          VkPipelineStageFlags    srcStageMask;
+    VkAttachmentLoadOp          loadOp;             const VkAttachmentReference* pInputAttachments;             VkPipelineStageFlags    dstStageMask;
+    VkAttachmentStoreOp         storeOp;            uint32_t                     colorAttachmentCount;          VkAccessFlags           srcAccessMask;
+    VkAttachmentLoadOp          stencilLoadOp;      const VkAttachmentReference* pColorAttachments;             VkAccessFlags           dstAccessMask;
+    VkAttachmentStoreOp         stencilStoreOp;     const VkAttachmentReference* pResolveAttachments;           VkDependencyFlags       dependencyFlags;
+    VkImageLayout               initialLayout;      const VkAttachmentReference* pDepthStencilAttachment;   }
+    VkImageLayout               finalLayout;        uint32_t                     preserveAttachmentCount;
+}                                                   const uint32_t*              pPreserveAttachments;
+                                                }
+
+typedef enum VkAccessFlags {                        typedef enum VkPipelineStageFlags {
+    VK_ACCESS_INDIRECT_COMMAND_READ_BIT,                VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+    VK_ACCESS_INDEX_READ_BIT,                           VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT,
+    VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,                VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
+    VK_ACCESS_UNIFORM_READ_BIT,                         VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
+    VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,                VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT,
+    VK_ACCESS_SHADER_READ_BIT,                          VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT,
+    VK_ACCESS_SHADER_WRITE_BIT,                         VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT,
+    VK_ACCESS_COLOR_ATTACHMENT_READ_BIT,                VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+    VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,               VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+    VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT,        VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+    VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,       VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+    VK_ACCESS_TRANSFER_READ_BIT,                        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+    VK_ACCESS_TRANSFER_WRITE_BIT,                       VK_PIPELINE_STAGE_TRANSFER_BIT,
+    VK_ACCESS_HOST_READ_BIT,                            VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+    VK_ACCESS_HOST_WRITE_BIT,                           VK_PIPELINE_STAGE_HOST_BIT,
+    VK_ACCESS_MEMORY_READ_BIT,                          VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+    VK_ACCESS_MEMORY_WRITE_BIT,                         VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+    VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR,  }
+    VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR,
+    VK_ACCESS_FRAGMENT_SHADING_RATE_ATTACHMENT_READ_BIT_KHR,
+    VK_ACCESS_NONE_KHR,
+}
+
 
 DescriptorSets
 ==============
@@ -210,11 +301,6 @@ VkDevice, VkDescriptorPool, Vec<VkDescriptorSet>                                
 VkDevice, Vec<VkDescriptorUpdateTemplateEntry>, VkDescriptorSetLayout, VkPipelineLayout, set    | vkCreateDescriptorUpdateTemplate      VkDescriptorUpdateTemplate
 
 
-Renderpass
-==========
-
-vkCreateRenderPass
-
 Pipelines
 =========
 
@@ -236,7 +322,6 @@ VkDevice, Vec<VkDescriptorSetLayout>, Vec<VkPushConstantRange>                  
 VkDevice, VkPipelineCache,                                                                                          | vkGetPipelineCacheData        pData
 VkDevice, VkPipelineCache, Vec<VkPipelineCache>                                                                     | vkMergePipelineCaches
 VkDevice, pCode                                                                                                     | vkCreateShaderModule          VkShaderModule
-VkDevice, mag, min, mmMode, addrMode(u,v,w), lodbias, anisotropy,max, cmp, cmpOp, minLod, maxLod, border, uCoord    | vkCreateSampler               VkSampler
 vkCreatePipelineCache
 
 vkCreateComputePipelines
@@ -342,7 +427,6 @@ vkDestroyPipelineLayout
 vkDestroyQueryPool
 vkDestroyRenderPass
 vkDestroySampler
-vkDestroySamplerYcbcrConversion
 vkDestroySemaphore
 vkDestroyShaderModule
 vkDestroySurfaceKHR

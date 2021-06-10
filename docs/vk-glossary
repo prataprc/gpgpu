@@ -1,55 +1,22 @@
-Vulkan Dispatchable object (VkInstance, VkPhysicalDevice, VkDevice, VkQueue, VkCommandBuffer)
-Vulkan object (VkDeviceMemory, VkSurface, VkSwapchain, VkSurface)
-Vulkan object (VkRenderPass, VkFrameBuffer)
-Vulkan object (VkBuffer, VkBufferView, VkImage, VkImageView, VkSampler)
-Vulkan object (VkCommanPool, VkQueryPool)
-Vulkan object (VkShaderModule, VkPipelineLayout, VkPipelineCache, VkPileline)
-Vulkan object (VkFence, VkSemaphore, VkEvent)
-Vulkan object (VkDescriptorLayout, VkDescriptorUpdateTemplate, VkDescriptorPool, VkDescriptorSet)
-Vulkan resources (Buffer, Image, ???)
+Graphics
+========
 
-Accessible (Descriptor Binding)
-Acquire Operation (Resource)
-Adjacent Vertex
-Alias (API type/command)
-Aliased Range (Memory)
-Allocation Scope
-    Command, Object, Cache, Device, Instance
-Attachment (Render Pass)
-Availability Operation
-Available
-Axis-aligned Bounding Box
-Batch
-Backwards Compatibility
-Binary Semaphore
-Binding (Memory)
-Blend Constant
-Blending
-Buffer
-Buffer Device Address
-Buffer View
-Built-In Variable
-Built-In Interface Block
-
-Frustrum
-Frustrum culling
-Clip distance
+Clip Coordinates), normalized device coordinates
 Clipping
 Colorspace
-Color value, red, green, blue, depth, color-space
-Coordinates (Clip), normalized device coordinates
-Coordinates (Texture)
-Cull distance
+Color value, red, green, blue, depth, stencil, color-space
 Culling
+Depth test
 Depth value
 Fragment depth, z-buffer, z-coordinate
 Fragment, for every pixel sample
+Frustrum
+Frustrum culling
+Image
 Model, Mesh, Geometry - Everything is a shell, Shells are made of triangles.
 Normalized Device Coordinates
 Pixel
 Primitive assembly
-Depth test
-Stencil test
 Rasterization
 Rasterizer
 Rendering
@@ -63,16 +30,56 @@ Space-b (World)
 Space-c (View)
 Space-d (Clip)
 Space-e (Screen)
+Stencil test
+Texture Coordinates
 Vector
-Vector direction
-Vector position
 Vector component
-Vector (unit-vector), vector-normalization
+Vector direction
 Vector (length)
 Vector normalization
-Image
-Vertex - collection of arbitrary data
+Vector position
+Vector (unit-vector), vector-normalization
 Vertex attributes
+Vertex - collection of arbitrary data
 Vertex position
 Vextex size
 Viewport transform - what area of the available area we are rendering to
+
+Vulkan
+======
+
+Accessible (Descriptor Binding)
+Acquire Operation (Resource)
+Adjacent Vertex
+Alias (API type/command)
+Aliased Range (Memory)
+Allocation Scope
+Aspect (Image)
+Attachment (Render Pass)
+Availability Operation
+Available
+Axis-aligned Bounding Box
+Backwards Compatibility
+Batch
+Binary Semaphore
+Binding (Memory)
+Blend Constant
+Blending
+Buffer
+Buffer Device Address
+Buffer View
+Built-In Interface Block
+Built-In Variable
+Clip Coordinates
+Clip distance
+Clip volume
+Cull distance
+Vulkan Dispatchable object (VkInstance, VkPhysicalDevice, VkDevice, VkQueue, VkCommandBuffer)
+Vulkan object (VkBuffer, VkBufferView, VkImage, VkImageView, VkSampler)
+Vulkan object (VkCommanPool, VkQueryPool)
+Vulkan object (VkDescriptorLayout, VkDescriptorUpdateTemplate, VkDescriptorPool, VkDescriptorSet)
+Vulkan object (VkDeviceMemory, VkSurface, VkSwapchain, VkSurface)
+Vulkan object (VkFence, VkSemaphore, VkEvent)
+Vulkan object (VkRenderPass, VkFrameBuffer)
+Vulkan object (VkShaderModule, VkPipelineLayout, VkPipelineCache, VkPileline)
+Vulkan resources (Buffer, Image, ???)

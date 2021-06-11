@@ -341,6 +341,7 @@ VkDevice, VkPipelineCache                                                       
 VkDevice, VkPipelineCache, Vec<VkPipelineCache>                                                                 | vkMergePipelineCaches         =>
 VkDevice, Vec<VkDescriptorSetLayout>, Vec<VkPushConstantRange>                                                  | vkCreatePipelineLayout        => VkPipelineLayout
 
+
 VkDevice, VkPipelineCache, Vec<VkComputePipelineCreateInfo>                                                     | vkCreateComputePipelines      => Vec<VkPipeline>
 
 typedef struct VkComputePipelineCreateInfo {                    typedef enum VkPipelineCreateFlags {
@@ -363,7 +364,57 @@ typedef struct VkPipelineShaderStageCreateInfo {                typedef struct V
 }
 
 
-vkCreateGraphicsPipelines
+
+VkDevice, VkPipelineCache, Vec<VkGraphicsPipelineCreateInfo>                                                    | vkCreateGraphicsPipelines     => Vec<VkPipeline>
+
+
+typedef struct VkGraphicsPipelineCreateInfo {                                   typedef struct VkPipelineVertexInputStateCreateInfo {
+    VkPipelineCreateFlags                            flags;                       x VkPipelineVertexInputStateCreateFlags       flags;
+    uint32_t                                         stageCount;                    uint32_t                                    vertexBindingDescriptionCount;
+    const VkPipelineShaderStageCreateInfo*           pStages;                       const VkVertexInputBindingDescription*      pVertexBindingDescriptions;
+    const VkPipelineVertexInputStateCreateInfo*      pVertexInputState;             uint32_t                                    vertexAttributeDescriptionCount;
+    const VkPipelineInputAssemblyStateCreateInfo*    pInputAssemblyState;           const VkVertexInputAttributeDescription*    pVertexAttributeDescriptions;
+    const VkPipelineTessellationStateCreateInfo*     pTessellationState;        }
+    const VkPipelineViewportStateCreateInfo*         pViewportState;            typedef struct VkVertexInputAttributeDescription {
+    const VkPipelineRasterizationStateCreateInfo*    pRasterizationState;           uint32_t    location;
+    const VkPipelineMultisampleStateCreateInfo*      pMultisampleState;             uint32_t    binding;
+    const VkPipelineDepthStencilStateCreateInfo*     pDepthStencilState;            VkFormat    format;
+    const VkPipelineColorBlendStateCreateInfo*       pColorBlendState;              uint32_t    offset;
+    const VkPipelineDynamicStateCreateInfo*          pDynamicState;             }
+    VkPipelineLayout                                 layout;                    typedef struct VkVertexInputBindingDescription {
+    VkRenderPass                                     renderPass;                    uint32_t             binding;
+    uint32_t                                         subpass;                       uint32_t             stride;
+    VkPipeline                                       basePipelineHandle;            VkVertexInputRate    inputRate;
+    int32_t                                          basePipelineIndex;         }
+}                                                                               typedef enum VkVertexInputRate {
+                                                                                    VK_VERTEX_INPUT_RATE_VERTEX = 0,
+typedef struct VkPipelineInputAssemblyStateCreateInfo {                             VK_VERTEX_INPUT_RATE_INSTANCE = 1,
+  x VkPipelineInputAssemblyStateCreateFlags    flags;                           }
+    VkPrimitiveTopology                        topology;
+    VkBool32                                   primitiveRestartEnable;          typedef struct VkPipelineViewportStateCreateInfo {  typedef struct VkViewport {
+}                                                                                   uint32_t                viewportCount;              float    x;
+typedef struct VkPipelineTessellationStateCreateInfo {                              const VkViewport*       pViewports;                 float    y;
+  x VkPipelineTessellationStateCreateFlags    flags;                                uint32_t                scissorCount;               float    width;
+    uint32_t                                  patchControlPoints;                   const VkRect2D*         pScissors;                  float    height;
+}                                                                               }                                                       float    minDepth;
+                                                                                                                                        float    maxDepth;
+                                                                                                                                    }
+typedef struct VkPipelineRasterizationStateCreateInfo {     typedef enum VkPolygonMode {
+    VkBool32        depthClampEnable;                           VK_POLYGON_MODE_FILL,
+    VkBool32        rasterizerDiscardEnable;                    VK_POLYGON_MODE_LINE,
+    VkPolygonMode   polygonMode;                                VK_POLYGON_MODE_POINT,
+    VkCullModeFlags cullMode;                               }
+    VkFrontFace     frontFace;                              typedef enum VkCullModeFlags {
+    VkBool32        depthBiasEnable;                            VK_CULL_MODE_NONE,
+    float           depthBiasConstantFactor;                    VK_CULL_MODE_FRONT_BIT,
+    float           depthBiasClamp;                             VK_CULL_MODE_BACK_BIT,
+    float           depthBiasSlopeFactor;                       VK_CULL_MODE_FRONT_AND_BACK,
+    float           lineWidth;                              }
+}                                                           typedef enum VkFrontFace {
+                                                                 VK_FRONT_FACE_COUNTER_CLOCKWISE,
+                                                                 VK_FRONT_FACE_CLOCKWISE,
+                                                             }
+
 
 Synchronisation
 ===============
@@ -394,7 +445,7 @@ CommandBuffer
 * graphics-pipeline             * Draw, Resolve
   * Index-buffer                * Dispatch
   * Vertex-buffers              * Query
-                                * PipelineBarrier, Event
+* push constants                * PipelineBarrier, Event
 
 
 VkDevice, queue-family                                        | vkCreateCommandPool           VkCommandPool

@@ -1,4 +1,4 @@
-VkMemoryHeap, VkMemoryType, VkRect2D, VkOffset2D, VkExtent2D, VkExtent3D
+VkMemoryHeap, VkMemoryType, VkRect2D, VkOffset2D, VkOffset3D, VkExtent2D, VkExtent3D
 
 Instance, PhysicalDevice
 ========================
@@ -54,10 +54,10 @@ VkDevice, VkQueryPool, (firstQ, count)                                          
 VkQueue, Vec<VkSubmitInfo>, VkFence                                                         | vkQueueSubmit                         =>
 VkQueue, Vec<VkPresentInfoKHR>                                                              | vkQueuePresentKHR                     =>
 
-typedef struct VkSubmitInfo {                                   typedef enum VkPipelineStageFlag {
+typedef struct VkSubmitInfo {                                   typedef enum VkPipelineStageFlags {
     uint32_t                       waitSemaphoreCount;              VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
     const VkSemaphore*             pWaitSemaphores;                 VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT,
-    const VkPipelineStageFlag*     pWaitDstStageMask;               VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
+    const VkPipelineStageFlags*    pWaitDstStageMask;               VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
     uint32_t                       commandBufferCount;              VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
     const VkCommandBuffer*         pCommandBuffers;                 VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT,
     uint32_t                       signalSemaphoreCount;            VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT,
@@ -416,23 +416,6 @@ typedef struct VkPipelineRasterizationStateCreateInfo {     typedef enum VkPolyg
                                                              }
 
 
-Synchronisation
-===============
-
-vkCreateSemaphore
-vkSignalSemaphore
-vkWaitSemaphores
-vkWaitSemaphoresKHR
-vkCreateEvent
-vkGetEventStatus
-vkResetEvent
-vkSetEvent
-vkCreateFence
-vkGetFenceFdKHR
-vkGetFenceStatus
-vkResetFences
-vkWaitForFences
-
 CommandBuffer
 =============
 
@@ -445,65 +428,215 @@ CommandBuffer
 * graphics-pipeline             * Draw, Resolve
   * Index-buffer                * Dispatch
   * Vertex-buffers              * Query
-* push constants                * PipelineBarrier, Event
+* push-constants                * PipelineBarrier, Event
+* viewPort
+* scissors
+* blend-constants
+* depthBias
+  * constantFactor
+  * clamp
+  * slopeFactor
+* depthBound
+  * min, max
+* device-mask
+* line-width
 
 
-VkDevice, queue-family                                        | vkCreateCommandPool           VkCommandPool
-VkDevice, VkCommandPool                                       | vkResetCommandPool
-VkDevice, VkCommandPool                                       | vkTrimCommandPool
+VkDevice, VkCommandPoolCreateFlags, queue-family                                        | vkCreateCommandPool           => VkCommandPool
+VkDevice, VkCommandPool, VkCommandPoolResetFlags                                        | vkResetCommandPool
+VkDevice, VkCommandPool                                                                 | vkTrimCommandPool
 
-VkDevice, VkCommandPool                                       | vkAllocateCommandBuffers      Vec<VkCommandBuffer>
-VkCommandBuffer, [VkRenderPass, subpass], [VkFramebuffer]     | vkBeginCommandBuffer
-VkCommandBuffer, VkQueryPool                                  | vkCmdBeginQuery
-VkCommandBuffer, VkRenderPass, VkFramebuffer                  | vkCmdBeginRenderPass
-VkCommandBuffer                                               | vkCmdSetBlendConstants
-VkCommandBuffer                                               | vkCmdSetDepthBias
-VkCommandBuffer                                               | vkCmdSetDepthBounds
-VkCommandBuffer                                               | vkCmdSetDeviceMask
-VkCommandBuffer                                               | vkCmdSetLineWidth
-VkCommandBuffer                                               | vkCmdSetScissor
-VkCommandBuffer                                               | vkCmdSetStencilCompareMask
-VkCommandBuffer                                               | vkCmdSetStencilReference
-VkCommandBuffer                                               | vkCmdSetStencilWriteMask
-VkCommandBuffer                                               | vkCmdSetViewport
-VkCommandBuffer, VkPipelineLayout, Vec<VkDescriptorSet>       | vkCmdBindDescriptorSets
-VkCommandBuffer, VkPipeline                                   | vkCmdBindPipeline
-VkCommandBuffer, VkBuffer                                     | vkCmdBindIndexBuffer
-VkCommandBuffer, Vec<VkBuffer>                                | vkCmdBindVertexBuffers
-VkCommandBuffer, VkImage, VkImage                             | vkCmdBlitImage
-VkCommandBuffer, Vec<VkClearAttachment>, Vec<VkClearRect>     | vkCmdClearAttachments
-VkCommandBuffer, VkImage                                      | vkCmdClearColorImage
-VkCommandBuffer, VkImage                                      | vkCmdClearDepthStencilImage
-VkCommandBuffer, VkBuffer                                     | vkCmdFillBuffer
-VkCommandBuffer, VkBuffer                                     | vkCmdUpdateBuffer
-VkCommandBuffer, VkBuffer, VkBuffer                           | vkCmdCopyBuffer
-VkCommandBuffer, VkBuffer, VkImage                            | vkCmdCopyBufferToImage
-VkCommandBuffer, VkImage, VkImage                             | vkCmdCopyImage
-VkCommandBuffer, VkImage, VkBuffer                            | vkCmdCopyImageToBuffer
-VkCommandBuffer, VkQueryPool, VkBuffer                        | vkCmdCopyQueryPoolResults
-VkCommandBuffer, VkQueryPool                                  | vkCmdResetQueryPool
-VkCommandBuffer, VkQueryPool                                  | vkCmdWriteTimestamp
-VkCommandBuffer, VkQueryPool                                  | vkCmdEndQuery
-VkCommandBuffer                                               | vkCmdDraw
-VkCommandBuffer                                               | vkCmdDrawIndexed
-VkCommandBuffer, VkBuffer                                     | vkCmdDrawIndexedIndirect
-VkCommandBuffer, VkBuffer, VkBuffer                           | vkCmdDrawIndexedIndirectCount
-VkCommandBuffer, VkBuffer                                     | vkCmdDrawIndirect
-VkCommandBuffer, VkBuffer, VkBuffer                           | vkCmdDrawIndirectCount
-VkCommandBuffer                                               | vkCmdEndRenderPass
-VkCommandBuffer, Vec<VkCommandBuffer>                         | vkCmdExecuteCommands
-VkCommandBuffer                                               | vkCmdNextSubpass
-VkCommandBuffer                                               | vkCmdPipelineBarrier
-VkCommandBuffer, VkPipelineLayout                             | vkCmdPushConstants
-VkCommandBuffer, VkPipelineLayout, VkDescriptorSet            | vkCmdPushDescriptorSetKHR
-VkCommandBuffer, VkDescriptorUpdateTemplate, VkPipelineLayout | vkCmdPushDescriptorSetWithTemplateKHR
-VkCommandBuffer, VkEvent                                      | vkCmdResetEvent
-VkCommandBuffer, VkEvent                                      | vkCmdSetEvent
-VkCommandBuffer, VkEvent                                      | vkCmdWaitEvents
-VkCommandBuffer, VkImage, VkImage                             | vkCmdResolveImage
-VkCommandBuffer                                               | vkEndCommandBuffer
-VkCommandBuffer                                               | vkResetCommandBuffer
-VkDevice, VkCommandPool, Vec<VkCommandBuffer>                 | vkFreeCommandBuffers
+typedef enum VkCommandPoolCreateFlags {                 typedef enum VkCommandPoolResetFlags {
+    VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,                   VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT,
+    VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,    }
+    VK_COMMAND_POOL_CREATE_PROTECTED_BIT,
+}
+
+
+
+VkDevice, VkCommandPool, VkCommandBufferLevel, count                                        | vkAllocateCommandBuffers      Vec<VkCommandBuffer>
+VkCommandBuffer, VkCommandBufferUsageFlags, VkCommandBufferInheritanceInfo                  | vkBeginCommandBuffer
+VkCommandBuffer, VkQueryPool, query-index, VkQueryControlFlags                              | vkCmdBeginQuery
+VkCommandBuffer, VkRenderPassBeginInfo, VkSubpassContents                                   | vkCmdBeginRenderPass
+
+typedef struct VkCommandBufferInheritanceInfo {                 typedef enum VkQueryPipelineStatisticFlags {                        typedef enum VkCommandBufferUsageFlags {
+    VkStructureType                  sType;                         VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT,            VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+    const void*                      pNext;                         VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_PRIMITIVES_BIT,          VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT,
+    VkRenderPass                     renderPass;                    VK_QUERY_PIPELINE_STATISTIC_VERTEX_SHADER_INVOCATIONS_BIT,          VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT,
+    uint32_t                         subpass;                       VK_QUERY_PIPELINE_STATISTIC_GEOMETRY_SHADER_INVOCATIONS_BIT,    }
+    VkFramebuffer                    framebuffer;                   VK_QUERY_PIPELINE_STATISTIC_GEOMETRY_SHADER_PRIMITIVES_BIT,                 typedef enum VkCommandBufferLevel {
+    VkBool32                         occlusionQueryEnable;          VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT,                           VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+    VkQueryControlFlags              queryFlags;                    VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT,                            VK_COMMAND_BUFFER_LEVEL_SECONDARY,
+    VkQueryPipelineStatisticFlags    pipelineStatistics;            VK_QUERY_PIPELINE_STATISTIC_FRAGMENT_SHADER_INVOCATIONS_BIT,                }
+}                                                                   VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_CONTROL_SHADER_PATCHES_BIT,
+                                                                    VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_EVALUATION_SHADER_INVOCATIONS_BIT,
+typedef enum VkQueryControlFlags {                                  VK_QUERY_PIPELINE_STATISTIC_COMPUTE_SHADER_INVOCATIONS_BIT,
+    VK_QUERY_CONTROL_PRECISE_BIT,                               }
+}
+
+
+typedef struct VkRenderPassBeginInfo {          typedef enum VkSubpassContents {                    typedef union VkClearColorValue {
+    VkRenderPass           renderPass;              VK_SUBPASS_CONTENTS_INLINE,                         float       float32[4];
+    VkFramebuffer          framebuffer;             VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS,      int32_t     int32[4];
+    VkRect2D               renderArea;          }                                                       uint32_t    uint32[4];
+    uint32_t               clearValueCount;     typedef union VkClearValue {                        }
+    const VkClearValue*    pClearValues;            VkClearColorValue           color;              typedef struct VkClearDepthStencilValue {
+}                                                   VkClearDepthStencilValue    depthStencil;           float       depth;
+                                                }                                                       uint32_t    stencil;
+                                                                                                    }
+
+
+VkCommandBuffer, blendConstants[4]                                                          | vkCmdSetBlendConstants
+VkCommandBuffer, constantFactor, clamp, slopeFactor                                         | vkCmdSetDepthBias
+VkCommandBuffer, min, max                                                                   | vkCmdSetDepthBounds
+VkCommandBuffer, deviceMask                                                                 | vkCmdSetDeviceMask
+VkCommandBuffer, lineWidth                                                                  | vkCmdSetLineWidth
+VkCommandBuffer, first-index, count, Vec<VkRect2D>                                          | vkCmdSetScissor
+VkCommandBuffer, VkStencilFaceFlags, compareMask                                            | vkCmdSetStencilCompareMask
+VkCommandBuffer, VkStencilFaceFlags, reference                                              | vkCmdSetStencilReference
+VkCommandBuffer, VkStencilFaceFlags, writeMask                                              | vkCmdSetStencilWriteMask
+VkCommandBuffer, first-index, count, Vec<VkViewport>                                        | vkCmdSetViewport
+
+typedef enum VkStencilFaceFlags {
+    VK_STENCIL_FACE_FRONT_BIT,
+    VK_STENCIL_FACE_BACK_BIT,
+    VK_STENCIL_FACE_FRONT_AND_BACK,
+    VK_STENCIL_FRONT_AND_BACK,
+}
+
+VkCommandBuffer, VkPipelineBindPoint, VkPipelineLayout, Vec<VkDescriptorSet>, Vec<offsets>  | vkCmdBindDescriptorSets
+VkCommandBuffer, VkPipelineBindPoint, VkPipeline                                            | vkCmdBindPipeline
+VkCommandBuffer, VkBuffer, size, VkIndexType                                                | vkCmdBindIndexBuffer
+VkCommandBuffer, first-binding, count, Vec<(VkBuffer, offsets)>                             | vkCmdBindVertexBuffers
+VkCommandBuffer, VkImage, VkImageLayout, VkImage, VkImageLayout, Vec<VkImageBlit>, VkFilter | vkCmdBlitImage
+
+
+typedef struct VkImageBlit {                        typedef struct VkImageSubresourceLayers {   typedef enum VkImageAspectFlags {       typedef enum VkIndexType {
+    VkImageSubresourceLayers    srcSubresource;         VkImageAspectFlags    aspectMask;           VK_IMAGE_ASPECT_COLOR_BIT,              VK_INDEX_TYPE_UINT16,
+    VkOffset3D                  srcOffsets[2];          uint32_t              mipLevel;             VK_IMAGE_ASPECT_DEPTH_BIT,              VK_INDEX_TYPE_UINT32,
+    VkImageSubresourceLayers    dstSubresource;         uint32_t              baseArrayLayer;       VK_IMAGE_ASPECT_STENCIL_BIT,            VK_INDEX_TYPE_NONE_KHR,
+    VkOffset3D                  dstOffsets[2];          uint32_t              layerCount;           VK_IMAGE_ASPECT_METADATA_BIT,       }
+}                                                   }                                               VK_IMAGE_ASPECT_PLANE_0_BIT,
+                                                                                                    VK_IMAGE_ASPECT_PLANE_1_BIT,
+                                                                                                    VK_IMAGE_ASPECT_PLANE_2_BIT,
+                                                                                                }
+
+
+VkCommandBuffer, Vec<VkClearAttachment>, Vec<VkClearRect>                                       | vkCmdClearAttachments
+VkCommandBuffer, VkImage, VkImageLayout, VkClearColorValue, Vec<VkImageSubresourceRange>        | vkCmdClearColorImage
+VkCommandBuffer, VkImage, VkImageLayout, VkClearDepthStencilValue, Vec<VkImageSubresourceRange> | vkCmdClearDepthStencilImage
+VkCommandBuffer, VkBuffer, dstOffset, size, pData                                               | vkCmdFillBuffer
+VkCommandBuffer, VkBuffer, dstOffset, size, pData                                               | vkCmdUpdateBuffer
+VkCommandBuffer, VkBuffer, VkBuffer, Vec<VkBufferCopy>                                          | vkCmdCopyBuffer
+VkCommandBuffer, VkBuffer, VkImage, VkImageLayout, Vec<VkBufferImageCopy>                       | vkCmdCopyBufferToImage
+VkCommandBuffer, VkImage, VkImageLayout, VkImage, VkImageLayout, Vec<VkImageCopy>               | vkCmdCopyImage
+VkCommandBuffer, VkImage, VkImageLayout, VkBuffer, Vec<VkBufferImageCopy>                       | vkCmdCopyImageToBuffer
+
+
+typedef struct VkBufferImageCopy {                  typedef struct VkClearAttachment {          typedef struct VkClearRect {        typedef struct VkBufferCopy {
+    VkDeviceSize                bufferOffset;           VkImageAspectFlags    aspectMask;           VkRect2D    rect;                   VkDeviceSize    srcOffset;
+    uint32_t                    bufferRowLength;        uint32_t              colorAttachment;      uint32_t    baseArrayLayer;         VkDeviceSize    dstOffset;
+    uint32_t                    bufferImageHeight;      VkClearValue          clearValue;           uint32_t    layerCount;             VkDeviceSize    size;
+    VkImageSubresourceLayers    imageSubresource;   }                                           }                                   }
+    VkOffset3D                  imageOffset;
+    VkExtent3D                  imageExtent;
+}
+
+typedef struct VkImageCopy {                        typedef enum VkQueryResultFlags {
+    VkImageSubresourceLayers    srcSubresource;         VK_QUERY_RESULT_64_BIT,
+    VkOffset3D                  srcOffset;              VK_QUERY_RESULT_WAIT_BIT,
+    VkImageSubresourceLayers    dstSubresource;         VK_QUERY_RESULT_WITH_AVAILABILITY_BIT,
+    VkOffset3D                  dstOffset;              VK_QUERY_RESULT_PARTIAL_BIT,
+    VkExtent3D                  extent;             }
+}
+
+
+VkCommandBuffer, VkQueryPool, firstQuery, queryCount, VkBuffer, dstOffset, stride, VkQueryResultFlags   | vkCmdCopyQueryPoolResults
+VkCommandBuffer, VkQueryPool, firstQuery, queryCount                                                    | vkCmdResetQueryPool
+VkCommandBuffer, VkQueryPool, VkPipelineStageFlags, query                                               | vkCmdWriteTimestamp
+VkCommandBuffer, VkQueryPool, query                                                                     | vkCmdEndQuery
+
+VkCommandBuffer, vertexCount, instanceCount, firstVertex, firstInstance                                 | vkCmdDraw
+VkCommandBuffer, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance                     | vkCmdDrawIndexed
+VkCommandBuffer, VkBuffer, offset, drawCount, stride                                                    | vkCmdDrawIndexedIndirect
+VkCommandBuffer, VkBuffer, offset, VkBuffer, countBufferOffset, maxDrawCount, stride                    | vkCmdDrawIndexedIndirectCount
+VkCommandBuffer, VkBuffer, offset, drawCount, stride                                                    | vkCmdDrawIndirect
+VkCommandBuffer, VkBuffer, offset, VkBuffer, countBufferOffset, maxDrawCount, stride                    | vkCmdDrawIndirectCount
+
+VkCommandBuffer                                                                                         | vkCmdEndRenderPass
+VkCommandBuffer, Vec<VkCommandBuffer>                                                                   | vkCmdExecuteCommands
+VkCommandBuffer, VkSubpassContents                                                                      | vkCmdNextSubpass
+VkCommandBuffer, VkBarrierInfo                                                                          | vkCmdPipelineBarrier
+VkCommandBuffer, VkPipelineLayout, VkShaderStageFlags, offset, size, pValues                            | vkCmdPushConstants
+VkCommandBuffer, VkPipelineBindPoint, VkPipelineLayout, set, Vec<VkWriteDescriptorSet>                  | vkCmdPushDescriptorSetKHR
+VkCommandBuffer, VkDescriptorUpdateTemplate, VkPipelineLayout, set, pData                               | vkCmdPushDescriptorSetWithTemplateKHR
+
+
+typedef struct VkBarrierInfo {                                  typedef struct VkImageMemoryBarrier {                   typedef struct VkBufferMemoryBarrier {
+    VkCommandBuffer                 commandBuffer,                  VkAccessFlags              srcAccessMask;               VkAccessFlags      srcAccessMask;
+    VkPipelineStageFlags            srcStageMask,                   VkAccessFlags              dstAccessMask;               VkAccessFlags      dstAccessMask;
+    VkPipelineStageFlags            dstStageMask,                   VkImageLayout              oldLayout;                   uint32_t           srcQueueFamilyIndex;
+    VkDependencyFlags               dependencyFlags,                VkImageLayout              newLayout;                   uint32_t           dstQueueFamilyIndex;
+    uint32_t                        memoryBarrierCount,             uint32_t                   srcQueueFamilyIndex;         VkBuffer           buffer;
+    const VkMemoryBarrier*          pMemoryBarriers,                uint32_t                   dstQueueFamilyIndex;         VkDeviceSize       offset;
+    uint32_t                        bufferMemoryBarrierCount,       VkImage                    image;                       VkDeviceSize       size;
+    const VkBufferMemoryBarrier*    pBufferMemoryBarriers,          VkImageSubresourceRange    subresourceRange;        }
+    uint32_t                        imageMemoryBarrierCount,    }                                                       typedef struct VkMemoryBarrier {
+    const VkImageMemoryBarrier*     pImageMemoryBarriers);                                                                  VkAccessFlags      srcAccessMask;
+}                                                                                                                           VkAccessFlags      dstAccessMask;
+
+
+VkCommandBuffer, VkEvent, VkPipelineStageFlags                                                          | vkCmdResetEvent
+VkCommandBuffer, VkEvent, VkPipelineStageFlags                                                          | vkCmdSetEvent
+VkCommandBuffer, Vec<VkEvent>, VkBarrierInfo                                                            | vkCmdWaitEvents
+VkCommandBuffer, VkImage, VkImageLayout, VkImage, VkImageLayout, Vec<VkImageResolve>                    | vkCmdResolveImage
+
+typedef struct VkImageResolve {
+    VkImageSubresourceLayers    srcSubresource;
+    VkOffset3D                  srcOffset;
+    VkImageSubresourceLayers    dstSubresource;
+    VkOffset3D                  dstOffset;
+    VkExtent3D                  extent;
+}
+
+
+VkCommandBuffer                                                                                         | vkEndCommandBuffer
+VkCommandBuffer, VkCommandBufferResetFlags                                                              | vkResetCommandBuffer
+VkDevice, VkCommandPool, Vec<VkCommandBuffer>                                                           | vkFreeCommandBuffers
+
+typedef enum VkCommandBufferResetFlags {
+    VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT
+}
+
+Synchronisation
+===============
+
+VkDevice                                                                                                | vkCreateSemaphore
+VkDevice, VkSemaphore, value_u64                                                                        | vkSignalSemaphore
+VkDevice, VkSemaphoreWaitFlags Vec<VkSemaphore>, Vec<value_u64> timeout                                 | vkWaitSemaphores
+
+VkDevice, VkEventCreateFlags                                                                            | vkCreateEvent
+VkDevice, VkEvent                                                                                       | vkGetEventStatus
+VkDevice, VkEvent                                                                                       | vkResetEvent
+VkDevice, VkEvent                                                                                       | vkSetEvent
+VkDevice, VkFenceCreateFlags                                                                            | vkCreateFence
+
+VkDevice, VkFence, VkExternalFenceHandleTypeFlags, fd_int                                               | vkGetFenceFdKHR
+VkDevice, VkFence                                                                                       | vkGetFenceStatus
+VkDevice, Vec<VkFence>                                                                                  | vkResetFences
+VkDevice, Vec<VkFence>, waitAll, timeout                                                                | vkWaitForFences
+
+typedef enum VkExternalFenceHandleTypeFlags {               typedef enum VkSemaphoreWaitFlags {
+    VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_FD_BIT,                VK_SEMAPHORE_WAIT_ANY_BIT,
+    VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_BIT,         }
+    VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT,     typedef enum VkEventCreateFlags {
+    VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT,                  VK_EVENT_CREATE_DEVICE_ONLY_BIT_KHR,
+}                                                           }
+                                                            typedef enum VkFenceCreateFlags {
+                                                                VK_FENCE_CREATE_SIGNALED_BIT,
+                                                            }
+
+
 
 ------------------
 

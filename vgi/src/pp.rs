@@ -178,6 +178,7 @@ impl<'a> PrettyRow for MemoryType<'a> {
     }
 }
 
+// TODO: don't do this as table, there are way too many details.
 impl<'a> PrettyRow for PhysicalDevice<'a> {
     fn to_format() -> prettytable::format::TableFormat {
         *prettytable::format::consts::FORMAT_CLEAN
@@ -188,15 +189,37 @@ impl<'a> PrettyRow for PhysicalDevice<'a> {
     }
 
     fn to_row(&self) -> prettytable::Row {
-        let uuid = uuid::Uuid::from_slice(&self.uuid()[..]).unwrap();
+        let uuid_to_s = |id: &[u8; 16]| {
+            uuid::Uuid::from_slice(&id[..])
+                .unwrap()
+                .to_hyphenated()
+                .to_string()
+        };
+
+        let properties = self.properties();
+        let none = "-none-".to_string();
+
         row![
             self.index(),
-            format!("{}\nUUID:{}", self.name(), uuid.to_hyphenated()),
-            physical_device_type_to_str(self.ty()),
-            &format!("{:x}", self.pci_device_id()),
-            &format!("{:x}", self.pci_vendor_id()),
-            self.api_version(),
-            self.driver_version(),
+            format!(
+                "{}\nDEVICE_UUID:{}\nDRIVER_UUID:{}",
+                properties.device_name.as_ref().unwrap_or(&none),
+                properties
+                    .device_uuid
+                    .as_ref()
+                    .map(uuid_to_s)
+                    .unwrap_or(none.clone()),
+                properties
+                    .driver_uuid
+                    .as_ref()
+                    .map(uuid_to_s)
+                    .unwrap_or(none.clone())
+            ),
+            physical_device_type_to_str(properties.device_type.unwrap()),
+            &format!("{:x}", properties.pci_device.unwrap()),
+            &format!("{:x}", properties.vendor_id.unwrap()),
+            properties.api_version.unwrap(),
+            properties.driver_version.unwrap(),
         ]
     }
 }

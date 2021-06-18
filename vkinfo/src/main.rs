@@ -228,7 +228,7 @@ fn info_device(_opts: Opt) {
 
     let vobj = Vulkan::new();
     let layers = vobj.as_layers();
-    let extns = vobj.as_extensions();
+    // let extns = vobj.as_extensions();
     let pds = vobj.as_physical_devices();
 
     println!("{}: {}", "Number of physical devices".yellow(), pds.len());
@@ -238,8 +238,9 @@ fn info_device(_opts: Opt) {
 
     make_table(&layers).print_tty(force_color);
     println!();
-    make_table(&extns).print_tty(force_color);
-    println!();
+    // TODO
+    //make_table(&extns).print_tty(force_color);
+    //println!();
 
     make_table_pdlimits(&pds).print_tty(force_color);
     println!();
@@ -320,7 +321,8 @@ fn make_table_pdfeatures(vobj: &Vulkan) -> prettytable::Table {
 
 fn print_physical_devices(pds: &[PhysicalDevice], force_color: bool) {
     for pd in pds {
-        let s = format!("Physical-device {{{}}} {}", pd.index(), pd.name()).red();
+        let name = pd.properties().device_name.as_ref().unwrap();
+        let s = format!("Physical-device {{{}}} {}", pd.index(), name,).red();
         println!("{}", s);
 
         let mut heap_table = prettytable::Table::new();

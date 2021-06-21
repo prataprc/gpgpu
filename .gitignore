@@ -12,3 +12,4 @@ perf.data.old
 *.png
 *.jpg
 *.jpeg
+.vimsession

@@ -224,6 +224,9 @@ fn info_formats(opts: Opt) {
 }
 
 fn info_device(_opts: Opt) {
+    use prettytable::Cell;
+    use vgi::pp::transpose;
+
     let force_color = false;
 
     let vobj = Vulkan::new();
@@ -233,7 +236,23 @@ fn info_device(_opts: Opt) {
 
     println!("{}: {}", "Number of physical devices".yellow(), pds.len());
     println!();
-    make_table(&pds).print_tty(force_color);
+    let mut table = make_table(&pds);
+    table.unset_titles();
+    let mut table = transpose(table);
+    // add property column
+    for (row, cell) in table
+        .row_iter_mut()
+        .zip(PhysicalDevice::to_head().into_iter())
+    {
+        row.insert_cell(0, cell.clone())
+    }
+    // add titles
+    let mut titles = Row::new(vec![Cell::new("")]);
+    pds.iter()
+        .map(|pd| titles.add_cell(Cell::new(&pd.index().to_string())));
+    table.set_titles(titles);
+    // print
+    table.print_tty(force_color);
     println!();
 
     make_table(&layers).print_tty(force_color);

@@ -68,8 +68,8 @@ impl<'a> PrettyRow for FaceParam<'a> {
 
     fn to_row(&self) -> prettytable::Row {
         use vgi::format_unwrap_or;
+        use vgi::pp::tos;
 
-        let e = "✗".to_string();
         let face = self.face;
 
         let mut row = row![Fg => self.name];
@@ -81,43 +81,59 @@ impl<'a> PrettyRow for FaceParam<'a> {
             "oblique" => if face.is_oblique() { "✓" } else { "✗" }.to_string(),
             "monospaced" => if face.is_monospaced() { "✓" } else { "✗" }.to_string(),
             "variable" => if face.is_variable() { "✓" } else { "✗" }.to_string(),
-            "units_per_em" => format_unwrap_or!(face.units_per_em(), e),
+            "units_per_em" => format_unwrap_or!(face.units_per_em(), tos, "✗"),
             "weight" => format!("{:?}", face.weight()),
             "width" => format!("{:?}", face.width()),
-            "italic_angle" => format_unwrap_or!(face.italic_angle(), e),
+            "italic_angle" => format_unwrap_or!(face.italic_angle(), tos, "✗"),
             "ascender/vertical" => {
                 let a = face.ascender();
-                let b = format_unwrap_or!(face.vertical_ascender(), e);
+                let b = format_unwrap_or!(face.vertical_ascender(), tos, "✗");
                 format!("{}/{}", a, b)
             }
             "descender/vertical" => {
                 let a = face.descender();
-                let b = format_unwrap_or!(face.vertical_descender(), e);
+                let b = format_unwrap_or!(face.vertical_descender(), tos, "✗");
                 format!("{}/{}", a, b)
             }
             "line_gap/vertical" => {
                 let a = face.line_gap();
-                let b = format_unwrap_or!(face.vertical_line_gap(), e);
+                let b = format_unwrap_or!(face.vertical_line_gap(), tos, "✗");
                 format!("{}/{}", a, b)
             }
             "height/vertical" => {
                 let a = face.height();
-                let b = format_unwrap_or!(face.vertical_height(), e);
+                let b = format_unwrap_or!(face.vertical_height(), tos, "✗");
                 format!("{}/{}", a, b)
             }
-            "x_height" => format_unwrap_or!(face.x_height(), e),
-            "capital_height" => format_unwrap_or!(face.capital_height(), e),
+            "x_height" => format_unwrap_or!(face.x_height(), tos, "✗"),
+            "capital_height" => format_unwrap_or!(face.capital_height(), tos, "✗"),
             "underline_metrics" => {
-                format_unwrap_or!(face.underline_metrics().map(lmetrics_to_string), e)
+                format_unwrap_or!(
+                    face.underline_metrics().map(lmetrics_to_string),
+                    tos,
+                    "✗"
+                )
             }
             "strikeout_metrics" => {
-                format_unwrap_or!(face.strikeout_metrics().map(lmetrics_to_string), e)
+                format_unwrap_or!(
+                    face.strikeout_metrics().map(lmetrics_to_string),
+                    tos,
+                    "✗"
+                )
             }
             "subscript_metrics" => {
-                format_unwrap_or!(face.subscript_metrics().map(smetrics_to_string), e)
+                format_unwrap_or!(
+                    face.subscript_metrics().map(smetrics_to_string),
+                    tos,
+                    "✗"
+                )
             }
             "superscript_metrics" => {
-                format_unwrap_or!(face.superscript_metrics().map(smetrics_to_string), e)
+                format_unwrap_or!(
+                    face.superscript_metrics().map(smetrics_to_string),
+                    tos,
+                    "✗"
+                )
             }
             "glyph_classes" => if face.has_glyph_classes() {
                 "✓"
@@ -221,26 +237,26 @@ impl<'a> PrettyRow for GlyphParam<'a> {
 
     fn to_row(&self) -> prettytable::Row {
         use vgi::format_unwrap_or;
+        use vgi::pp::tos;
 
-        let e = "✗".to_string();
         let (face, g, codepoint) = (self.face, self.g, self.codepoint);
 
         row![
             Fg -> format!("{:?}/0x{:x}", std::char::from_u32(codepoint), codepoint),
             self.g.0,
-            format_unwrap_or!(face.glyph_hor_advance(g), e),
-            format_unwrap_or!(face.glyph_ver_advance(g), e),
-            format_unwrap_or!(face.glyph_hor_side_bearing(g), e),
-            format_unwrap_or!(face.glyph_ver_side_bearing(g), e),
-            format_unwrap_or!(face.glyph_y_origin(g), e),
+            format_unwrap_or!(face.glyph_hor_advance(g), tos, "✗"),
+            format_unwrap_or!(face.glyph_ver_advance(g), tos, "✗"),
+            format_unwrap_or!(face.glyph_hor_side_bearing(g), tos, "✗"),
+            format_unwrap_or!(face.glyph_ver_side_bearing(g), tos, "✗"),
+            format_unwrap_or!(face.glyph_y_origin(g), tos, "✗"),
             if face.has_glyph_classes() {
-                face.glyph_class(g).map(|x| format!("{:?}", x)).unwrap_or(e.clone())
+                face.glyph_class(g).map(|x| format!("{:?}", x)).unwrap_or("✗".to_string())
             } else {
                 "✗".to_string()
             },
             face.glyph_mark_attachment_class(g).0,
             if face.is_mark_glyph(g, None) { "✓" } else { "✗" }.to_string(),
-            face.glyph_bounding_box(g).map(|rec| rect_to_string(rec)).unwrap_or(e.clone())
+            face.glyph_bounding_box(g).map(|rec| rect_to_string(rec)).unwrap_or("✗".to_string())
         ]
     }
 }

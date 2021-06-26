@@ -1,5 +1,5 @@
 use colored::Colorize;
-use prettytable::{cell, row, Row, Table};
+use prettytable::{cell, row, Cell, Row, Table};
 use structopt::StructOpt;
 use vulkano::{
     device::{Device, DeviceExtensions},
@@ -224,18 +224,53 @@ fn info_formats(opts: Opt) {
 }
 
 fn info_device(_opts: Opt) {
-    use prettytable::Cell;
+    use info::{device_extensions, instance_extensions, ChecklistItem};
     use vgi::pp::transpose;
 
     let force_color = false;
 
     let vobj = Vulkan::new();
     let layers = vobj.as_layers();
-    // let extns = vobj.as_extensions();
     let pds = vobj.as_physical_devices();
 
     println!("{}: {}", "Number of physical devices".yellow(), pds.len());
     println!();
+
+    make_table(&layers).print_tty(force_color);
+    println!();
+
+    println!("{}:", "Instance core extensions".yellow());
+    make_table(&instance_extensions()).print_tty(force_color);
+    println!();
+
+    println!("{}:", "Device core extensions".yellow());
+    let mut iter = pds.iter().map(|pd| device_extensions(pd.clone()));
+    let mut table = match iter.next() {
+        Some(dextns) => {
+            let table = make_table(&dextns);
+            iter.fold(table, |mut table, dextns| {
+                for (r, c) in table.row_iter_mut().zip(make_table(&dextns).column_iter(1))
+                {
+                    r.add_cell(c.clone())
+                }
+                table
+            })
+        }
+        None => make_table(&Vec::<ChecklistItem>::default()),
+    };
+    table.unset_titles();
+    // add titles
+    let mut head = row![Fy => "Extension"];
+    pds.iter().for_each(|pd| {
+        head.add_cell(Cell::from(&format!("device-{}", pd.index())).style_spec("Fy"))
+    });
+    table.set_titles(head);
+    table.set_format(PhysicalDevice::to_format());
+    // print
+    table.print_tty(force_color);
+    println!();
+
+    println!("{}:", "Physical device properties".yellow());
     let mut table = make_table(&pds);
     table.unset_titles();
     let mut table = transpose(table);
@@ -247,64 +282,21 @@ fn info_device(_opts: Opt) {
         row.insert_cell(0, cell.clone())
     }
     // add titles
-    let mut titles = Row::new(vec![Cell::new("")]);
-    pds.iter()
-        .map(|pd| titles.add_cell(Cell::new(&pd.index().to_string())));
-    table.set_titles(titles);
+    let mut head = row![Fy => "Property/Limit"];
+    pds.iter().for_each(|pd| {
+        head.add_cell(Cell::from(&format!("device-{}", pd.index())).style_spec("Fy"))
+    });
+    table.set_titles(head);
+    table.set_format(PhysicalDevice::to_format());
     // print
     table.print_tty(force_color);
     println!();
 
-    make_table(&layers).print_tty(force_color);
-    println!();
-    // TODO
-    //make_table(&extns).print_tty(force_color);
-    //println!();
-
-    make_table_pdlimits(&pds).print_tty(force_color);
-    println!();
     make_table_pdfeatures(&vobj).print_tty(force_color);
     println!();
 
     print_physical_devices(&pds, force_color);
     println!();
-}
-
-fn make_table_pdlimits(pds: &[PhysicalDevice]) -> prettytable::Table {
-    use info::{physical_device_limits, LimitItem};
-
-    let mut table = prettytable::Table::new();
-
-    match pds.len() {
-        0 => table,
-        _ => {
-            let titles = row![
-                Fy => "Limit-name", format!("Device-{}", pds[DEFAULT_PHYDEV].index())
-            ];
-
-            let mut lists: Vec<Vec<LimitItem>> =
-                pds.iter().map(|pd| physical_device_limits(&pd)).collect();
-            let list = lists.remove(0);
-
-            for l in list.iter() {
-                table.add_row(l.to_row());
-            }
-
-            for list in lists.into_iter() {
-                for (i, l) in list.iter().enumerate() {
-                    table
-                        .get_mut_row(i)
-                        .unwrap()
-                        .add_cell(l.to_row().get_cell(1).unwrap().clone())
-                }
-            }
-
-            table.set_titles(titles);
-
-            table.set_format(LimitItem::to_format());
-            table
-        }
-    }
 }
 
 fn make_table_pdfeatures(vobj: &Vulkan) -> prettytable::Table {
@@ -313,7 +305,7 @@ fn make_table_pdfeatures(vobj: &Vulkan) -> prettytable::Table {
     let mut pds = vobj.as_physical_devices().to_vec();
     let mut table = prettytable::Table::new();
 
-    let titles = row![Fy => "Feature-name", format!("Device-0")];
+    let head = row![Fy => "Feature-name", format!("Device-0")];
 
     match pds.len() {
         0 => table,
@@ -331,7 +323,7 @@ fn make_table_pdfeatures(vobj: &Vulkan) -> prettytable::Table {
                 }
             }
 
-            table.set_titles(titles);
+            table.set_titles(head);
             table.set_format(ChecklistItem::to_format());
             table
         }

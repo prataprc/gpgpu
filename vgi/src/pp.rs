@@ -6,8 +6,8 @@ use vulkano::{
     image::{ImageAspects, SampleCounts},
     instance::{
         DriverId, LayerProperties, MemoryHeap, MemoryType, PhysicalDevice,
-        PhysicalDeviceType, PointClippingBehavior, QueueFamily,
-        ShaderFloatControlsIndependence, SubgroupFeatures,
+        PointClippingBehavior, QueueFamily, ShaderFloatControlsIndependence,
+        SubgroupFeatures,
     },
 };
 
@@ -538,7 +538,9 @@ impl<'a> PrettyRow for PhysicalDevice<'a> {
         };
 
         let props = self.properties();
-        let none = "-none-".to_string();
+        let driver_uuid = props.driver_uuid.as_ref().map(uuid_to_s);
+        let device_uuid = props.device_uuid.as_ref().map(uuid_to_s);
+        let pcache_uuid = props.pipeline_cache_uuid.as_ref().map(uuid_to_s);
 
         row![
             format_unwrap_or!(props.api_version, tos, "-"),
@@ -550,8 +552,8 @@ impl<'a> PrettyRow for PhysicalDevice<'a> {
             format_unwrap_or!(props.driver_id, driver_id_to_str, "-"),
             format_unwrap_or!(props.driver_info, tos, "-"),
             format_unwrap_or!(props.driver_name, tos, "-"),
-            format_unwrap_or!(props.driver_uuid, tod, "-"),
-            format_unwrap_or!(props.device_uuid, tod, "-"),
+            format_unwrap_or!(driver_uuid, tod, "-"),
+            format_unwrap_or!(device_uuid, tod, "-"),
             format_unwrap_or!(props.discrete_queue_priorities, tos, "-"),
             format_unwrap_or!(props.pci_function, tos, "-"),
             format_unwrap_or!(props.active_compute_unit_count, tos, "-"),
@@ -986,7 +988,7 @@ impl<'a> PrettyRow for PhysicalDevice<'a> {
             format_unwrap_or!(props.pci_device, tos, "-"),
             format_unwrap_or!(props.pci_domain, tos, "-"),
             format_unwrap_or!(props.per_view_position_all_components, tos, "-"),
-            format_unwrap_or!(props.pipeline_cache_uuid, tod, "-"),
+            format_unwrap_or!(pcache_uuid, tod, "-"),
             format_unwrap_or!(props.point_clipping_behavior, point_clipping_to_str, "-"),
             format_unwrap_or!(props.point_size_granularity, tos, "-"),
             format_unwrap_or!(props.point_size_range, tod, "-"),
@@ -1284,7 +1286,7 @@ fn shader_stages_to_str(val: &ShaderStages) -> String {
     if val.compute {
         outs.push("cs")
     }
-    outs.join("/")
+    outs.join("|")
 }
 
 fn shader_float_control_to_str(val: &ShaderFloatControlsIndependence) -> String {
@@ -1339,7 +1341,7 @@ fn sample_counts_to_str(val: &SampleCounts) -> String {
     if val.sample64 {
         outs.push("64")
     }
-    outs.join("/")
+    outs.join("|")
 }
 
 fn point_clipping_to_str(val: &PointClippingBehavior) -> String {
@@ -1377,17 +1379,7 @@ fn subgroup_to_str(val: &SubgroupFeatures) -> String {
     if val.quad {
         outs.push("quad")
     }
-    outs.join("/")
-}
-
-fn physical_device_type_to_str(ty: PhysicalDeviceType) -> &'static str {
-    match ty {
-        PhysicalDeviceType::IntegratedGpu => "IntegratedGpu",
-        PhysicalDeviceType::DiscreteGpu => "DiscreteGpu",
-        PhysicalDeviceType::VirtualGpu => "VirtualGpu",
-        PhysicalDeviceType::Cpu => "Cpu",
-        PhysicalDeviceType::Other => "Other",
-    }
+    outs.join("|")
 }
 
 fn format_cell_content(a: bool, b: bool, c: bool) -> String {

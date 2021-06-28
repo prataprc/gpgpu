@@ -53,6 +53,7 @@ fn info_surface(_opts: Opt) {
         image_tiling_list, image_type_list, image_usage_list, surface_capabilities,
         ImageFormat,
     };
+    use vgi::vulkan::extensions_for_features;
     use vulkano::format::Format;
 
     let force_color = false;
@@ -116,7 +117,8 @@ fn info_surface(_opts: Opt) {
 
     let (device, _iter) = {
         let features = pd.supported_features();
-        let extens = DeviceExtensions::supported_by_device(pd);
+        let extens =
+            extensions_for_features(&features, DeviceExtensions::supported_by_device(pd));
         let qfs = pd.queue_families().map(|q| (q, 1.0));
         Device::new(pd, &features, &extens, qfs).unwrap()
     };
@@ -151,6 +153,7 @@ fn info_formats(opts: Opt) {
     use info::{
         format_list, image_tiling_list, image_type_list, image_usage_list, ImageFormat,
     };
+    use vgi::vulkan::extensions_for_features;
 
     let force_color = false;
     let phydev = opts.phydev.unwrap_or(DEFAULT_PHYDEV);
@@ -191,7 +194,8 @@ fn info_formats(opts: Opt) {
 
     let (device, _iter) = {
         let features = pd.supported_features();
-        let extens = DeviceExtensions::supported_by_device(pd);
+        let extens =
+            extensions_for_features(&features, DeviceExtensions::supported_by_device(pd));
         let qfs = pd.queue_families().map(|q| (q, 1.0));
         Device::new(pd, &features, &extens, qfs).unwrap()
     };

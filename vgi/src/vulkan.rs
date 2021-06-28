@@ -1,5 +1,8 @@
 use vk_sys as vk;
-use vulkano::instance::{Instance, InstanceExtensions, LayerProperties, PhysicalDevice};
+use vulkano::{
+    device::{DeviceExtensions, Features},
+    instance::{Instance, InstanceExtensions, LayerProperties, PhysicalDevice},
+};
 
 use std::{ffi::CStr, sync::Arc};
 
@@ -183,76 +186,29 @@ pub fn layers() -> Result<Vec<LayerProperties>> {
     Ok(err_at!(Vk, layers_list())?.collect())
 }
 
-//pub fn extensions(layer: Option<&str>) -> Result<Vec<ExtensionProperties>> {
-//    use vulkano::instance::loader::auto_loader;
-//
-//    let ptrs = err_at!(Vk, auto_loader())?;
-//    let entry_points = ptrs.entry_points();
-//
-//    let (layer_cstr, _s) = match layer.clone() {
-//        Some(layer) => {
-//            let _s = err_at!(Invalid, CString::new(layer))?;
-//            (_s.as_c_str().as_ptr(), _s)
-//        }
-//        None => (ptr::null(), CString::new("").unwrap()),
-//    };
-//
-//    let mut properties: Vec<ExtensionProperties> = unsafe {
-//        let mut num = 0;
-//        check_errors(entry_points.EnumerateInstanceExtensionProperties(
-//            layer_cstr,
-//            &mut num,
-//            ptr::null_mut(),
-//        ))?;
-//
-//        let mut properties = Vec::with_capacity(num as usize);
-//        check_errors(entry_points.EnumerateInstanceExtensionProperties(
-//            layer_cstr,
-//            &mut num,
-//            properties.as_mut_ptr(),
-//        ))?;
-//        properties.set_len(num as usize);
-//        properties.into_iter().map(From::from).collect()
-//    };
-//    for prop in properties.iter_mut() {
-//        match layer {
-//            Some(layer) => prop.layers = vec![layer.to_string()],
-//            None => prop.core = true,
-//        }
-//    }
-//
-//    Ok(properties)
-//}
-
-//pub fn device_extensions(pd: PhysicalDevice) -> Result<Vec<ExtensionProperties>> {
-//    let entry_points = pd.instance().pointers();
-//    let index = pd.index();
-//
-//    let mut properties: Vec<ExtensionProperties> = unsafe {
-//        let mut num = 0;
-//        check_errors(entry_points.EnumerateDeviceExtensionProperties(
-//            pd.internal_object(),
-//            ptr::null(),
-//            &mut num,
-//            ptr::null_mut(),
-//        ))?;
-//
-//        let mut properties = Vec::with_capacity(num as usize);
-//        check_errors(entry_points.EnumerateDeviceExtensionProperties(
-//            pd.internal_object(),
-//            ptr::null(),
-//            &mut num,
-//            properties.as_mut_ptr(),
-//        ))?;
-//        properties.set_len(num as usize);
-//        properties.into_iter().map(From::from).collect()
-//    };
-//    for props in properties.iter_mut() {
-//        props.physical_devices = vec![index];
-//    }
-//
-//    Ok(properties)
-//}
+// TODO: why are we even doing this ? How can a device extension is enabled when a device
+// feature is not available.
+pub fn extensions_for_features(
+    features: &Features,
+    mut extensions: DeviceExtensions,
+) -> DeviceExtensions {
+    if !features.descriptor_indexing {
+        extensions.ext_descriptor_indexing = false
+    }
+    if !features.draw_indirect_count {
+        extensions.khr_draw_indirect_count = false
+    }
+    if !features.sampler_filter_minmax {
+        extensions.ext_sampler_filter_minmax = false
+    }
+    if !features.sampler_mirror_clamp_to_edge {
+        extensions.khr_sampler_mirror_clamp_to_edge = false
+    }
+    if !features.shader_output_layer {
+        extensions.ext_shader_viewport_index_layer = false
+    }
+    extensions
+}
 
 pub fn check_errors(result: vk::Result) -> Result<()> {
     if result & 0x80000000 > 0 {

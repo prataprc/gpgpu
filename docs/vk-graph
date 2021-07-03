@@ -1,4 +1,82 @@
-VkMemoryHeap, VkMemoryType, VkRect2D, VkOffset2D, VkOffset3D, VkExtent2D, VkExtent3D
+typedef uint64_t VkDeviceSize;
+typedef uint64_t VkDeviceAddress;
+VkExtent2D VkExtent3D { width, height, depth }
+VkOffset2D VkOffset3D { x, y, z }
+VkRect2D { VkOffset2D, VkExtent2D }
+
+Fragment:
+    composed-of -> raster-position, color, texture-coordinates, depth, alpha, stencil, scissor, window-id
+    ops -> discard-rectangle, scissor, exclusive-scissor, sample-mask, fragment-shading, multisample-coverage, depth-bounds,
+           stencil, depth, representative-fragment, sample-couting, coverage-to-color, coverage-reduction, coverage-modulation
+
+VkFormat:
+    RGBA/E/DS/X
+    UNORM/SNORM/USCALED/SSCALED/UINT/SINT/UFLOAT/SFLOAT
+    PACK8/PACK16/2PACK16/3PACK16/4PACK16/PACK32/BLOCK
+    BC1/BC2/BC3/BC4/BC5/BC6H/BC7/ETC2/EAC/ASTC/PVRTC1/PVRTC2
+    2BPP/4BPP/SRGB, 2PLANE/3PLANE, 422/420/444
+
+Image
+    ImageType -> 1D, 2D, 3D
+    ImageTiling -> Linear, Optimal
+    ImageDimensions -> {w, array_layers}, {w, h, array_layers}, {w, h, d }
+    ImageAspects -> Color, Depth, Stencil, Metadata, Plane0, Plane1, Plane2, MemoryPlane0, MemoryPlane1, MemoryPlane2,
+    ImageUsage -> tx_source, tx_dest, sampled, storage, color_attach, depth_stencil_attach, transient_attch, input_attach
+    ImageCreate ->
+    Format -> Size, DataType, Plane, Block, Aspects, Properties(Phydev)
+    ImageFormatProperties -> max_extent, max_mip_levels, max_array_layers, sample_counts, max_resource_size
+    ImageLayout -> undefined, general, preinitialized
+                   tx_src_optimal, tx_dst_optimal,
+                   attach_optimal, ro_optimal, color_attach_optimal, depth_attach_optimal, stencil_attach_optimal, depth_ro_optimal, stencil_ro_optimal,
+                   depth_stencil_attach_optimal, depth_stencil_ro_optimal, depth_ro_stencil_attach_optimal, depth_attach_stencil_ro_optimal,
+                   video_encode_src, video_encode_dst, video_encode_dpb, video_decode_src, video_decode_dst, video_decode_dpb,
+                   shader_ro_optimal, present_src, shared_present,
+
+Family of types
+
+`Vk*CreateInfo`, `Vk*Flags`, `Vk*FlagBit`,
+
+Family of functions
+
+`vkQueue*`, `vkCreate*`, `vkAllocate*`, `vkDestroy*`, `vkFree*`
+`vkGet*`, `vkEnumerate*`, `vkCmd*`
+
+
+Dispatchable and Non-Dispatchable Handles
+-----------------------------------------
+
+VkInstance
+    +-> VkPhysicalDevice
+    |   +-> VkDevice <- VkDeviceCreateInfo
+    |       +-> VkQueue
+    |       +-> VkSwapchain <- VkSwapchainCreateInfoKHR
+    |       +-> VkCommandPool <- VkCommandPoolCreateInfo
+    |       +-> VkCommandBuffer <- VkCommandBufferAllocateInfo
+    |       +-> VkDeviceMemory <- VkMemoryAllocateInfo
+    |       +-> VkBuffer <- VkBufferCreateInfo
+    |       +-> VkBufferView <- VkBufferViewCreateInfo
+    |       +-> VkImage <- VkImageCreateInfo
+    |       +-> VkImageView <- VkImageViewCreateInfo
+    |       +-> VkSampler <- VkSamplerCreateInfo
+    |       +-> VkQueryPool <- VkQueryPoolCreateInfo
+    |       +-> VkShaderModule <- VkShaderModuleCreateInfo
+    |       +-> VkPipeline <- VkPipelineCache, VkGraphicsPipelineCreateInfo
+    |       +-> VkPipeline <- VkPipelineCache, VkComputePipelineCreateInfo
+    |       +-> VkPipelineLayout <- VkPipelineLayoutCreateInfo
+    |       +-> VkPipelineCache <- VkPipelineCacheCreateInfo
+    |       +-> VkEvent <- VkEventCreateInfo
+    |       +-> VkFence <- VkFenceCreateInfo
+    |       +-> VkSemaphore <- VkSemaphoreCreateInfo
+    |       +-> VkRenderPass <- VkRenderPassCreateInfo
+    |       +-> VkFramebuffer <- VkFramebufferCreateInfo
+    |       +-> VkDescriptorPool <- VkDescriptorPoolCreateInfo
+    |       +-> VkDescriptorSet <- VkDescriptorSetAllocateInfo
+    |       +-> VkDescriptorSetLayout <- VkDescriptorSetLayoutCreateInfo
+    |       +-> VkDescriptorUpdateTemplate <- VkDescriptorUpdateTemplateCreateInfo
+    +-> VkSurface
+    +-> VkDisplay
+    +-> VkDisplayMode
+
 
 Instance, PhysicalDevice
 ========================
@@ -29,14 +107,26 @@ typedef enum VkImageCreateFlag {                        typedef enum VkImageUsag
     VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT,                     VK_IMAGE_USAGE_STORAGE_BIT,                 }                               VkSampleCountFlags    sampleCounts;
     VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,                    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,                                        VkDeviceSize          maxResourceSize;
     VK_IMAGE_CREATE_ALIAS_BIT,                              VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,                            }
-    VK_IMAGE_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT,        VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT,
-    VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT,                VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
-    VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT,    }
-    VK_IMAGE_CREATE_EXTENDED_USAGE_BIT,                 typedef enum VkImageTiling {
-    VK_IMAGE_CREATE_PROTECTED_BIT,                          VK_IMAGE_TILING_OPTIMAL,
-    VK_IMAGE_CREATE_DISJOINT_BIT,                           VK_IMAGE_TILING_LINEAR,
-}                                                       }
+    VK_IMAGE_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT,        VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT,    typedef enum VkPhysicalDeviceType {
+    VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT,                VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,            VK_PHYSICAL_DEVICE_TYPE_OTHER,
+    VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT,    }                                                   VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU,
+    VK_IMAGE_CREATE_EXTENDED_USAGE_BIT,                 typedef enum VkImageTiling {                        VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU,
+    VK_IMAGE_CREATE_PROTECTED_BIT,                          VK_IMAGE_TILING_OPTIMAL,                        VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU,
+    VK_IMAGE_CREATE_DISJOINT_BIT,                           VK_IMAGE_TILING_LINEAR,                         VK_PHYSICAL_DEVICE_TYPE_CPU,
+}                                                       }                                               }
 
+
+typedef struct VkMemoryType {
+    VkMemoryPropertyFlags    propertyFlags;                                                     typedef enum VkMemoryPropertyFlags {
+    uint32_t                 heapIndex;                                                             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+}                                                                                                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+                                                                                                    VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+typedef struct VkMemoryHeap {                   typedef enum VkMemoryHeapFlags {                    VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
+    VkDeviceSize         size;                      VK_MEMORY_HEAP_DEVICE_LOCAL_BIT,                VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT,
+    VkMemoryHeapFlags    flags;                     VK_MEMORY_HEAP_MULTI_INSTANCE_BIT,              VK_MEMORY_PROPERTY_PROTECTED_BIT,
+}                                               }                                                   VK_MEMORY_PROPERTY_DEVICE_COHERENT_BIT_AMD,
+                                                                                                    VK_MEMORY_PROPERTY_DEVICE_UNCACHED_BIT_AMD,
+                                                                                                }
 
 VkDevice, VkQueue
 =================
@@ -585,6 +675,7 @@ typedef struct VkBarrierInfo {                                  typedef struct V
     uint32_t                        imageMemoryBarrierCount,    }                                                       typedef struct VkMemoryBarrier {
     const VkImageMemoryBarrier*     pImageMemoryBarriers);                                                                  VkAccessFlags      srcAccessMask;
 }                                                                                                                           VkAccessFlags      dstAccessMask;
+                                                                                                                        }
 
 
 VkCommandBuffer, VkEvent, VkPipelineStageFlags                                                          | vkCmdResetEvent
@@ -611,6 +702,32 @@ typedef enum VkCommandBufferResetFlags {
 
 Synchronisation
 ===============
+
+Implicit ordering guarantees                Fences, Sempahores, Events, Pipeline-barriers, Renderpasses
+Explicit synchronisation primitives
+Semaphore wait operation                    Synchronization commands introduce explicit execution dependencies, and memory dependencies between
+Semaphore signal operation                  two sets of operations defined by the command’s two synchronization scopes.
+Fence wait operation
+Fence signal operation
+
+Processing/execution order
+
+* Primitive order
+* Submission order
+* Pipeline order
+* Rasterization order
+* Dispatch order
+
+A memory dependency is an execution dependency which includes availability and visibility operations such that:
+
+* The first set of operations happens-before the availability operation.
+* The availability operation happens-before the visibility operation.
+* The visibility operation happens-before the second set of operations.
+
+Event Synchronization primitives are used to insert a fine-grained dependency between commands submitted to the same queue, or between the host and a queue.
+
+Image subresources can be transitioned from one layout to another as part of a memory dependency
+
 
 VkDevice                                                                                                | vkCreateSemaphore
 VkDevice, VkSemaphore, value_u64                                                                        | vkSignalSemaphore

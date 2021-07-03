@@ -14,7 +14,7 @@ winit = "0.25.0"
 vgi = { version = "0.1.0", path = "../vgi" }
 
 
-vulkano = { version = "0.23", path = "/home/prataprc/devrs/vulkano/vulkano/" }
-vk-sys = { version = "0.6.1", path = "/home/prataprc/devrs/vulkano/vk-sys/" }
-vulkano-win = { version = "0.23", path = "/home/prataprc/devrs/vulkano/vulkano-win/" }
-vulkano-shaders = { version = "0.23", path = "/home/prataprc/devrs/vulkano/vulkano-shaders/" }
+vulkano = { version = "0.24", path = "/home/prataprc/devrs/vulkano/vulkano/" }
+vk-sys = { version = "0.6.2", path = "/home/prataprc/devrs/vulkano/vk-sys/" }
+vulkano-win = { version = "0.24", path = "/home/prataprc/devrs/vulkano/vulkano-win/" }
+vulkano-shaders = { version = "0.24", path = "/home/prataprc/devrs/vulkano/vulkano-shaders/" }

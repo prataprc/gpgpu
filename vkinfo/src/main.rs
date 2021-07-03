@@ -13,7 +13,8 @@ use winit::window::WindowBuilder;
 
 use vgi::{
     pp::{make_table, PrettyRow},
-    vulkan::Vulkan,
+    vulkan::{Builder, Vulkan},
+    Result,
 };
 
 mod info;
@@ -39,16 +40,21 @@ pub struct Opt {
 fn main() {
     let opts = Opt::from_args();
 
-    if opts.surface {
+    let res = if opts.surface {
         info_surface(opts)
     } else if opts.formats {
         info_formats(opts)
     } else {
         info_device(opts)
+    };
+
+    match res {
+        Ok(_) => (),
+        Err(err) => println!("unexpected error: {}", err),
     }
 }
 
-fn info_surface(_opts: Opt) {
+fn info_surface(_opts: Opt) -> Result<()> {
     use crate::info::{
         image_tiling_list, image_type_list, image_usage_list, surface_capabilities,
         ImageFormat,
@@ -58,7 +64,7 @@ fn info_surface(_opts: Opt) {
 
     let force_color = false;
 
-    let vobj = Vulkan::new();
+    let vobj: Vulkan = Builder::new()?.build().unwrap();
     let pds = vobj.as_physical_devices();
     let pd = pds[DEFAULT_PHYDEV];
 
@@ -147,9 +153,11 @@ fn info_surface(_opts: Opt) {
     }
     filter_empty_rows(make_table(&image_formats)).print_tty(force_color);
     println!();
+
+    Ok(())
 }
 
-fn info_formats(opts: Opt) {
+fn info_formats(opts: Opt) -> Result<()> {
     use info::{
         format_list, image_tiling_list, image_type_list, image_usage_list, ImageFormat,
     };
@@ -158,7 +166,7 @@ fn info_formats(opts: Opt) {
     let force_color = false;
     let phydev = opts.phydev.unwrap_or(DEFAULT_PHYDEV);
 
-    let vobj = Vulkan::new();
+    let vobj: Vulkan = Builder::new()?.build().unwrap();
     let pd = vobj.as_physical_devices()[phydev];
 
     // format attributes
@@ -225,21 +233,27 @@ fn info_formats(opts: Opt) {
     }
     filter_empty_rows(make_table(&image_formats)).print_tty(force_color);
     println!();
+
+    Ok(())
 }
 
-fn info_device(_opts: Opt) {
+fn info_device(_opts: Opt) -> Result<()> {
     use info::{device_extensions, instance_extensions, ChecklistItem};
-    use vgi::pp::transpose;
+    use vgi::{pp::transpose, vulkan::layers};
 
     let force_color = false;
 
-    let vobj = Vulkan::new();
+    let layers = layers()?;
+    let layer_names: Vec<&str> = layers.iter().map(|l| l.name()).collect();
+    let vobj: Vulkan = Builder::new()?.with_layers(layer_names).build().unwrap();
     let layers = vobj.as_layers();
     let pds = vobj.as_physical_devices();
 
+    println!("{}: {}", "API Version".yellow(), vobj.api_version());
     println!("{}: {}", "Number of physical devices".yellow(), pds.len());
     println!();
 
+    println!("{}", "List of layers".yellow());
     make_table(&layers).print_tty(force_color);
     println!();
 
@@ -301,6 +315,8 @@ fn info_device(_opts: Opt) {
 
     print_physical_devices(&pds, force_color);
     println!();
+
+    Ok(())
 }
 
 fn make_table_pdfeatures(vobj: &Vulkan) -> prettytable::Table {

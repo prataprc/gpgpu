@@ -65,7 +65,7 @@ fn info_surface(_opts: Opt) -> Result<()> {
     let force_color = false;
 
     let vobj: Vulkan = Builder::new()?.build().unwrap();
-    let pds = vobj.as_physical_devices();
+    let pds = vobj.to_physical_devices();
     let pd = pds[DEFAULT_PHYDEV];
 
     let event_loop = EventLoop::new();
@@ -167,7 +167,7 @@ fn info_formats(opts: Opt) -> Result<()> {
     let phydev = opts.phydev.unwrap_or(DEFAULT_PHYDEV);
 
     let vobj: Vulkan = Builder::new()?.build().unwrap();
-    let pd = vobj.as_physical_devices()[phydev];
+    let pd = vobj.to_physical_devices()[phydev];
 
     // format attributes
     make_table(&format_list()).print_tty(force_color);
@@ -246,8 +246,8 @@ fn info_device(_opts: Opt) -> Result<()> {
     let layers = layers()?;
     let layer_names: Vec<&str> = layers.iter().map(|l| l.name()).collect();
     let vobj: Vulkan = Builder::new()?.with_layers(layer_names).build().unwrap();
-    let layers = vobj.as_layers();
-    let pds = vobj.as_physical_devices();
+    let layers = vobj.enabled_layers();
+    let pds = vobj.to_physical_devices();
 
     println!("{}: {}", "API Version".yellow(), vobj.api_version());
     println!("{}: {}", "Number of physical devices".yellow(), pds.len());
@@ -322,7 +322,7 @@ fn info_device(_opts: Opt) -> Result<()> {
 fn make_table_pdfeatures(vobj: &Vulkan) -> prettytable::Table {
     use info::{device_features, ChecklistItem};
 
-    let mut pds = vobj.as_physical_devices().to_vec();
+    let mut pds = vobj.to_physical_devices().to_vec();
     let mut table = prettytable::Table::new();
 
     let head = row![Fy => "Feature-name", format!("Device-0")];

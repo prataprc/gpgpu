@@ -15,6 +15,8 @@ use std::sync::Arc;
 
 use crate::{Error, Result};
 
+// TODO: vkGetPhysicalDeviceFormatProperties
+
 /// Maps to VkQueueFlagBits.
 #[derive(Clone)]
 pub enum QueueCapability {
@@ -27,6 +29,10 @@ pub enum QueueCapability {
 /// Similar to VkDeviceQueueCreateInfo. A single instance of QueueCreateInfo shall create
 /// as many VkQueue objects as then number of priorities, in other-words each item in
 /// priorities vector specify the priority for queue-count-index.
+///
+/// By default [Builder] creates a single queue with Graphics capabilities with priority
+/// `1.0`. Refer to [Builder::with_queues] to learn how to configure/create queues
+/// for [Vulkan] instances.
 #[derive(Clone)]
 pub struct QueueCreateInfo {
     pub cap: QueueCapability,
@@ -1318,6 +1324,12 @@ impl<'a> Vulkan<'a> {
         self.device.physical_device().memory_heaps().collect()
     }
 
+    /// Return the list of memory-types available for this device instance, depends
+    /// on the physical-device used to create this device.
+    pub fn memory_types(&self) -> Vec<MemoryType> {
+        self.device.physical_device().memory_types().collect()
+    }
+
     /// Return the list of queue-families available for this device instance, depends
     /// on the physical-device used to create this device.
     pub fn queue_families(&self) -> Vec<QueueFamily> {
@@ -1327,12 +1339,6 @@ impl<'a> Vulkan<'a> {
     /// Return the list of queue-families created for this device instance.
     pub fn active_queue_families(&self) -> Vec<QueueFamily> {
         self.device.active_queue_families().collect()
-    }
-
-    /// Return the list of memory-types available for this device instance, depends
-    /// on the physical-device used to create this device.
-    pub fn memory_types(&self) -> Vec<MemoryType> {
-        self.device.physical_device().memory_types().collect()
     }
 
     /// Return the properties of physical-device used to create this device.

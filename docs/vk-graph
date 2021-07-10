@@ -78,8 +78,8 @@ VkInstance
     +-> VkDisplayMode
 
 
-Instance, PhysicalDevice
-========================
+Instance
+========
 
                                                                                                 | vkEnumerateInstanceVersion                => Version
                                                                                                 | vkEnumerateInstanceLayerProperties        => Vec<VkLayerProperties>
@@ -88,6 +88,49 @@ layer                                                                           
 ApplicationInfo, layers, extensions                                                             | vkCreateInstance                          => VkInstance
 VkInstance                                                                                      | vkEnumeratePhysicalDeviceGroups           => Vec<VkPhysicalDeviceGroupProperties>
 VkInstance, name                                                                                | vkGetInstanceProcAddr                     => *func
+VkInstance                                                                                      | vkDestroyInstance                         =>
+
+VkInstance, VkDebugReportFlags, pfnCallbak, pUserData                                           | vkCreateDebugReportCallbackEXT            => VkDebugReportCallbackEXT
+VkInstance, VkDebugReportFlags, VkDebugReportObjectTypeEXT,  obj, loc, msgCode, layer, message  | vkDebugReportMessageEXT                   =>
+VkInstance, VkDebugReportCallbackEXT                                                            | vkDestroyDebugReportCallbackEXT           =>
+
+VkInstance, VkDebugUtilsMessengerCreateInfoEXT                                                  | vkCreateDebugUtilsMessengerEXT            => VkDebugUtilsMessengerEXT
+VkInstance, VkDebugUtilsMessageSeverityFlags VkDebugUtilsMessageTypeFlags, pCallbackData        | vkSubmitDebugUtilsMessageEXT              =>
+VkInstance, VkDebugUtilsMessengerEXT                                                            | vkDestroyDebugUtilsMessengerEXT           =>
+
+
+typedef enum VkDebugReportFlags {                   typedef enum VkDebugReportFlags {
+    VK_DEBUG_REPORT_INFORMATION_BIT_EXT,                VK_DEBUG_REPORT_INFORMATION_BIT_EXT,
+    VK_DEBUG_REPORT_WARNING_BIT_EXT,                    VK_DEBUG_REPORT_WARNING_BIT_EXT,
+    VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT,        VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT,
+    VK_DEBUG_REPORT_ERROR_BIT_EXT,                      VK_DEBUG_REPORT_ERROR_BIT_EXT,
+    VK_DEBUG_REPORT_DEBUG_BIT_EXT,                      VK_DEBUG_REPORT_DEBUG_BIT_EXT,
+}                                                   }
+
+typedef struct VkDebugUtilsMessengerCreateInfoEXT {             typedef enum VkDebugUtilsMessageSeverityFlags {         typedef enum VkDebugUtilsMessageTypeFlags {
+  x VkDebugUtilsMessengerCreateFlags        flags;                  VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT,        VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT,
+    VkDebugUtilsMessageSeverityFlags        messageSeverity;        VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT,           VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT,
+    VkDebugUtilsMessageTypeFlagsEXT         messageType;            VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT,        VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT,
+    PFN_vkDebugUtilsMessengerCallbackEXT    pfnUserCallback;        VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT,      }
+    void*                                   pUserData;          }
+}
+
+List of surface creating APIs
+
+    vkCreate {
+        DisplayPlaneSurfaceKHR      HeadlessSurfaceEXT          WaylandSurfaceKHR           MacOSSurfaceMVK         DirectFBSurfaceEXT
+                                                                Win32SurfaceKHR             MetalSurfaceEXT         ImagePipeSurfaceFUCHSIA
+        StreamDescriptorSurfaceGGP                              XcbSurfaceKHR                                       AndroidSurfaceKHR
+        ViSurfaceNN                                             XlibSurfaceKHR                                      IOSSurfaceMVK
+                                                                                                                    ScreenSurfaceQNX
+    }
+    vkDestroySurfaceKHR
+
+
+PhysicalDevice
+==============
+
+TODO: vet all the function APIs in vulkan spec that directly uses the VkPhysicalDevice object.
 
 VkInstance                                                                                      | vkEnumeratePhysicalDevices                => Vec<VkPhysicalDevice>
 VkPhysicalDevice                                                                                | vkGetPhysicalDeviceProperties             => VkPhysicalDeviceProperties
@@ -96,7 +139,7 @@ VkPhysicalDevice                                                                
 VkPhysicalDevice                                                                                | vkEnumerateDeviceLayerProperties          => Vec<VkLayerProperties>
 VkPhysicalDevice, layer                                                                         | vkEnumerateDeviceExtensionProperties      => Vec<VkExtensionProperties>
 VkPhysicalDevice                                                                                | vkGetPhysicalDeviceQueueFamilyProperties  => Vec<VkQueueFamilyProperties>
-VkPhysicalDevice                                                                                | vkGetPhysicalDeviceFormatProperties       => VkFormatProperties
+VkPhysicalDevice, VkFormat                                                                      | vkGetPhysicalDeviceFormatProperties       => VkFormatProperties
 VkPhysicalDevice, VkFormat, VkImageType, VkImageTiling, VkImageUsageFlag, VkImageCreateFlag     | vkGetPhysicalDeviceImageFormatProperties  => Vec<VkImageFormatProperties>
 VkPhysicalDevice, VkSurface                                                                     | vkGetPhysicalDevicePresentRectanglesKHR   => Vec<VkRect2D>
 
@@ -128,29 +171,34 @@ typedef struct VkMemoryHeap {                   typedef enum VkMemoryHeapFlags {
                                                                                                     VK_MEMORY_PROPERTY_DEVICE_UNCACHED_BIT_AMD,
                                                                                                 }
 
-VkDevice, VkQueue
-=================
+VkDevice, VkQueue, VkQueryPool
+==============================
 
 VkPhysicalDevice, Vec<(qf, qc, qp)>, layers, extensions, VkPhysicalDeviceFeatures           | vkCreateDevice                        => VkDevice
 VkDevice, qf, qi                                                                            | vkGetDeviceQueue                      => VkQueue
 VkDevice                                                                                    | vkDeviceWaitIdle                      =>
+
 VkDevice, timeout                                                                           | vkAcquireProfilingLockKHR             =>
 VkDevice                                                                                    | vkReleaseProfilingLockKHR             =>
+
 VkDevice, VkRenderPass                                                                      | vkGetRenderAreaGranularity            => VkExtent2D
 VkDevice, VkSemaphore                                                                       | vkGetSemaphoreCounterValue            => uint64
-VkDevice, VkQueryType, qc, VkQueryPipelineStatistic                                         | vkCreateQueryPool                     =>
+
+VkDevice, VkQueryType, qc, VkQueryPipelineStatistic                                         | vkCreateQueryPool                     => VkQueryPool
 VkDevice, VkQueryPool, (firstQ, count)                                                      | vkGetQueryPoolResults                 => pData
 VkDevice, VkQueryPool, (firstQ, count)                                                      | vkResetQueryPool                      =>
+
 VkQueue, Vec<VkSubmitInfo>, VkFence                                                         | vkQueueSubmit                         =>
 VkQueue, Vec<VkPresentInfoKHR>                                                              | vkQueuePresentKHR                     =>
 
-typedef struct VkSubmitInfo {                                   typedef enum VkPipelineStageFlags {
-    uint32_t                       waitSemaphoreCount;              VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-    const VkSemaphore*             pWaitSemaphores;                 VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT,
+
+typedef struct VkSubmitInfo {                                   typedef enum VkPipelineStageFlags {                         typedef enum VkDeviceEventTypeEXT {
+    uint32_t                       waitSemaphoreCount;              VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,                          VK_DEVICE_EVENT_TYPE_DISPLAY_HOTPLUG_EXT,
+    const VkSemaphore*             pWaitSemaphores;                 VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT,                    }
     const VkPipelineStageFlags*    pWaitDstStageMask;               VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
-    uint32_t                       commandBufferCount;              VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
-    const VkCommandBuffer*         pCommandBuffers;                 VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT,
-    uint32_t                       signalSemaphoreCount;            VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT,
+    uint32_t                       commandBufferCount;              VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,                    typedef enum VkDisplayEventTypeEXT {
+    const VkCommandBuffer*         pCommandBuffers;                 VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT,          VK_DISPLAY_EVENT_TYPE_FIRST_PIXEL_OUT_EXT,
+    uint32_t                       signalSemaphoreCount;            VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT,   }
     const VkSemaphore*             pSignalSemaphores;               VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT,
 }                                                                   VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
                                                                     VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
@@ -737,23 +785,26 @@ VkDevice, VkEventCreateFlags                                                    
 VkDevice, VkEvent                                                                                       | vkGetEventStatus
 VkDevice, VkEvent                                                                                       | vkResetEvent
 VkDevice, VkEvent                                                                                       | vkSetEvent
-VkDevice, VkFenceCreateFlags                                                                            | vkCreateFence
+VkCommandBuffer, VkEvent, VkPipelineStageFlags                                                          | vkCmdResetEvent
+VkCommandBuffer, VkEvent, VkPipelineStageFlags                                                          | vkCmdSetEvent
+VkCommandBuffer, Vec<VkEvent>, VkBarrierInfo                                                            | vkCmdWaitEvents
+VkDevice, VkEvent                                                                                       | vkDestroyEvent
 
-VkDevice, VkFence, VkExternalFenceHandleTypeFlags, fd_int                                               | vkGetFenceFdKHR
+VkDevice, VkFenceCreateFlags                                                                            | vkCreateFence
+VkDevice, VkFence, VkExternalFenceHandleTypeFlags                                                       | vkGetFenceFdKHR           => pFd
+VkDevice, VkFence, VkFenceImportFlags, VkExternalFenceHandleTypeFlags                                   | VkImportFenceFdInfoKHR
 VkDevice, VkFence                                                                                       | vkGetFenceStatus
 VkDevice, Vec<VkFence>                                                                                  | vkResetFences
 VkDevice, Vec<VkFence>, waitAll, timeout                                                                | vkWaitForFences
+VkDevice, VkFence                                                                                       | vkDestroyFence
 
-typedef enum VkExternalFenceHandleTypeFlags {               typedef enum VkSemaphoreWaitFlags {
-    VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_FD_BIT,                VK_SEMAPHORE_WAIT_ANY_BIT,
-    VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_BIT,         }
-    VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT,     typedef enum VkEventCreateFlags {
-    VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT,                  VK_EVENT_CREATE_DEVICE_ONLY_BIT_KHR,
-}                                                           }
-                                                            typedef enum VkFenceCreateFlags {
-                                                                VK_FENCE_CREATE_SIGNALED_BIT,
-                                                            }
 
+typedef enum VkExternalFenceHandleTypeFlags {               typedef enum VkSemaphoreWaitFlags {             typedef enum VkFenceCreateFlags {
+    VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_FD_BIT,                VK_SEMAPHORE_WAIT_ANY_BIT,                      VK_FENCE_CREATE_SIGNALED_BIT,
+    VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_BIT,         }                                               }
+    VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT,     typedef enum VkEventCreateFlags {               typedef enum VkFenceImportFlagBits {
+    VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT,                  VK_EVENT_CREATE_DEVICE_ONLY_BIT_KHR,            VK_FENCE_IMPORT_TEMPORARY_BIT
+}                                                           }                                               }
 
 
 ------------------
@@ -766,8 +817,6 @@ vkDestroyDescriptorSetLayout
 vkDestroyDescriptorUpdateTemplate
 vkDestroyDescriptorUpdateTemplateKHR
 vkDestroyDevice
-vkDestroyEvent
-vkDestroyFence
 vkDestroyFramebuffer
 vkDestroyImage
 vkDestroyImageView

@@ -1,6 +1,6 @@
 use vulkano::{
     device::{Device, DeviceExtensions, Features, Properties, Queue},
-    format::Format,
+    format::{Format, FormatProperties},
     image::{
         ImageCreateFlags, ImageFormatProperties, ImageTiling, ImageType, ImageUsage,
     },
@@ -15,7 +15,9 @@ use std::sync::Arc;
 
 use crate::{Error, Result};
 
-// TODO: vkGetPhysicalDeviceFormatProperties
+pub fn layers() -> Result<Vec<LayerProperties>> {
+    Ok(err_at!(Vk, vulkano::instance::layers_list())?.collect())
+}
 
 /// Maps to VkQueueFlagBits.
 #[derive(Clone)]
@@ -111,8 +113,10 @@ impl<'a> Builder<'a> {
     pub fn new() -> Result<Builder<'a>> {
         use vulkano::instance::loader::auto_loader;
 
-        let funcptrs = err_at!(Vk, auto_loader())?;
-        let version = err_at!(Vk, funcptrs.api_version())?;
+        let version = {
+            let funcptrs = err_at!(Vk, auto_loader())?;
+            err_at!(Vk, funcptrs.api_version())?
+        };
 
         let builder = Builder {
             // instance attributes
@@ -131,9 +135,27 @@ impl<'a> Builder<'a> {
         Ok(builder)
     }
 
-    /// Similar to [new] method, but supply the [ApplicationInfo] and [Version].
-    pub fn with(app_info: ApplicationInfo<'a>, version: Version) -> Builder<'a> {
-        Builder {
+    /// Similar to [new] method, but supply the [ApplicationInfo] and [Version]. If
+    /// requested [Version] is greater than the local vulkan version (driver), this
+    /// call shall fail.
+    pub fn with(
+        app_info: ApplicationInfo<'a>,
+        version: Option<Version>,
+    ) -> Result<Builder<'a>> {
+        use vulkano::instance::loader::auto_loader;
+
+        let local_version = {
+            let funcptrs = err_at!(Vk, auto_loader())?;
+            err_at!(Vk, funcptrs.api_version())?
+        };
+
+        let version = match version {
+            Some(ver) if ver <= local_version => ver,
+            Some(ver) => err_at!(Vk, msg: "local_version {} < {}", local_version, ver)?,
+            None => local_version,
+        };
+
+        Ok(Builder {
             // instance attributes
             app_info,
             version,
@@ -145,7 +167,7 @@ impl<'a> Builder<'a> {
             dextns: DeviceExtensions::none(),
             properties: Properties::default(),
             features: Features::none(),
-        }
+        })
     }
 
     /// Configure the [ApplicationInfo]
@@ -1351,6 +1373,11 @@ impl<'a> Vulkan<'a> {
         self.device.physical_device().supported_features()
     }
 
+    /// Return the format properties supported for this device.
+    pub fn format_properties(&self, format: Format) -> Result<FormatProperties> {
+        Ok(format.properties(self.device.physical_device()))
+    }
+
     /// Return the image format properties supported for this device.
     pub fn image_format_properties(
         &self,
@@ -1408,9 +1435,100 @@ impl<'a> Vulkan<'a> {
 //        .collect()
 //}
 
-pub fn layers() -> Result<Vec<LayerProperties>> {
-    Ok(err_at!(Vk, vulkano::instance::layers_list())?.collect())
-}
+//#[macro_export]
+//macro_rules! feature_conflict {
+//    ($features:ident, $field:ident, $($conflict:ident,)*) => {{
+//        $(
+//            if $features.$field && $features.$conflict {
+//                let (field, conflict) = (stringify!($field), stringify!($conflict));
+//                err_at!(Vk, msg: "{} conflict with {}", field, conflict)?
+//            }
+//        )*
+//    }};
+//}
+//
+//#[macro_export]
+//macro_rules! device_extension_require_feature {
+//    ($exten:expr, $features:ident, $field:ident) => {
+//        if $exten {
+//            $features.$field = true;
+//        }
+//    };
+//}
+//
+//#[macro_export]
+//macro_rules! feature_requires {
+//    ($features:ident, $field:ident, $require:ident) => {
+//        if $features.$field {
+//            $features.$require = true;
+//        }
+//    };
+//}
+//
+//pub fn dependency(
+//    iextens: InstanceExtensions,
+//    dextens: DeviceExtensions,
+//    features: Features,
+//) -> Result<(InstanceExtensions, DeviceExtensions, Features, Version)> {
+//
+//    // feature conflicts with other features.
+//    feature_conflict!(
+//        features, attachment_fragment_shading_rate,
+//        shading_rate_image, fragment_density_map
+//    );
+//    feature_conflict!(
+//        features, fragment_density_map,
+//        pipeline_fragment_shading_rate, primitive_fragment_shading_rate,
+//        attachment_fragment_shading_rate
+//    );
+//    feature_conflict!(
+//        features, pipeline_fragment_shading_rate,
+//        shading_rate_image, fragment_density_map
+//    );
+//    feature_conflict!(
+//        features, primitive_fragment_shading_rate,
+//        shading_rate_image, fragment_density_map
+//    );
+//    feature_conflict!(
+//        features, shading_rate_image,
+//        pipeline_fragment_shading_rate, primitive_fragment_shading_rate,
+//        attachment_fragment_shading_rate
+//    );
+//    // feature required by device extension
+//    device_extension_require_feature!(
+//        dextens.ext_descriptor_indexing, features, descriptor_indexing,
+//    );
+//    device_extension_require_feature!(
+//        dextens.khr_draw_indirect_count, features, draw_indirect_count,
+//    );
+//    device_extension_require_feature!(
+//        dextens.ext_sampler_filter_minmax, features, sampler_filter_minmax,
+//    );
+//    device_extension_require_feature!(
+//        dextens.khr_sampler_mirror_clamp_to_edge, features, sampler_mirror_clamp_to_edge,
+//    );
+//    device_extension_require_feature!(
+//        dextens.khr_shader_draw_parameters, features, shader_draw_parameters,
+//    );
+//    device_extension_require_feature!(
+//        dextens.ext_shader_viewport_index_layer, features, shader_output_layer,
+//    );
+//    device_extension_require_feature!(
+//        dextens.ext_shader_viewport_index_layer, features, shader_output_viewport_index,
+//    )
+//    // feature requires other feature
+//    feature_requires!(
+//        features, sparse_image_float32_atomic_add, shader_image_float32_atomic_add
+//    );
+//    feature_requires!(
+//        features, sparse_image_float32_atomics, shader_image_float32_atomics
+//    );
+//    feature_requires!(
+//        features, sparse_image_int64_atomics, shader_image_int64_atomics
+//    );
+//
+//    Ok((iextens, dextens, features))
+//}
 
 // TODO: why are we even doing this ? How can a device extension is enabled when a device
 // feature is not available.

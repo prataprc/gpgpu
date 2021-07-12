@@ -5,7 +5,7 @@ use vulkano::{
     device::{Device, DeviceExtensions},
     format::FormatProperties,
     image::ImageCreateFlags,
-    instance::{MemoryHeap, MemoryType, PhysicalDevice, QueueFamily},
+    instance::{InstanceExtensions, MemoryHeap, MemoryType, PhysicalDevice, QueueFamily},
 };
 use vulkano_win::VkSurfaceBuild;
 use winit::event_loop::EventLoop;
@@ -33,6 +33,9 @@ pub struct Opt {
     #[structopt(long = "formats")]
     formats: bool,
 
+    #[structopt(long = "registry")]
+    registry: bool,
+
     #[structopt(long = "phydev")]
     phydev: Option<usize>,
 }
@@ -44,6 +47,8 @@ fn main() {
         info_surface(opts)
     } else if opts.formats {
         info_formats(opts)
+    } else if opts.registry {
+        info_registry(opts)
     } else {
         info_device(opts)
     };
@@ -55,16 +60,18 @@ fn main() {
 }
 
 fn info_surface(_opts: Opt) -> Result<()> {
-    use crate::info::{
-        image_tiling_list, image_type_list, image_usage_list, surface_capabilities,
-        ImageFormat,
-    };
+    use crate::info::ImageFormat;
     use vgi::vulkan::extensions_for_features;
     use vulkano::format::Format;
 
     let force_color = false;
 
-    let vobj: Vulkan = Builder::new()?.build().unwrap();
+    let iextns = InstanceExtensions {
+        khr_surface: true,
+        khr_wayland_surface: true,
+        ..InstanceExtensions::none()
+    };
+    let vobj: Vulkan = Builder::new()?.with_extensions(iextns).build().unwrap();
     let pds = vobj.to_physical_devices();
     let pd = pds[DEFAULT_PHYDEV];
 
@@ -73,20 +80,19 @@ fn info_surface(_opts: Opt) -> Result<()> {
         .build_vk_surface(&event_loop, vobj.to_instance())
         .unwrap();
 
-    match pds.len() {
-        0 => (),
+    let caps = match pds.len() {
+        0 => panic!("no physical device found"),
         _ => {
-            let caps = surface_capabilities(pd, &surface);
-            let mut table = make_table(&caps);
+            let caps = surface.capabilities(pd).unwrap();
+            let mut table = make_table(&info::surface_capabilities(caps.clone()));
             table.set_titles(row![Fy => "Surface-capability", "Value"]);
             table.print_tty(force_color);
+            caps
         }
-    }
+    };
     println!();
 
-    let formats: Vec<Format> = surface
-        .capabilities(pd)
-        .unwrap()
+    let formats: Vec<Format> = caps
         .supported_formats
         .iter()
         .map(|(f, _)| f.clone())
@@ -125,6 +131,7 @@ fn info_surface(_opts: Opt) -> Result<()> {
         let features = pd.supported_features();
         let extens =
             extensions_for_features(&features, DeviceExtensions::supported_by_device(pd));
+        println!("{:?}", extens);
         let qfs = pd.queue_families().map(|q| (q, 1.0));
         Device::new(pd, &features, &extens, qfs).unwrap()
     };
@@ -132,9 +139,9 @@ fn info_surface(_opts: Opt) -> Result<()> {
     let create_flags = ImageCreateFlags::none();
     let mut image_formats = vec![];
     for format in formats.into_iter() {
-        for ty in image_type_list().into_iter() {
-            for tiling in image_tiling_list().into_iter() {
-                for usage in image_usage_list().into_iter() {
+        for ty in info::image_type_list().into_iter() {
+            for tiling in info::image_tiling_list().into_iter() {
+                for usage in info::image_usage_list().into_iter() {
                     let props = device.image_format_properties(
                         format,
                         ty,
@@ -158,9 +165,7 @@ fn info_surface(_opts: Opt) -> Result<()> {
 }
 
 fn info_formats(opts: Opt) -> Result<()> {
-    use info::{
-        format_list, image_tiling_list, image_type_list, image_usage_list, ImageFormat,
-    };
+    use info::ImageFormat;
     use vgi::vulkan::extensions_for_features;
 
     let force_color = false;
@@ -170,13 +175,13 @@ fn info_formats(opts: Opt) -> Result<()> {
     let pd = vobj.to_physical_devices()[phydev];
 
     // format attributes
-    make_table(&format_list()).print_tty(force_color);
+    make_table(&info::format_list()).print_tty(force_color);
     println!();
 
     // format features
     println!("{}", "Format supported features".red());
     let rows: Vec<Row> = {
-        let formats = format_list();
+        let formats = info::format_list();
         formats
             .iter()
             .map(|f| (f, f.properties(pd)))
@@ -211,10 +216,10 @@ fn info_formats(opts: Opt) -> Result<()> {
     println!("{}", "ImageFormat properties".red());
     let create_flags = ImageCreateFlags::none();
     let mut image_formats = vec![];
-    for format in format_list().into_iter() {
-        for ty in image_type_list().into_iter() {
-            for tiling in image_tiling_list().into_iter() {
-                for usage in image_usage_list().into_iter() {
+    for format in info::format_list().into_iter() {
+        for ty in info::image_type_list().into_iter() {
+            for tiling in info::image_tiling_list().into_iter() {
+                for usage in info::image_usage_list().into_iter() {
                     let props = device.image_format_properties(
                         format,
                         ty,
@@ -314,6 +319,28 @@ fn info_device(_opts: Opt) -> Result<()> {
     println!();
 
     print_physical_devices(&pds, force_color);
+    println!();
+
+    Ok(())
+}
+
+fn info_registry(_opts: Opt) -> Result<()> {
+    use vgi::{get_registry_variant, registry};
+    use vk_parse::RegistryChild::{self};
+    use vk_parse::{CommentedChildren, Platform};
+
+    let force_color = false;
+
+    let reg = registry::get_registry()?;
+    registry::front_page(&reg);
+    println!();
+
+    println!("{}:", "Registry platforms".yellow());
+    for platform in get_registry_variant!(reg, Platforms, Platform).into_iter() {
+        platform.comment.map(|val| println!("{:?}", val));
+        make_table(&platform.children).print_tty(force_color);
+        println!();
+    }
     println!();
 
     Ok(())

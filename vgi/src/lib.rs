@@ -47,6 +47,7 @@ macro_rules! err_at {
 }
 
 pub mod pp;
+pub mod registry;
 pub mod vulkan;
 
 /// Error variants that are returned by this package's API.

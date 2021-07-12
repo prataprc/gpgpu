@@ -1418,6 +1418,24 @@ fn image_aspects(val: ImageAspects) -> String {
     ss.join(", ")
 }
 
+impl PrettyRow for vk_parse::Platform {
+    fn to_format() -> prettytable::format::TableFormat {
+        *prettytable::format::consts::FORMAT_CLEAN
+    }
+
+    fn to_head() -> prettytable::Row {
+        row![Fy => "name", "protect", "comment"]
+    }
+
+    fn to_row(&self) -> prettytable::Row {
+        let comment = match &self.comment {
+            Some(val) => val.clone(),
+            None => "None".to_string(),
+        };
+        row![self.name, self.protect, comment]
+    }
+}
+
 #[inline]
 pub fn tos<T: fmt::Display>(val: T) -> String {
     val.to_string()

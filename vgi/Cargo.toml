@@ -10,6 +10,7 @@ edition = "2018"
 prettytable-rs = "0.8.0"
 uuid = "0.8"
 colored = "2.0.0"
+vk-parse = "0.6" # TODO: move this to build-dependencies ?
 
 vulkano = { version = "0.24", path = "/home/prataprc/devrs/vulkano/vulkano/" }
 vk-sys = { version = "0.6.2", path = "/home/prataprc/devrs/vulkano/vk-sys/" }

@@ -4,8 +4,8 @@ use vulkano::{
     image::{ImageFormatProperties, ImageTiling, ImageType, ImageUsage},
     instance::PhysicalDevice,
     swapchain::{
-        SupportedCompositeAlpha, SupportedPresentModes, SupportedSurfaceTransforms,
-        Surface,
+        Capabilities, SupportedCompositeAlpha, SupportedPresentModes,
+        SupportedSurfaceTransforms,
     },
 };
 
@@ -600,12 +600,7 @@ pub fn device_extensions<'a>(pd: PhysicalDevice<'a>) -> Vec<ChecklistItem> {
     ]
 }
 
-pub fn surface_capabilities<'a, W>(
-    pd: PhysicalDevice<'a>,
-    surface: &Surface<W>,
-) -> Vec<LimitItem> {
-    let c = surface.capabilities(pd).unwrap();
-
+pub fn surface_capabilities(c: Capabilities) -> Vec<LimitItem> {
     let mut limits = make_limits![
         dbg_field,
         (c, min_image_count),

@@ -327,20 +327,59 @@ fn info_device(_opts: Opt) -> Result<()> {
 fn info_registry(_opts: Opt) -> Result<()> {
     use vgi::{get_registry_variant, registry};
     use vk_parse::RegistryChild::{self};
-    use vk_parse::{CommentedChildren, Platform};
+    use vk_parse::{CommentedChildren, Extension, Platform, Tag, VendorId};
 
     let force_color = false;
-
     let reg = registry::get_registry()?;
-    registry::front_page(&reg);
-    println!();
 
-    println!("{}:", "Registry platforms".yellow());
-    for platform in get_registry_variant!(reg, Platforms, Platform).into_iter() {
-        platform.comment.map(|val| println!("{:?}", val));
+    println!("{}:", "Registry Platforms".yellow());
+    for (i, platform) in get_registry_variant!(reg, Platforms, Platform)
+        .into_iter()
+        .enumerate()
+    {
+        platform.comment.map(|val| println!("{} {:?}", i, val));
         make_table(&platform.children).print_tty(force_color);
         println!();
     }
+    println!();
+
+    println!("{}:", "Registry Vendor-ids".yellow());
+    for (i, vendor_id) in get_registry_variant!(reg, VendorIds, VendorId)
+        .into_iter()
+        .enumerate()
+    {
+        vendor_id.comment.map(|val| println!("{} {:?}", i, val));
+        make_table(&vendor_id.children).print_tty(force_color);
+        println!();
+    }
+    println!();
+
+    println!("{}:", "Registry Tags".yellow());
+    for (i, tag) in get_registry_variant!(reg, Tags, Tag)
+        .into_iter()
+        .enumerate()
+    {
+        tag.comment.map(|val| println!("{} {:?}", i, val));
+        make_table(&tag.children).print_tty(force_color);
+        println!();
+    }
+    println!();
+
+    println!("{}:", "Registry Instance Extesions".yellow());
+    let mut extensions: Vec<Extension> =
+        get_registry_variant!(reg, Extensions, Extension)
+            .into_iter()
+            .map(|cc| cc.children)
+            .flatten()
+            //.filter(|e| e.ext_type == Some("instance".to_string()))
+            //.filter(|e| e.supported == Some("vulkan".to_string()))
+            .collect();
+    extensions.sort_by(|a, b| a.name.cmp(&b.name));
+    make_table(&extensions).print_tty(force_color);
+    println!();
+
+    println!("{}:", "Registry".yellow());
+    registry::front_page(&reg);
     println!();
 
     Ok(())

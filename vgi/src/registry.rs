@@ -45,7 +45,7 @@ pub fn front_page(reg: &Registry) {
             RegistryChild::Extensions(val) => (8, val.children.len()),
             RegistryChild::SpirvExtensions(val) => (9, val.children.len()),
             RegistryChild::SpirvCapabilities(val) => (10, val.children.len()),
-            _ => panic!("non-exhaustive patter for RegistryChild"),
+            _ => panic!("non-exhaustive pattern for RegistryChild"),
         };
         counts[off].0 += 1;
         counts[off].1 += children;

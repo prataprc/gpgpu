@@ -90,6 +90,14 @@ fn make_queue_request<'a>(
     return vec![];
 }
 
+/// Return the vulkan implementation available through this package.
+pub fn api_version() -> Result<Version> {
+    use vulkano::instance::loader::auto_loader;
+
+    let funcptrs = err_at!(Vk, auto_loader())?;
+    err_at!(Vk, funcptrs.api_version())
+}
+
 pub struct Builder<'a> {
     // instance attributes
     app_info: ApplicationInfo<'a>,
@@ -111,17 +119,10 @@ impl<'a> Builder<'a> {
     /// [FunctionPointers]. Later use one of the `with_*` methods to add more builder
     /// options.
     pub fn new() -> Result<Builder<'a>> {
-        use vulkano::instance::loader::auto_loader;
-
-        let version = {
-            let funcptrs = err_at!(Vk, auto_loader())?;
-            err_at!(Vk, funcptrs.api_version())?
-        };
-
         let builder = Builder {
             // instance attributes
             app_info: vulkano::app_info_from_cargo_toml!(),
-            version,
+            version: api_version()?,
             iextns: InstanceExtensions::none(),
             layers: Vec::default(),
             // device attributes
@@ -142,17 +143,11 @@ impl<'a> Builder<'a> {
         app_info: ApplicationInfo<'a>,
         version: Option<Version>,
     ) -> Result<Builder<'a>> {
-        use vulkano::instance::loader::auto_loader;
-
-        let local_version = {
-            let funcptrs = err_at!(Vk, auto_loader())?;
-            err_at!(Vk, funcptrs.api_version())?
-        };
-
+        let local_ver = api_version()?;
         let version = match version {
-            Some(ver) if ver <= local_version => ver,
-            Some(ver) => err_at!(Vk, msg: "local_version {} < {}", local_version, ver)?,
-            None => local_version,
+            Some(ver) if ver <= local_ver => ver,
+            Some(ver) => err_at!(Vk, msg: "local_version {} < {}", local_ver, ver)?,
+            None => local_ver,
         };
 
         Ok(Builder {
@@ -286,6 +281,7 @@ impl<'a> Builder<'a> {
         Ok(val)
     }
 
+    // TODO: split this into properties, limits and more...
     fn confirm_properties(&self, props: Properties) -> Result<()> {
         let p = self.properties.clone();
 

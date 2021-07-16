@@ -1436,6 +1436,122 @@ impl PrettyRow for vk_parse::Platform {
     }
 }
 
+impl PrettyRow for vk_parse::VendorId {
+    fn to_format() -> prettytable::format::TableFormat {
+        *prettytable::format::consts::FORMAT_CLEAN
+    }
+
+    fn to_head() -> prettytable::Row {
+        row![Fy => "name", "id", "comment"]
+    }
+
+    fn to_row(&self) -> prettytable::Row {
+        let comment = match &self.comment {
+            Some(val) => val.clone(),
+            None => "None".to_string(),
+        };
+        row![self.name, self.id, comment]
+    }
+}
+
+impl PrettyRow for vk_parse::Tag {
+    fn to_format() -> prettytable::format::TableFormat {
+        *prettytable::format::consts::FORMAT_CLEAN
+    }
+
+    fn to_head() -> prettytable::Row {
+        row![Fy => "name", "author", "contact"]
+    }
+
+    fn to_row(&self) -> prettytable::Row {
+        row![self.name, self.author, self.contact]
+    }
+}
+
+impl PrettyRow for vk_parse::TypesChild {
+    fn to_format() -> prettytable::format::TableFormat {
+        *prettytable::format::consts::FORMAT_CLEAN
+    }
+
+    fn to_head() -> prettytable::Row {
+        row![Fy =>
+            "name", "alias", "api", "requires", "category", "comment", "parent",
+            //"returnedonly", "structextends", "allowduplicate", "objtypeenum",
+            //"bitvalues", "comment",
+        ]
+    }
+
+    fn to_row(&self) -> prettytable::Row {
+        use vk_parse::TypesChild;
+
+        match self {
+            TypesChild::Type(ty) => row![
+                format_unwrap_or!(ty.name, tos, "-"),
+                format_unwrap_or!(ty.alias, tos, "-"),
+                format_unwrap_or!(ty.api, tos, "-"),
+                format_unwrap_or!(ty.requires, tos, "-"),
+                format_unwrap_or!(ty.category, tos, "-"),
+                format_unwrap_or!(ty.comment, tos, "-"),
+                format_unwrap_or!(ty.parent, tos, "-"),
+                format_unwrap_or!(ty.returnedonly, tos, "-"),
+                format_unwrap_or!(ty.structextends, tos, "-"),
+                format_unwrap_or!(ty.allowduplicate, tos, "-"),
+                format_unwrap_or!(ty.objtypeenum, tos, "-"),
+                format_unwrap_or!(ty.bitvalues, tos, "-"),
+                // spec: TypeSpec TODO: implement a way to list type-spec.
+                "-".to_string(),
+            ],
+            TypesChild::Comment(c) => row![
+                "-".to_string(),
+                "-".to_string(),
+                "-".to_string(),
+                "-".to_string(),
+                "-".to_string(),
+                "-".to_string(),
+                "-".to_string(),
+                "-".to_string(),
+                "-".to_string(),
+                "-".to_string(),
+                "-".to_string(),
+                "-".to_string(),
+                // spec: TypeSpec TODO: implement a way to list type-spec.
+                c,
+            ],
+            val => panic!("non-exhaustive pattern for TypesChild {:?}, val"),
+        }
+    }
+}
+
+impl PrettyRow for vk_parse::Extension {
+    fn to_format() -> prettytable::format::TableFormat {
+        *prettytable::format::consts::FORMAT_CLEAN
+    }
+
+    fn to_head() -> prettytable::Row {
+        row![Fy =>
+            "name", "number", "platform", "author", "requires", "requires_core",
+            "deprecatedby", "children",
+        ]
+    }
+
+    fn to_row(&self) -> prettytable::Row {
+        row![
+            self.name,
+            format_unwrap_or!(self.number, tos, "-"),
+            format_unwrap_or!(self.platform, tos, "-"),
+            format_unwrap_or!(self.author, tos, "-"),
+            format_unwrap_or!(self.requires, tos, "-"),
+            format_unwrap_or!(self.requires_core, tos, "-"),
+            format_unwrap_or!(self.deprecatedby, tos, "-"),
+            self.children
+                .iter()
+                .map(ext_child_to_string)
+                .collect::<Vec<String>>()
+                .join(",")
+        ]
+    }
+}
+
 #[inline]
 pub fn tos<T: fmt::Display>(val: T) -> String {
     val.to_string()
@@ -1444,6 +1560,21 @@ pub fn tos<T: fmt::Display>(val: T) -> String {
 #[inline]
 fn tod<T: fmt::Debug>(val: T) -> String {
     format!("{:?}", val)
+}
+
+fn ext_child_to_string(c: &vk_parse::ExtensionChild) -> String {
+    use vk_parse::ExtensionChild;
+
+    match c {
+        ExtensionChild::Require {
+            api,
+            feature,
+            extension,
+            ..
+        } => format!("Req|{:?}|{:?}|{:?}", api, feature, extension),
+        ExtensionChild::Remove { .. } => format!("Rem"),
+        val => panic!("non-exhaustive pattern for ExtensionChild {:?}", val),
+    }
 }
 
 pub fn transpose(mut table: Table) -> Table {

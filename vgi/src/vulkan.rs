@@ -191,6 +191,12 @@ impl<'a> Builder<'a> {
         self
     }
 
+    /// Enable all core extensions supported by this driver.
+    pub fn with_core_extensions(mut self) -> Self {
+        self.iextns = InstanceExtensions::supported_by_core().unwrap();
+        self
+    }
+
     /// Create VkDevice object using supplied parameters. At preset we don't have
     /// multi-device support. For requested [Features], device-extensions shall
     /// automatically be enabled event if they are not supplied in the `extensions` arg.

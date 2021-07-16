@@ -1517,7 +1517,7 @@ impl PrettyRow for vk_parse::TypesChild {
                 // spec: TypeSpec TODO: implement a way to list type-spec.
                 c,
             ],
-            val => panic!("non-exhaustive pattern for TypesChild {:?}, val"),
+            val => panic!("non-exhaustive pattern for TypesChild {:?}", val),
         }
     }
 }

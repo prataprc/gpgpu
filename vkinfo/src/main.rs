@@ -5,7 +5,7 @@ use vulkano::{
     device::{Device, DeviceExtensions},
     format::FormatProperties,
     image::ImageCreateFlags,
-    instance::{InstanceExtensions, MemoryHeap, MemoryType, PhysicalDevice, QueueFamily},
+    instance::{MemoryHeap, MemoryType, PhysicalDevice, QueueFamily},
 };
 use vulkano_win::VkSurfaceBuild;
 use winit::event_loop::EventLoop;
@@ -66,12 +66,7 @@ fn info_surface(_opts: Opt) -> Result<()> {
 
     let force_color = false;
 
-    let iextns = InstanceExtensions {
-        khr_surface: true,
-        khr_wayland_surface: true,
-        ..InstanceExtensions::none()
-    };
-    let vobj: Vulkan = Builder::new()?.with_extensions(iextns).build().unwrap();
+    let vobj: Vulkan = Builder::new()?.with_core_extensions().build().unwrap();
     let pds = vobj.to_physical_devices();
     let pd = pds[DEFAULT_PHYDEV];
 
@@ -131,7 +126,6 @@ fn info_surface(_opts: Opt) -> Result<()> {
         let features = pd.supported_features();
         let extens =
             extensions_for_features(&features, DeviceExtensions::supported_by_device(pd));
-        println!("{:?}", extens);
         let qfs = pd.queue_families().map(|q| (q, 1.0));
         Device::new(pd, &features, &extens, qfs).unwrap()
     };
@@ -171,7 +165,7 @@ fn info_formats(opts: Opt) -> Result<()> {
     let force_color = false;
     let phydev = opts.phydev.unwrap_or(DEFAULT_PHYDEV);
 
-    let vobj: Vulkan = Builder::new()?.build().unwrap();
+    let vobj: Vulkan = Builder::new()?.with_core_extensions().build().unwrap();
     let pd = vobj.to_physical_devices()[phydev];
 
     // format attributes

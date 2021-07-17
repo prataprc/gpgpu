@@ -1,5 +1,5 @@
 use vulkano::{
-    device::{Device, DeviceExtensions, Features, Properties, Queue},
+    device::{DeviceExtensions, Features, Properties, Queue},
     format::{Format, FormatProperties},
     image::{
         ImageCreateFlags, ImageFormatProperties, ImageTiling, ImageType, ImageUsage,
@@ -110,6 +110,8 @@ pub struct Builder<'a> {
     dextns: DeviceExtensions,
     properties: Properties,
     features: Features,
+    // surface parameters
+    surface_extensions: InstanceExtensions,
 }
 
 impl<'a> Builder<'a> {
@@ -131,6 +133,8 @@ impl<'a> Builder<'a> {
             dextns: DeviceExtensions::none(),
             properties: Properties::default(),
             features: Features::none(),
+            // surface parameters
+            surface_extensions: vulkano_win::required_extensions(),
         };
 
         Ok(builder)
@@ -162,6 +166,8 @@ impl<'a> Builder<'a> {
             dextns: DeviceExtensions::none(),
             properties: Properties::default(),
             features: Features::none(),
+            // surface parameters
+            surface_extensions: vulkano_win::required_extensions(),
         })
     }
 
@@ -194,6 +200,12 @@ impl<'a> Builder<'a> {
     /// Enable all core extensions supported by this driver.
     pub fn with_core_extensions(mut self) -> Self {
         self.iextns = InstanceExtensions::supported_by_core().unwrap();
+        self
+    }
+
+    /// Enable necessary surface extensions.
+    pub fn with_surface(mut self, extensions: InstanceExtensions) -> Self {
+        self.surface_extensions = extensions;
         self
     }
 
@@ -231,6 +243,11 @@ impl<'a> Builder<'a> {
 
     /// Finally call build, to obtain the [Vulkan] object.
     pub fn build(self) -> Result<Vulkan<'a>> {
+        use vulkano::device::Device;
+        use vulkano_win::VkSurfaceBuild;
+        use winit::event_loop::EventLoop;
+        use winit::window::WindowBuilder;
+
         let instance = err_at!(
             Vk,
             Instance::new(
@@ -269,6 +286,11 @@ impl<'a> Builder<'a> {
             (dextns, device, queues.collect::<Vec<Arc<Queue>>>())
         };
 
+        let event_loop = EventLoop::new();
+        let surface = WindowBuilder::new()
+            .build_vk_surface(&event_loop, Arc::clone(&instance))
+            .unwrap();
+
         let val = Vulkan {
             // instance attribute
             layers: layers()?
@@ -282,6 +304,9 @@ impl<'a> Builder<'a> {
             dextns,
             device,
             queues,
+            // surface object
+            event_loop,
+            surface,
         };
 
         Ok(val)
@@ -1309,16 +1334,24 @@ impl<'a> Builder<'a> {
 /// Vulkan type roughly maps to instance/device object defined by the vulkan spec.
 /// This type try to abstract the boiler plate code as much as possible by
 /// providing convinient methods and related macros.
-pub struct Vulkan<'a> {
-    // instance attributes
+///
+/// Note that this object shall be created in the main thread.
+pub struct Vulkan<'a, W = winit::window::Window, E = ()>
+where
+    E: 'static,
+{
+    // instance objects
     layers: Vec<LayerProperties>,
     iextns: InstanceExtensions,
     instance: Box<Arc<Instance>>,
     phydevs: Vec<PhysicalDevice<'a>>,
-    // device attributes
+    // device objects
     dextns: DeviceExtensions,
-    device: Arc<Device>,
+    device: Arc<vulkano::device::Device>,
     queues: Vec<Arc<Queue>>,
+    // surface objects
+    event_loop: winit::event_loop::EventLoop<E>,
+    surface: Arc<vulkano::swapchain::Surface<W>>,
 }
 
 impl<'a> Vulkan<'a> {
@@ -1414,6 +1447,10 @@ impl<'a> Vulkan<'a> {
     /// Return the queue objects created for this device
     pub fn to_queues(&self) -> Vec<Arc<Queue>> {
         self.queues.clone()
+    }
+
+    pub unsafe fn wait(&self) -> Result<()> {
+        err_at!(Vk, self.device.wait())
     }
 }
 

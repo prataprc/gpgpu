@@ -1,3 +1,5 @@
+TODO: vet all the APIs and data-structures associated with dispatchable and non-dispatchable handles.
+
 typedef uint64_t VkDeviceSize;
 typedef uint64_t VkDeviceAddress;
 VkExtent2D VkExtent3D { width, height, depth }
@@ -32,14 +34,9 @@ Image
                    video_encode_src, video_encode_dst, video_encode_dpb, video_decode_src, video_decode_dst, video_decode_dpb,
                    shader_ro_optimal, present_src, shared_present,
 
-Family of types
+Family of types: `Vk*CreateInfo`, `Vk*Flags`, `Vk*FlagBit`,
 
-`Vk*CreateInfo`, `Vk*Flags`, `Vk*FlagBit`,
-
-Family of functions
-
-`vkQueue*`, `vkCreate*`, `vkAllocate*`, `vkDestroy*`, `vkFree*`
-`vkGet*`, `vkEnumerate*`, `vkCmd*`
+Family of functions: `vkQueue*`, `vkCreate*`, `vkAllocate*`, `vkDestroy*`, `vkFree*` `vkGet*`, `vkEnumerate*`, `vkCmd*`
 
 
 Dispatchable and Non-Dispatchable Handles
@@ -129,8 +126,6 @@ List of surface creating APIs
 
 PhysicalDevice
 ==============
-
-TODO: vet all the function APIs in vulkan spec that directly uses the VkPhysicalDevice object.
 
 VkInstance                                                                                      | vkEnumeratePhysicalDevices                => Vec<VkPhysicalDevice>
 VkPhysicalDevice                                                                                | vkGetPhysicalDeviceProperties             => VkPhysicalDeviceProperties

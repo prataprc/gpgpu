@@ -239,6 +239,7 @@ Memory and resources
                 CreateFlags UsageFlags Type Tiling Aspect Format Layout Extent samples miplevels arrlayers sharingMode queue
 Image           o           o          o    o             o      o      o      o       o         o         o           o
 ImageView                              o           o      o                            o         o
+Surface                     o          2D   Linear RGBA   S             S      1       1         S         o           o
 Buffer          o           o                                                                              o           o
 BufferView                                                o
 
@@ -825,7 +826,7 @@ VkDevice, VkEvent                                                               
 VkDevice, VkFenceCreateFlags                                                                            | vkCreateFence
 VkDevice, VkFence, VkExternalFenceHandleTypeFlags                                                       | vkGetFenceFdKHR           => pFd
 VkDevice, VkFence, VkFenceImportFlags, VkExternalFenceHandleTypeFlags                                   | VkImportFenceFdInfoKHR
-VkDevice, VkFence                                                                                       | vkGetFenceStatus
+VkDevice, VkFence                                                                                       | vkGetFenceStatus          => Result (signaled, unsignaled)
 VkDevice, Vec<VkFence>                                                                                  | vkResetFences
 VkDevice, Vec<VkFence>, waitAll, timeout                                                                | vkWaitForFences
 VkDevice, VkFence                                                                                       | vkDestroyFence

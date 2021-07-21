@@ -66,7 +66,11 @@ fn info_surface(_opts: Opt) -> Result<()> {
 
     let force_color = false;
 
-    let vobj: Vulkan = Builder::new()?.with_core_extensions().build().unwrap();
+    let vobj: Vulkan = Builder::new()?
+        .with_extensions(None) // enable core instance-extensions.
+        .with_surface(None) // enabled required extensions for surface creation.
+        .build()
+        .unwrap();
     let pds = vobj.to_physical_devices();
     let pd = pds[DEFAULT_PHYDEV];
 
@@ -165,7 +169,11 @@ fn info_formats(opts: Opt) -> Result<()> {
     let force_color = false;
     let phydev = opts.phydev.unwrap_or(DEFAULT_PHYDEV);
 
-    let vobj: Vulkan = Builder::new()?.with_core_extensions().build().unwrap();
+    let vobj: Vulkan = Builder::new()?
+        .with_extensions(None) // enable core instance-extensions.
+        .with_surface(None) // enabled required extensions for surface creation.
+        .build()
+        .unwrap();
     let pd = vobj.to_physical_devices()[phydev];
 
     // format attributes
@@ -244,7 +252,12 @@ fn info_device(_opts: Opt) -> Result<()> {
 
     let layers = layers()?;
     let layer_names: Vec<&str> = layers.iter().map(|l| l.name()).collect();
-    let vobj: Vulkan = Builder::new()?.with_layers(layer_names).build().unwrap();
+    let vobj: Vulkan = Builder::new()?
+        .with_extensions(None) // enable core instance-extensions.
+        .with_surface(None) // enabled required extensions for surface creation.
+        .with_layers(layer_names)
+        .build()
+        .unwrap();
     let layers = vobj.enabled_layers();
     let pds = vobj.to_physical_devices();
 
@@ -260,7 +273,7 @@ fn info_device(_opts: Opt) -> Result<()> {
     make_table(&instance_extensions()).print_tty(force_color);
     println!();
 
-    println!("{}:", "Device core extensions".yellow());
+    println!("{}:", "Device supported extensions".yellow());
     let mut iter = pds.iter().map(|pd| device_extensions(pd.clone()));
     let mut table = match iter.next() {
         Some(dextns) => {

@@ -68,8 +68,7 @@ fn info_surface(_opts: Opt) -> Result<()> {
 
     let vobj: Vulkan = Builder::new()?
         .with_extensions(None) // enable core instance-extensions.
-        .with_surface(None) // enabled required extensions for surface creation.
-        .build()
+        .build(Some(vulkano_win::required_extensions()))
         .unwrap();
     let pds = vobj.to_physical_devices();
     let pd = pds[DEFAULT_PHYDEV];
@@ -171,8 +170,7 @@ fn info_formats(opts: Opt) -> Result<()> {
 
     let vobj: Vulkan = Builder::new()?
         .with_extensions(None) // enable core instance-extensions.
-        .with_surface(None) // enabled required extensions for surface creation.
-        .build()
+        .build(Some(vulkano_win::required_extensions()))
         .unwrap();
     let pd = vobj.to_physical_devices()[phydev];
 
@@ -254,9 +252,8 @@ fn info_device(_opts: Opt) -> Result<()> {
     let layer_names: Vec<&str> = layers.iter().map(|l| l.name()).collect();
     let vobj: Vulkan = Builder::new()?
         .with_extensions(None) // enable core instance-extensions.
-        .with_surface(None) // enabled required extensions for surface creation.
         .with_layers(layer_names)
-        .build()
+        .build(Some(vulkano_win::required_extensions()))
         .unwrap();
     let layers = vobj.enabled_layers();
     let pds = vobj.to_physical_devices();

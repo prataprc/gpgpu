@@ -109,8 +109,6 @@ pub struct Builder<'a> {
     dextns: Option<DeviceExtensions>,
     properties: Properties,
     features: Features,
-    // surface parameters
-    surface_extensions: Option<InstanceExtensions>,
 }
 
 impl<'a> Builder<'a> {
@@ -132,8 +130,6 @@ impl<'a> Builder<'a> {
             dextns: None,
             properties: Properties::default(),
             features: Features::none(),
-            // surface parameters
-            surface_extensions: Some(vulkano_win::required_extensions()),
         };
 
         Ok(builder)
@@ -165,8 +161,6 @@ impl<'a> Builder<'a> {
             dextns: None,
             properties: Properties::default(),
             features: Features::none(),
-            // surface parameters
-            surface_extensions: Some(vulkano_win::required_extensions()),
         })
     }
 
@@ -195,13 +189,6 @@ impl<'a> Builder<'a> {
     pub fn with_extensions(mut self, extensions: Option<InstanceExtensions>) -> Self {
         self.iextns =
             extensions.unwrap_or(InstanceExtensions::supported_by_core().unwrap());
-        self
-    }
-
-    /// Enable necessary surface extensions. If passed none then surface creation
-    /// and corresponding swapchain creation is disabled.
-    pub fn with_surface(mut self, extensions: Option<InstanceExtensions>) -> Self {
-        self.surface_extensions = extensions;
         self
     }
 
@@ -240,29 +227,24 @@ impl<'a> Builder<'a> {
         self
     }
 
-    /// Finally call build, to obtain the [Vulkan] object.
-    pub fn build(self) -> Result<Vulkan<'a>> {
+    /// Finally call build, to obtain the [Vulkan] object. If surface and swapschain
+    /// needs to be created for this Vulkan object, then pass valid set of instance
+    /// extensions (for required surface).
+    pub fn build(self, surface: Option<InstanceExtensions>) -> Result<Vulkan<'a>> {
         use vulkano::device::Device;
         use vulkano_win::VkSurfaceBuild;
         use winit::event_loop::EventLoop;
         use winit::window::WindowBuilder;
 
         let instance = {
-            let iextns = match self.surface_extensions.clone() {
-                Some(surface_extensions) => {
-                    union_iextns(self.iextns.clone(), surface_extensions.clone())
-                }
+            let iextns = match surface.clone() {
+                Some(extens) => union_iextns(self.iextns.clone(), extens),
                 None => self.iextns.clone(),
             };
-            Box::new(err_at!(
-                Vk,
-                Instance::new(
-                    Some(&self.app_info),
-                    self.version,
-                    &iextns,
-                    self.layers.iter().map(|s| s.as_str()),
-                )
-            )?)
+            let layers = self.layers.iter().map(|s| s.as_str());
+
+            let res = Instance::new(Some(&self.app_info), self.version, &iextns, layers);
+            Box::new(err_at!(Vk, res)?)
         };
 
         let pds: Vec<PhysicalDevice> = unsafe {
@@ -297,21 +279,24 @@ impl<'a> Builder<'a> {
         };
 
         let event_loop = EventLoop::new();
-        let surface = match self.surface_extensions.is_some() {
-            true => Some(
-                WindowBuilder::new()
-                    .build_vk_surface(&event_loop, Arc::clone(&instance))
-                    .unwrap(),
-            ),
-            false => None,
+        let surface = if surface.is_some() {
+            let wb = WindowBuilder::new();
+            Some(err_at!(
+                Vk,
+                wb.build_vk_surface(&event_loop, Arc::clone(&instance))
+            )?)
+        } else {
+            None
         };
+
+        let layers = layers()?
+            .into_iter()
+            .filter(|l| self.layers.contains(&l.name().to_string()))
+            .collect();
 
         let val = Vulkan {
             // instance attribute
-            layers: layers()?
-                .into_iter()
-                .filter(|l| self.layers.contains(&l.name().to_string()))
-                .collect(),
+            layers,
             iextns: self.iextns,
             instance,
             phydevs: pds,
@@ -331,6 +316,7 @@ impl<'a> Builder<'a> {
 }
 
 pub struct SwapchainCreateInfo {
+    // swapchain parameters
     num_images: u32,
     format: vulkano::format::Format,
     color_space: vulkano::swapchain::ColorSpace,
@@ -475,7 +461,7 @@ where
 }
 
 impl<'a, W, T> Vulkan<'a, W, T> {
-    pub fn default_swapchain_create_info(&self) -> Result<SwapchainCreateInfo> {
+    fn default_swapchain_create_info(&self) -> Result<SwapchainCreateInfo> {
         use vulkano::{
             swapchain::{
                 CompositeAlpha, FullscreenExclusive, PresentMode, SurfaceTransform,
@@ -484,10 +470,7 @@ impl<'a, W, T> Vulkan<'a, W, T> {
         };
 
         let cap = match &self.surface {
-            Some(surface) => {
-                let cap = surface.capabilities(self.to_physical_device());
-                err_at!(Vk, cap)?
-            }
+            Some(srfc) => err_at!(Vk, srfc.capabilities(self.to_physical_device()))?,
             None => err_at!(Vk, msg: "surface not enabled")?,
         };
         let (format, color_space) = match cap.supported_formats.into_iter().next() {
@@ -513,9 +496,14 @@ impl<'a, W, T> Vulkan<'a, W, T> {
         })
     }
 
-    pub fn create_swapchain(&mut self, info: SwapchainCreateInfo) -> Result<()> {
+    pub fn create_swapchain(&mut self, info: Option<SwapchainCreateInfo>) -> Result<()> {
         use std::cmp;
         use vulkano::swapchain::Swapchain;
+
+        let info = match info {
+            Some(info) => info,
+            None => self.default_swapchain_create_info()?,
+        };
 
         let (device, surface, cap) = match &self.surface {
             Some(surface) => {
@@ -551,7 +539,7 @@ impl<'a, W, T> Vulkan<'a, W, T> {
         Ok(())
     }
 
-    pub fn recreate_swapchain(&mut self, info: SwapchainCreateInfo) {
+    pub fn recreate_swapchain(&mut self, _info: SwapchainCreateInfo) {
         todo!()
     }
 

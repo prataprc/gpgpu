@@ -9,6 +9,7 @@ edition = "2018"
 [dependencies]
 structopt = "*"
 winit = "0.25.0"
+image = "0.23"
 vgi = { version = "0.1.0", path = "../vgi" }
 
 

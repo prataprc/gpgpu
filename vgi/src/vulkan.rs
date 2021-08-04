@@ -459,7 +459,7 @@ where
     }
 
     #[allow(dead_code)]
-    fn to_images(&self) -> Arc<vulkano::image::AttachmentImage> {
+    fn to_image(&self) -> Arc<vulkano::image::AttachmentImage> {
         match self {
             Target::Bitmap { image } => Arc::clone(image),
             Target::Surface { .. } => panic!("vulkan target not a bitmap"),
@@ -588,6 +588,10 @@ where
 
     pub fn to_swapchain(&self) -> Arc<vulkano::swapchain::Swapchain<W>> {
         self.target.to_swapchain()
+    }
+
+    pub fn to_image(&self) -> Arc<vulkano::image::AttachmentImage> {
+        self.target.to_image()
     }
 }
 

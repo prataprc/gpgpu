@@ -173,7 +173,7 @@ impl<'a> Builder<'a> {
     /// List of layers to be enabled while creating vulkan-instance.
     pub fn with_layers<L>(mut self, layers: L) -> Self
     where
-        L: IntoIterator<Item = &'a str>,
+        L: IntoIterator<Item = String>,
     {
         self.layers = layers.into_iter().map(|s| s.to_string()).collect();
         self
@@ -192,13 +192,13 @@ impl<'a> Builder<'a> {
         self
     }
 
-    /// Create VkDevice object using supplied parameters. At preset we don't have
+    /// Create VkDevice object using supplied parameters. At present we don't have
     /// multi-device support. For requested [Features], device-extensions shall
     /// automatically be enabled event if they are not supplied in the `extensions` arg.
     ///
-    /// By default if this method is not used, the the first available physical device
-    /// shall be used with default properties and no-specific-feature requested and
-    /// no-specific-device-extension enabled.
+    /// By default, if this method is not used, the the first available physical device
+    /// shall be used with default properties, with extensions required and supported by
+    /// the physical-device, and with no-specific-feature.
     ///
     /// If `extensions` is None, then all extensions required and supported by the
     /// physical device shall be enabled.
@@ -220,29 +220,27 @@ impl<'a> Builder<'a> {
         self
     }
 
-    /// Create with queues. If not used a single graphics queue with priority 1.0 shall
-    /// be used.
+    /// Create with queues. If not used, a single graphics queue with priority 1.0
+    /// shall be created and used.
     pub fn with_queues(mut self, infos: Vec<QueueCreateInfo>) -> Self {
         self.queue_infos = infos;
         self
     }
 
-    /// Finally call build, to obtain the [Vulkan] object. If surface and swapschain
-    /// needs to be created for this Vulkan object, then pass valid set of instance
-    /// extensions (for required surface).
-    pub fn build(self, surface: Option<InstanceExtensions>) -> Result<Vulkan<'a>> {
+    /// Finally call build, to obtain the [Vulkan] object. There are two variant
+    /// of build, one to build for a platform dependant surface for which use
+    /// `build_for_surface` method and second to rendering into image buffer.
+    ///
+    /// If not sure, use vulkano_win::required_extensions() for `surface` parameter.
+    pub fn build_for_surface(self, surface: InstanceExtensions) -> Result<Vulkan<'a>> {
         use vulkano::device::Device;
         use vulkano_win::VkSurfaceBuild;
         use winit::event_loop::EventLoop;
         use winit::window::WindowBuilder;
 
         let instance = {
-            let iextns = match surface.clone() {
-                Some(extens) => union_iextns(self.iextns.clone(), extens),
-                None => self.iextns.clone(),
-            };
+            let iextns = union_iextns(self.iextns.clone(), surface);
             let layers = self.layers.iter().map(|s| s.as_str());
-
             let res = Instance::new(Some(&self.app_info), self.version, &iextns, layers);
             Box::new(err_at!(Vk, res)?)
         };
@@ -259,7 +257,10 @@ impl<'a> Builder<'a> {
 
         let dextns = match self.dextns {
             Some(extensions) => extensions,
-            None => DeviceExtensions::required_extensions(pd),
+            None => DeviceExtensions {
+                khr_swapchain: true,
+                ..DeviceExtensions::required_extensions(pd)
+            },
         };
         let (dextns, device, queues) = {
             let qrs: Vec<(QueueFamily<'a>, f32)> = self
@@ -279,14 +280,14 @@ impl<'a> Builder<'a> {
         };
 
         let event_loop = EventLoop::new();
-        let surface = if surface.is_some() {
-            let wb = WindowBuilder::new();
-            Some(err_at!(
+        let target = Target::Surface {
+            surface: err_at!(
                 Vk,
-                wb.build_vk_surface(&event_loop, Arc::clone(&instance))
-            )?)
-        } else {
-            None
+                WindowBuilder::new().build_vk_surface(&event_loop, Arc::clone(&instance))
+            )?,
+            images: Vec::default(),
+            event_loop,
+            swapchain: None,
         };
 
         let layers = layers()?
@@ -304,31 +305,88 @@ impl<'a> Builder<'a> {
             dextns,
             device,
             queues,
-            // surface object
-            event_loop,
-            surface,
-            swapchain: None,
-            images: Some(Vec::default()),
+            target,
         };
 
         Ok(val)
     }
-}
 
-pub struct SwapchainCreateInfo {
-    // swapchain parameters
-    num_images: u32,
-    format: vulkano::format::Format,
-    color_space: vulkano::swapchain::ColorSpace,
-    dimensions: [u32; 2],
-    layers: u32,
-    usage: vulkano::image::ImageUsage,
-    sharing_mode: vulkano::sync::SharingMode,
-    transform: vulkano::swapchain::SurfaceTransform,
-    composite_alpha: vulkano::swapchain::CompositeAlpha,
-    present_mode: vulkano::swapchain::PresentMode,
-    fullscreen_exclusive: vulkano::swapchain::FullscreenExclusive,
-    clipped: bool,
+    /// Finally call build, to obtain the [Vulkan] object. There are two variant
+    /// of build, one to render into image buffer, for which use `build_for_buffer`
+    /// and second to build for a platform dependant surface.
+    pub fn build_for_buffer(
+        self,
+        dimensions: [u32; 2],
+        format: Format,
+    ) -> Result<Vulkan<'a>> {
+        use vulkano::device::Device;
+        use vulkano::image::AttachmentImage;
+
+        let instance = {
+            let iextns = self.iextns.clone();
+            let layers = self.layers.iter().map(|s| s.as_str());
+            let res = Instance::new(Some(&self.app_info), self.version, &iextns, layers);
+            Box::new(err_at!(Vk, res)?)
+        };
+
+        let pds: Vec<PhysicalDevice> = unsafe {
+            let inst = (instance.as_ref() as *const Arc<Instance>)
+                .as_ref()
+                .unwrap();
+            PhysicalDevice::enumerate(inst).collect()
+        };
+        let pd = pds[self.device_id];
+        confirm_properties(&self, pd.properties().clone())?;
+        let qfamilies: Vec<QueueFamily> = pd.queue_families().collect();
+
+        let dextns = match self.dextns {
+            Some(extensions) => extensions,
+            None => DeviceExtensions {
+                khr_swapchain: true,
+                ..DeviceExtensions::required_extensions(pd)
+            },
+        };
+        let (dextns, device, queues) = {
+            let qrs: Vec<(QueueFamily<'a>, f32)> = self
+                .queue_infos
+                .clone()
+                .into_iter()
+                .map(|info| make_queue_request(info, &qfamilies))
+                .flatten()
+                .map(|(id, p)| (pd.queue_family_by_id(id).unwrap(), p))
+                .collect();
+            let dextns = extensions_for_features(&self.features, dextns);
+            let (device, queues) = err_at!(
+                Vk,
+                Device::new(pd, &self.features, &dextns, qrs.into_iter())
+            )?;
+            (dextns, device, queues.collect::<Vec<Arc<Queue>>>())
+        };
+
+        let target = Target::Bitmap {
+            image: err_at!(Vk, AttachmentImage::new(device.clone(), dimensions, format))?,
+        };
+
+        let layers = layers()?
+            .into_iter()
+            .filter(|l| self.layers.contains(&l.name().to_string()))
+            .collect();
+
+        let val = Vulkan {
+            // instance attribute
+            layers,
+            iextns: self.iextns,
+            instance,
+            phydevs: pds,
+            // device attribute
+            dextns,
+            device,
+            queues,
+            target,
+        };
+
+        Ok(val)
+    }
 }
 
 /// Vulkan type roughly maps to instance/device object defined by the vulkan spec.
@@ -349,11 +407,80 @@ where
     dextns: DeviceExtensions,
     device: Arc<vulkano::device::Device>,
     queues: Vec<Arc<Queue>>,
-    // surface and swapchain objects
-    event_loop: winit::event_loop::EventLoop<T>,
-    surface: Option<Arc<vulkano::swapchain::Surface<W>>>,
-    swapchain: Option<Arc<vulkano::swapchain::Swapchain<W>>>,
-    images: Option<Vec<Arc<vulkano::image::swapchain::SwapchainImage<W>>>>,
+    // surface and swapchain objects, or bmp.
+    target: Target<W, T>,
+}
+
+enum Target<W, T>
+where
+    T: 'static,
+{
+    Surface {
+        // surface, swapchain and event-loop
+        surface: Arc<vulkano::swapchain::Surface<W>>,
+        swapchain: Option<Arc<vulkano::swapchain::Swapchain<W>>>,
+        images: Vec<Arc<vulkano::image::swapchain::SwapchainImage<W>>>,
+        // window, events
+        event_loop: winit::event_loop::EventLoop<T>,
+    },
+    Bitmap {
+        image: Arc<vulkano::image::AttachmentImage>,
+    },
+}
+
+impl<W, T> Target<W, T>
+where
+    T: 'static,
+{
+    fn to_surface(&self) -> Arc<vulkano::swapchain::Surface<W>> {
+        match self {
+            Target::Surface { surface, .. } => Arc::clone(surface),
+            Target::Bitmap { .. } => panic!("vulkan target not a surface"),
+        }
+    }
+
+    fn to_swapchain(&self) -> Arc<vulkano::swapchain::Swapchain<W>> {
+        match self {
+            Target::Surface {
+                swapchain: Some(swpc),
+                ..
+            } => Arc::clone(swpc),
+            Target::Surface { .. } => panic!("swapchain yet to be built"),
+            Target::Bitmap { .. } => panic!("vulkan target not a surface"),
+        }
+    }
+
+    #[allow(dead_code)]
+    fn to_swapimages(&self) -> Vec<Arc<vulkano::image::swapchain::SwapchainImage<W>>> {
+        match self {
+            Target::Surface { images, .. } => images.iter().map(Arc::clone).collect(),
+            Target::Bitmap { .. } => panic!("vulkan target not a surface"),
+        }
+    }
+
+    #[allow(dead_code)]
+    fn to_images(&self) -> Arc<vulkano::image::AttachmentImage> {
+        match self {
+            Target::Bitmap { image } => Arc::clone(image),
+            Target::Surface { .. } => panic!("vulkan target not a bitmap"),
+        }
+    }
+}
+
+pub struct SwapchainCreateInfo {
+    // swapchain parameters
+    num_images: u32,
+    format: vulkano::format::Format,
+    color_space: vulkano::swapchain::ColorSpace,
+    dimensions: [u32; 2],
+    layers: u32,
+    usage: vulkano::image::ImageUsage,
+    sharing_mode: vulkano::sync::SharingMode,
+    transform: vulkano::swapchain::SurfaceTransform,
+    composite_alpha: vulkano::swapchain::CompositeAlpha,
+    present_mode: vulkano::swapchain::PresentMode,
+    fullscreen_exclusive: vulkano::swapchain::FullscreenExclusive,
+    clipped: bool,
 }
 
 impl<'a, W, T> Vulkan<'a, W, T>
@@ -449,31 +576,68 @@ where
         self.phydevs.clone()
     }
 
+    /// Return the underlying device reference as Arc<T>
+    pub fn to_device(&self) -> Arc<vulkano::device::Device> {
+        self.device.clone()
+    }
+
     /// Return the queue objects created for this device
     pub fn to_queues(&self) -> Vec<Arc<Queue>> {
         self.queues.clone()
     }
 
-    /// Return reference to surface object
-    pub fn as_surface(&self) -> Option<&Arc<vulkano::swapchain::Surface<W>>> {
-        self.surface.as_ref()
+    pub fn to_swapchain(&self) -> Arc<vulkano::swapchain::Swapchain<W>> {
+        self.target.to_swapchain()
     }
 }
 
-impl<'a, W, T> Vulkan<'a, W, T> {
-    fn default_swapchain_create_info(&self) -> Result<SwapchainCreateInfo> {
-        use vulkano::{
-            swapchain::{
-                CompositeAlpha, FullscreenExclusive, PresentMode, SurfaceTransform,
-            },
-            sync::SharingMode,
+impl<'a, T> Vulkan<'a, winit::window::Window, T> {
+    /// Returns swapchain create parameters
+    pub fn default_swapchain_create_info(&self) -> Result<SwapchainCreateInfo> {
+        use vulkano::swapchain::{FullscreenExclusive, PresentMode, SurfaceTransform};
+
+        let (caps, dimensions, _qf) = match &self.target {
+            Target::Surface { surface, .. } => {
+                // Query capabilities of the surface. When we create the swapchain
+                // we can only pass values that are allowed by the capabilities.
+                let caps = err_at!(Vk, surface.capabilities(self.to_physical_device()))?;
+
+                // The dimensions of the window, only used to initially setup the
+                // swapchain.
+                //
+                // NOTE: On some drivers the swapchain dimensions are specified by
+                // `caps.current_extent` and the swapchain size must use these dimensions.
+                //
+                // These dimensions are always the same as the window dimensions.
+                // However, other drivers don't specify a value, i.e.
+                // `caps.current_extent` is `None`. These drivers will allow anything,
+                // but the only sensible value is the window dimensions.
+                //
+                // Both of these cases need the swapchain to use the window dimensions,
+                // so we just use that.
+                let dimensions: [u32; 2] = surface.window().inner_size().into();
+
+                let qf = {
+                    self.device
+                        .physical_device()
+                        .queue_families()
+                        .find(|&q| {
+                            // take the first queue that supports drawing to our window.
+                            q.supports_graphics()
+                                && surface.is_supported(q).unwrap_or(false)
+                        })
+                        .unwrap();
+                };
+                (caps, dimensions, qf)
+            }
+            Target::Bitmap { .. } => err_at!(Vk, msg: "vulkan target not surface")?,
         };
 
-        let cap = match &self.surface {
-            Some(srfc) => err_at!(Vk, srfc.capabilities(self.to_physical_device()))?,
-            None => err_at!(Vk, msg: "surface not enabled")?,
-        };
-        let (format, color_space) = match cap.supported_formats.into_iter().next() {
+        // The alpha mode indicates how the alpha value of the final image will behave.
+        // For example, you can choose whether the window will be opaque or transparent.
+        let composite_alpha = caps.supported_composite_alpha.iter().next().unwrap();
+
+        let (format, color_space) = match caps.supported_formats.into_iter().next() {
             Some((Format::R8G8B8A8Unorm, cs)) => (Format::R8G8B8A8Unorm, cs),
             Some((Format::B8G8R8A8Unorm, cs)) => (Format::B8G8R8A8Unorm, cs),
             Some((format, cs)) => (format, cs),
@@ -481,15 +645,15 @@ impl<'a, W, T> Vulkan<'a, W, T> {
         };
 
         Ok(SwapchainCreateInfo {
-            num_images: cap.min_image_count,
+            num_images: caps.min_image_count,
             format,
             color_space,
-            dimensions: Default::default(),
+            dimensions,
             layers: 1,
-            usage: ImageUsage::none(),
-            sharing_mode: SharingMode::Exclusive,
+            usage: ImageUsage::color_attachment(),
+            sharing_mode: self.queues.iter().next().unwrap().into(),
             transform: SurfaceTransform::Identity,
-            composite_alpha: CompositeAlpha::Opaque,
+            composite_alpha,
             present_mode: PresentMode::Fifo,
             fullscreen_exclusive: FullscreenExclusive::Default,
             clipped: true,
@@ -500,24 +664,29 @@ impl<'a, W, T> Vulkan<'a, W, T> {
         use std::cmp;
         use vulkano::swapchain::Swapchain;
 
+        let device = Arc::clone(&self.device);
         let info = match info {
             Some(info) => info,
             None => self.default_swapchain_create_info()?,
         };
 
-        let (device, surface, cap) = match &self.surface {
-            Some(surface) => {
-                let cap = err_at!(Vk, surface.capabilities(self.to_physical_device()))?;
-                (Arc::clone(&self.device), Arc::clone(surface), cap)
-            }
-            None => err_at!(Vk, msg: "surface not enabled")?,
-        };
+        let max_image_count = err_at!(
+            Vk,
+            self.target
+                .to_surface()
+                .capabilities(self.to_physical_device())
+        )?
+        .max_image_count
+        .unwrap_or(info.num_images);
 
-        let (swapchain, images) = {
-            let max_image_count = cap.max_image_count.unwrap_or(info.num_images);
-            err_at!(
-                Vk,
-                Swapchain::start(device, surface)
+        match &mut self.target {
+            Target::Surface {
+                surface,
+                swapchain,
+                images,
+                ..
+            } => {
+                let res = Swapchain::start(device, Arc::clone(surface))
                     .num_images(cmp::min(info.num_images, max_image_count))
                     .format(info.format)
                     .color_space(info.color_space)
@@ -530,11 +699,13 @@ impl<'a, W, T> Vulkan<'a, W, T> {
                     .present_mode(info.present_mode)
                     .fullscreen_exclusive(info.fullscreen_exclusive)
                     .clipped(info.clipped)
-                    .build()
-            )?
+                    .build();
+                let (swapchain_n, images_n) = err_at!(Vk, res)?;
+                *swapchain = Some(swapchain_n);
+                *images = images_n;
+            }
+            Target::Bitmap { .. } => err_at!(Vk, msg: "vulkan target not a surface")?,
         };
-        self.swapchain = Some(swapchain);
-        self.images = Some(images);
 
         Ok(())
     }
@@ -547,121 +718,6 @@ impl<'a, W, T> Vulkan<'a, W, T> {
         err_at!(Vk, self.device.wait())
     }
 }
-
-//TODO
-//fn enable_layers(layers: &[LayerProperties]) -> Vec<&'static str> {
-//    layers
-//        .iter()
-//        .filter_map(|layer| match layer.name() {
-//            "VK_LAYER_LUNARG_parameter_validation" => {
-//                Some("VK_LAYER_LUNARG_parameter_validation")
-//            }
-//            "VK_LAYER_LUNARG_object_tracker" => Some("VK_LAYER_LUNARG_object_tracker"),
-//            "VK_LAYER_LUNARG_standard_validation" => {
-//                Some("VK_LAYER_LUNARG_standard_validation")
-//            }
-//            "VK_LAYER_LUNARG_core_validation" => Some("VK_LAYER_LUNARG_core_validation"),
-//            "VK_LAYER_GOOGLE_threading" => Some("VK_LAYER_GOOGLE_threading"),
-//            "VK_LAYER_GOOGLE_unique_objects" => Some("VK_LAYER_GOOGLE_unique_objects"),
-//            _ => None,
-//        })
-//        .collect()
-//}
-
-//#[macro_export]
-//macro_rules! feature_conflict {
-//    ($features:ident, $field:ident, $($conflict:ident,)*) => {{
-//        $(
-//            if $features.$field && $features.$conflict {
-//                let (field, conflict) = (stringify!($field), stringify!($conflict));
-//                err_at!(Vk, msg: "{} conflict with {}", field, conflict)?
-//            }
-//        )*
-//    }};
-//}
-//
-//#[macro_export]
-//macro_rules! device_extension_require_feature {
-//    ($exten:expr, $features:ident, $field:ident) => {
-//        if $exten {
-//            $features.$field = true;
-//        }
-//    };
-//}
-//
-//#[macro_export]
-//macro_rules! feature_requires {
-//    ($features:ident, $field:ident, $require:ident) => {
-//        if $features.$field {
-//            $features.$require = true;
-//        }
-//    };
-//}
-//
-//pub fn dependency(
-//    iextens: InstanceExtensions,
-//    dextens: DeviceExtensions,
-//    features: Features,
-//) -> Result<(InstanceExtensions, DeviceExtensions, Features, Version)> {
-//
-//    // feature conflicts with other features.
-//    feature_conflict!(
-//        features, attachment_fragment_shading_rate,
-//        shading_rate_image, fragment_density_map
-//    );
-//    feature_conflict!(
-//        features, fragment_density_map,
-//        pipeline_fragment_shading_rate, primitive_fragment_shading_rate,
-//        attachment_fragment_shading_rate
-//    );
-//    feature_conflict!(
-//        features, pipeline_fragment_shading_rate,
-//        shading_rate_image, fragment_density_map
-//    );
-//    feature_conflict!(
-//        features, primitive_fragment_shading_rate,
-//        shading_rate_image, fragment_density_map
-//    );
-//    feature_conflict!(
-//        features, shading_rate_image,
-//        pipeline_fragment_shading_rate, primitive_fragment_shading_rate,
-//        attachment_fragment_shading_rate
-//    );
-//    // feature required by device extension
-//    device_extension_require_feature!(
-//        dextens.ext_descriptor_indexing, features, descriptor_indexing,
-//    );
-//    device_extension_require_feature!(
-//        dextens.khr_draw_indirect_count, features, draw_indirect_count,
-//    );
-//    device_extension_require_feature!(
-//        dextens.ext_sampler_filter_minmax, features, sampler_filter_minmax,
-//    );
-//    device_extension_require_feature!(
-//        dextens.khr_sampler_mirror_clamp_to_edge, features, sampler_mirror_clamp_to_edge,
-//    );
-//    device_extension_require_feature!(
-//        dextens.khr_shader_draw_parameters, features, shader_draw_parameters,
-//    );
-//    device_extension_require_feature!(
-//        dextens.ext_shader_viewport_index_layer, features, shader_output_layer,
-//    );
-//    device_extension_require_feature!(
-//        dextens.ext_shader_viewport_index_layer, features, shader_output_viewport_index,
-//    )
-//    // feature requires other feature
-//    feature_requires!(
-//        features, sparse_image_float32_atomic_add, shader_image_float32_atomic_add
-//    );
-//    feature_requires!(
-//        features, sparse_image_float32_atomics, shader_image_float32_atomics
-//    );
-//    feature_requires!(
-//        features, sparse_image_int64_atomics, shader_image_int64_atomics
-//    );
-//
-//    Ok((iextens, dextens, features))
-//}
 
 // TODO: why are we even doing this ? How can a device extension is enabled when a device
 // feature is not available.

@@ -3,4 +3,5 @@ members = [
     "vgi",
     "vkinfo",
     "fonts",
+    "samples",
 ]

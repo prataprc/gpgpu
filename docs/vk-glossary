@@ -1,6 +1,56 @@
+Getting started
+===============
+
+* State initialization, state tracking
+* Objects, allocation, instance and lifetime
+* Logical device
+* Physical device(s), usually single piece of hardware of interconnected group of devices
+* Parallel computing with very-wide multithreaded processors
+* Memory-Heap, Memory-Type, device-local, host-visible, coherent, cached, lazy
+* Host memory, applications can choose to manage.
+* Device memory, applications must manage.
+* Pipeline - Transfer, Graphics, Compute
+* No gobal state, all state stored in one of the vulkan-objects, starting from VkInstance
+* Dispatchable objects - VkInstance, VkPhysicalDevice, VkDevice, VkQueue, VkCommandBuffer
+* Non-dispatchable objects
+* Resource objects - VkImage, VkBuffer, VkDescriptorSet bind resource objects with device memory.
+* OPTIMAL tiling will likely to perform significantly better than linear tiling.
+* LINEAR tiling might not be supported at all for some operations or formats.
+* INPUT attachment differ from regular SAMPLED or STORAGE attachment in that FS can read its own pixel.
+* Layout, initial-layout for Images must either be in LAYOUT_UNDEFINED or LAYOUT_PREINITIALIZED
+* Layout transision happens at pipeline-barrier, image-memory-barrier
+* For shared memory between host and device, allocate from HOST_VISIBLE heap.
+* Cache coherency from host use vkFlushMappedMemoryRanges and vkInvalidateMappedMemoryRanges
+* Cache-coherency from device use Barriers.
+
+* Pixels in Image are laid out left-to-right and top-to-bottom
+* Pixel coordinate of each unit of data
+* Type says what are the dimensions, like 1D, 2D, 3D, in pixel-coordinate
+* Extent gives the limits of these dimensions in each direction.
+* Texel is data themself
+* Aspect tells different components of data
+* Format tells the structure and shape of data
+* Layout tells how to interpret the data at any given moment
+* Additionally there is row-pitch, array-pitch, depth-pitch given in bytes.
+* Image subresource defines a subset based on aspect, mipmap-levels and array-layers, along with offset and extent
+* Texel buffers, data interpreted as sequence of texels with the specified format. Atlease 65536 texels in range.
+* Format of Image and ImageView must be compatible, which usually means same number of bits / pixel.
+
+Multithreading
+==============
+
+* Externally Synchronized Parameters.
+* Externally Synchronized Parameter Lists.
+* Implicit Externally Synchronized Parameters.
+* Per thread allocator to manage host memory.
+* Per thread command-pool and command-buffers.
+* Per thread descriptor-pool and descriptor-sets.
+* Secondary command buffers, generated in parallel and then pooled within a render-pass.
+
 Graphics
 ========
 
+Homogeneous Vector
 Clip Coordinates), normalized device coordinates
 Clipping
 Colorspace
@@ -48,6 +98,7 @@ Viewport transform - what area of the available area we are rendering to
 Vulkan
 ======
 
+One hot values - single-bit enumeration
 Accessible (Descriptor Binding)
 Acquire Operation (Resource)
 Adjacent Vertex

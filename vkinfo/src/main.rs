@@ -13,8 +13,7 @@ use winit::window::WindowBuilder;
 
 use vgi::{
     pp::{make_table, PrettyRow},
-    vulkan::{Builder, Vulkan},
-    Result,
+    Builder, Result, Vulkan,
 };
 
 mod info;
@@ -38,10 +37,18 @@ pub struct Opt {
 
     #[structopt(long = "phydev")]
     phydev: Option<usize>,
+
+    #[structopt(long = "color")]
+    color: bool,
 }
 
 fn main() {
     let opts = Opt::from_args();
+
+    // always color, even if the output is piped to some other program
+    if opts.color {
+        colored::control::set_override(true)
+    }
 
     let res = if opts.surface {
         info_surface(opts)
@@ -59,16 +66,14 @@ fn main() {
     }
 }
 
-fn info_surface(_opts: Opt) -> Result<()> {
+fn info_surface(opts: Opt) -> Result<()> {
     use crate::info::ImageFormat;
-    use vgi::vulkan::extensions_for_features;
+    use vgi::extensions_for_features;
     use vulkano::format::Format;
-
-    let force_color = false;
 
     let vobj: Vulkan = Builder::new()?
         .with_extensions(None) // enable core instance-extensions.
-        .build(Some(vulkano_win::required_extensions()))
+        .build_for_surface(vulkano_win::required_extensions())
         .unwrap();
     let pds = vobj.to_physical_devices();
     let pd = pds[DEFAULT_PHYDEV];
@@ -84,7 +89,7 @@ fn info_surface(_opts: Opt) -> Result<()> {
             let caps = surface.capabilities(pd).unwrap();
             let mut table = make_table(&info::surface_capabilities(caps.clone()));
             table.set_titles(row![Fy => "Surface-capability", "Value"]);
-            table.print_tty(force_color);
+            table.print_tty(opts.color);
             caps
         }
     };
@@ -96,7 +101,7 @@ fn info_surface(_opts: Opt) -> Result<()> {
         .map(|(f, _)| f.clone())
         .collect();
 
-    make_table(&formats).print_tty(force_color);
+    make_table(&formats).print_tty(opts.color);
     println!();
 
     // format features
@@ -122,7 +127,7 @@ fn info_surface(_opts: Opt) -> Result<()> {
     let mut table = Table::init(rows);
     table.set_titles(FormatProperties::to_head());
     table.set_format(FormatProperties::to_format());
-    table.print_tty(force_color);
+    table.print_tty(opts.color);
     println!();
 
     let (device, _iter) = {
@@ -155,7 +160,7 @@ fn info_surface(_opts: Opt) -> Result<()> {
             }
         }
     }
-    filter_empty_rows(make_table(&image_formats)).print_tty(force_color);
+    filter_empty_rows(make_table(&image_formats)).print_tty(opts.color);
     println!();
 
     Ok(())
@@ -163,19 +168,18 @@ fn info_surface(_opts: Opt) -> Result<()> {
 
 fn info_formats(opts: Opt) -> Result<()> {
     use info::ImageFormat;
-    use vgi::vulkan::extensions_for_features;
+    use vgi::extensions_for_features;
 
-    let force_color = false;
     let phydev = opts.phydev.unwrap_or(DEFAULT_PHYDEV);
 
     let vobj: Vulkan = Builder::new()?
         .with_extensions(None) // enable core instance-extensions.
-        .build(Some(vulkano_win::required_extensions()))
+        .build_for_surface(vulkano_win::required_extensions())
         .unwrap();
     let pd = vobj.to_physical_devices()[phydev];
 
     // format attributes
-    make_table(&info::format_list()).print_tty(force_color);
+    make_table(&info::format_list()).print_tty(opts.color);
     println!();
 
     // format features
@@ -202,7 +206,7 @@ fn info_formats(opts: Opt) -> Result<()> {
     let mut table = Table::init(rows);
     table.set_titles(FormatProperties::to_head());
     table.set_format(FormatProperties::to_format());
-    table.print_tty(force_color);
+    table.print_tty(opts.color);
     println!();
 
     let (device, _iter) = {
@@ -236,24 +240,22 @@ fn info_formats(opts: Opt) -> Result<()> {
             }
         }
     }
-    filter_empty_rows(make_table(&image_formats)).print_tty(force_color);
+    filter_empty_rows(make_table(&image_formats)).print_tty(opts.color);
     println!();
 
     Ok(())
 }
 
-fn info_device(_opts: Opt) -> Result<()> {
+fn info_device(opts: Opt) -> Result<()> {
     use info::{device_extensions, instance_extensions, ChecklistItem};
-    use vgi::{pp::transpose, vulkan::layers};
-
-    let force_color = false;
+    use vgi::{layers, pp::transpose};
 
     let layers = layers()?;
-    let layer_names: Vec<&str> = layers.iter().map(|l| l.name()).collect();
+    let layer_names: Vec<String> = layers.iter().map(|l| l.name().to_string()).collect();
     let vobj: Vulkan = Builder::new()?
         .with_extensions(None) // enable core instance-extensions.
         .with_layers(layer_names)
-        .build(Some(vulkano_win::required_extensions()))
+        .build_for_surface(vulkano_win::required_extensions())
         .unwrap();
     let layers = vobj.enabled_layers();
     let pds = vobj.to_physical_devices();
@@ -263,11 +265,11 @@ fn info_device(_opts: Opt) -> Result<()> {
     println!();
 
     println!("{}", "List of layers".yellow());
-    make_table(&layers).print_tty(force_color);
+    make_table(&layers).print_tty(opts.color);
     println!();
 
     println!("{}:", "Instance core extensions".yellow());
-    make_table(&instance_extensions()).print_tty(force_color);
+    make_table(&instance_extensions()).print_tty(opts.color);
     println!();
 
     println!("{}:", "Device supported extensions".yellow());
@@ -294,7 +296,7 @@ fn info_device(_opts: Opt) -> Result<()> {
     table.set_titles(head);
     table.set_format(PhysicalDevice::to_format());
     // print
-    table.print_tty(force_color);
+    table.print_tty(opts.color);
     println!();
 
     println!("{}:", "Physical device properties".yellow());
@@ -316,24 +318,23 @@ fn info_device(_opts: Opt) -> Result<()> {
     table.set_titles(head);
     table.set_format(PhysicalDevice::to_format());
     // print
-    table.print_tty(force_color);
+    table.print_tty(opts.color);
     println!();
 
-    make_table_pdfeatures(&vobj).print_tty(force_color);
+    make_table_pdfeatures(&vobj).print_tty(opts.color);
     println!();
 
-    print_physical_devices(&pds, force_color);
+    print_physical_devices(&pds, &opts);
     println!();
 
     Ok(())
 }
 
-fn info_registry(_opts: Opt) -> Result<()> {
+fn info_registry(opts: Opt) -> Result<()> {
     use vgi::{get_registry_variant, registry};
     use vk_parse::RegistryChild::{self};
     use vk_parse::{CommentedChildren, Extension, Platform, Tag, VendorId};
 
-    let force_color = false;
     let reg = registry::get_registry()?;
 
     println!("{}:", "Registry Platforms".yellow());
@@ -342,7 +343,7 @@ fn info_registry(_opts: Opt) -> Result<()> {
         .enumerate()
     {
         platform.comment.map(|val| println!("{} {:?}", i, val));
-        make_table(&platform.children).print_tty(force_color);
+        make_table(&platform.children).print_tty(opts.color);
         println!();
     }
     println!();
@@ -353,7 +354,7 @@ fn info_registry(_opts: Opt) -> Result<()> {
         .enumerate()
     {
         vendor_id.comment.map(|val| println!("{} {:?}", i, val));
-        make_table(&vendor_id.children).print_tty(force_color);
+        make_table(&vendor_id.children).print_tty(opts.color);
         println!();
     }
     println!();
@@ -364,7 +365,7 @@ fn info_registry(_opts: Opt) -> Result<()> {
         .enumerate()
     {
         tag.comment.map(|val| println!("{} {:?}", i, val));
-        make_table(&tag.children).print_tty(force_color);
+        make_table(&tag.children).print_tty(opts.color);
         println!();
     }
     println!();
@@ -379,7 +380,7 @@ fn info_registry(_opts: Opt) -> Result<()> {
             //.filter(|e| e.supported == Some("vulkan".to_string()))
             .collect();
     extensions.sort_by(|a, b| a.name.cmp(&b.name));
-    make_table(&extensions).print_tty(force_color);
+    make_table(&extensions).print_tty(opts.color);
     println!();
 
     println!("{}:", "Registry".yellow());
@@ -420,7 +421,7 @@ fn make_table_pdfeatures(vobj: &Vulkan) -> prettytable::Table {
     }
 }
 
-fn print_physical_devices(pds: &[PhysicalDevice], force_color: bool) {
+fn print_physical_devices(pds: &[PhysicalDevice], opts: &Opt) {
     for pd in pds {
         let name = pd.properties().device_name.as_ref().unwrap();
         let s = format!("Physical-device {{{}}} {}", pd.index(), name,).red();
@@ -436,11 +437,11 @@ fn print_physical_devices(pds: &[PhysicalDevice], force_color: bool) {
         let types: Vec<MemoryType> = pd.memory_types().collect();
         let queues: Vec<QueueFamily> = pd.queue_families().collect();
 
-        make_table(&heaps).print_tty(force_color);
+        make_table(&heaps).print_tty(opts.color);
         println!();
-        make_table(&types).print_tty(force_color);
+        make_table(&types).print_tty(opts.color);
         println!();
-        make_table(&queues).print_tty(force_color);
+        make_table(&queues).print_tty(opts.color);
         println!();
     }
 }

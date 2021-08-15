@@ -48,13 +48,27 @@ macro_rules! format_props {
     ($val:ident, $($field:ident,)*) => (
         vec![
             $(
-                match ($val.linear_tiling_features.$field, $val.optimal_tiling_features.$field, $val.buffer_features.$field) {
+                match (
+                    $val.linear_tiling_features.$field,
+                    $val.optimal_tiling_features.$field,
+                    $val.buffer_features.$field
+                ) {
                     (false, false, false) => "-".to_string(),
                     (a, b, c) => format_cell_content(a, b, c).to_string(),
                 },
             )*
         ]
     );
+}
+
+macro_rules! format_bool {
+    ($val:expr) => {
+        if $val {
+            "✓".green()
+        } else {
+            "✗".red()
+        }
+    };
 }
 
 pub trait PrettyRow {
@@ -116,8 +130,8 @@ impl<'a> PrettyRow for MemoryHeap<'a> {
         row![
             self.id(),
             self.size(),
-            self.is_device_local(),
-            self.is_multi_instance()
+            format_bool!(self.is_device_local()),
+            format_bool!(self.is_multi_instance())
         ]
     }
 }
@@ -135,11 +149,11 @@ impl<'a> PrettyRow for MemoryType<'a> {
         row![
             self.id(),
             self.heap().id(),
-            self.is_device_local(),
-            self.is_host_visible(),
-            self.is_host_cached(),
-            self.is_host_coherent(),
-            self.is_lazily_allocated(),
+            format_bool!(self.is_device_local()),
+            format_bool!(self.is_host_visible()),
+            format_bool!(self.is_host_cached()),
+            format_bool!(self.is_host_coherent()),
+            format_bool!(self.is_lazily_allocated()),
         ]
     }
 }
@@ -161,26 +175,10 @@ impl<'a> PrettyRow for QueueFamily<'a> {
             self.id(),
             self.queues_count(),
             format!("{:?}", self.min_image_transfer_granularity()),
-            if self.supports_graphics() {
-                "✓"
-            } else {
-                "✗"
-            },
-            if self.supports_compute() {
-                "✓"
-            } else {
-                "✗"
-            },
-            if self.explicitly_supports_transfers() {
-                "✓"
-            } else {
-                "✗"
-            },
-            if self.supports_sparse_binding() {
-                "✓"
-            } else {
-                "✗"
-            },
+            format_bool!(self.supports_graphics()),
+            format_bool!(self.supports_compute()),
+            format_bool!(self.explicitly_supports_transfers()),
+            format_bool!(self.supports_sparse_binding()),
         ]
     }
 }

@@ -1,5 +1,8 @@
 use std::{error, fmt, result};
 
+// TODO: `vk_parse` crate can parse the vk.xml to give several information
+// about khronos-vulkan registry.
+
 // Short form to compose Error values.
 //
 // Here are few possible ways:
@@ -47,8 +50,12 @@ macro_rules! err_at {
 }
 
 pub mod pp;
-pub mod registry;
-pub mod vulkan;
+
+mod validity;
+mod vulkan;
+
+pub use validity::extensions_for_features;
+pub use vulkan::{api_version, layers, Builder, Vulkan};
 
 /// Error variants that are returned by this package's API.
 ///

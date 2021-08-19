@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 fn main() {
-    use vgi::vulkan::{layers, Builder};
+    use vgi::{layers, Builder};
     use vulkano::buffer::{cpu_access::CpuAccessibleBuffer, BufferUsage};
 
     // create the vulkan container

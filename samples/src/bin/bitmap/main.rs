@@ -1,20 +1,21 @@
+use vulkano::{
+    buffer::{cpu_access::CpuAccessibleBuffer, BufferUsage},
+    command_buffer::{
+        AutoCommandBufferBuilder, CommandBufferUsage, DynamicState, PrimaryCommandBuffer,
+        SubpassContents,
+    },
+    format::Format,
+    image::view::ImageView,
+    pipeline::{viewport::Viewport, GraphicsPipeline},
+    render_pass::{Framebuffer, FramebufferAbstract, Subpass},
+    sync::GpuFuture,
+};
+
 use std::sync::Arc;
 
-fn main() {
-    use vgi::vulkan::{layers, Builder};
-    use vulkano::{
-        buffer::{cpu_access::CpuAccessibleBuffer, BufferUsage},
-        command_buffer::{
-            AutoCommandBufferBuilder, CommandBufferUsage, DynamicState,
-            PrimaryCommandBuffer, SubpassContents,
-        },
-        format::Format,
-        image::view::ImageView,
-        pipeline::{viewport::Viewport, GraphicsPipeline},
-        render_pass::{Framebuffer, FramebufferAbstract, Subpass},
-        sync::GpuFuture,
-    };
+use vgi::{layers, Builder};
 
+fn main() {
     let width = 800;
     let height = 600;
     let format = Format::R8G8B8A8Srgb;
@@ -130,13 +131,6 @@ fn main() {
     let queue = Arc::clone(vko.to_queues().iter().next().unwrap());
     let clear_values = vec![[0.0, 0.0, 1.0, 1.0].into()];
 
-    let mut builder = AutoCommandBufferBuilder::primary(
-        vko.to_device(),
-        queue.family(),
-        CommandBufferUsage::OneTimeSubmit,
-    )
-    .unwrap();
-
     let buf = CpuAccessibleBuffer::from_iter(
         vko.to_device(),
         BufferUsage::all(),
@@ -145,27 +139,51 @@ fn main() {
     )
     .unwrap();
 
-    builder
-        .begin_render_pass(framebuffer.clone(), SubpassContents::Inline, clear_values)
-        .unwrap()
-        .draw(
-            pipeline.clone(),
-            &dynamic_state,
-            vertex_buffer.clone(),
-            (),
-            (),
-            vec![],
+    let command_buffer1 = {
+        let mut builder = AutoCommandBufferBuilder::primary(
+            vko.to_device(),
+            queue.family(),
+            CommandBufferUsage::OneTimeSubmit,
         )
-        .unwrap()
-        .end_render_pass()
-        .unwrap()
-        .copy_image_to_buffer(image.clone(), buf.clone())
         .unwrap();
+        builder
+            .begin_render_pass(framebuffer.clone(), SubpassContents::Inline, clear_values)
+            .unwrap()
+            .draw(
+                pipeline.clone(),
+                &dynamic_state,
+                vertex_buffer.clone(),
+                (),
+                (),
+                vec![],
+            )
+            .unwrap()
+            .end_render_pass()
+            .unwrap();
+        builder.build().unwrap()
+    };
+    let command_buffer2 = {
+        let mut builder = AutoCommandBufferBuilder::primary(
+            vko.to_device(),
+            queue.family(),
+            CommandBufferUsage::OneTimeSubmit,
+        )
+        .unwrap();
+        builder
+            .copy_image_to_buffer(image.clone(), buf.clone())
+            .unwrap();
+        builder.build().unwrap()
+    };
 
     // Finish building the command buffer by calling `build`.
-    let command_buffer = builder.build().unwrap();
-
-    command_buffer
+    command_buffer1
+        .execute(queue.clone())
+        .unwrap()
+        .then_signal_fence_and_flush()
+        .unwrap()
+        .wait(None)
+        .unwrap();
+    command_buffer2
         .execute(queue.clone())
         .unwrap()
         .then_signal_fence_and_flush()
@@ -173,10 +191,13 @@ fn main() {
         .wait(None)
         .unwrap();
 
-    use image::{ImageBuffer, Rgba};
-
-    let data = buf.read().unwrap();
-    let image = ImageBuffer::<Rgba<u8>, _>::from_raw(width, height, &data[..]).unwrap();
+    {
+        use image::{ImageBuffer, Rgba};
+        let data = buf.read().unwrap();
+        let image =
+            ImageBuffer::<Rgba<u8>, _>::from_raw(width, height, &data[..]).unwrap();
+        image.save("image.png").unwrap();
+    }
 }
 
 mod vs {

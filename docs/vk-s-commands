@@ -18,8 +18,6 @@ Command buffer state:
   * Color blend state
   * Dynamic state
 
-
-
 VkResult vkQueueSubmit(                     typedef struct VkSubmitInfo {
     VkQueue               queue,                VkStructureType                sType;
     uint32_t              submitCount,          const void*                    pNext;
@@ -31,11 +29,6 @@ VkResult vkQueueSubmit(                     typedef struct VkSubmitInfo {
                                                 uint32_t                       signalSemaphoreCount;
                                                 const VkSemaphore*             pSignalSemaphores;
                                             }
-
-
-
-
-
 
 
 vkQueueSubmit2

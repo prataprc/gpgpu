@@ -64,6 +64,8 @@ Family of functions: `vkQueue*`, `vkCreate*`, `vkAllocate*`, `vkDestroy*`, `vkFr
 Dispatchable and Non-Dispatchable Handles
 -----------------------------------------
 
+There is no global state in vulkan, all states are captured within dispatchable handles (aka objects).
+
 VkInstance
     +-> VkPhysicalDevice
     |   +-> VkDevice <- VkDeviceCreateInfo
@@ -100,22 +102,22 @@ VkInstance
 Instance
 ========
 
-                                                                                                | vkEnumerateInstanceVersion                => Version
-                                                                                                | vkEnumerateInstanceLayerProperties        => Vec<VkLayerProperties>
-layer                                                                                           | vkEnumerateInstanceExtensionProperties    => Vec<VkExtensionProperties>
+===>                                                                                                 | vkEnumerateInstanceVersion                => Version
+===>                                                                                                 | vkEnumerateInstanceLayerProperties        => Vec<VkLayerProperties>
+===> layer                                                                                           | vkEnumerateInstanceExtensionProperties    => Vec<VkExtensionProperties>
 
-ApplicationInfo, layers, extensions                                                             | vkCreateInstance                          => VkInstance
-VkInstance                                                                                      | vkEnumeratePhysicalDeviceGroups           => Vec<VkPhysicalDeviceGroupProperties>
-VkInstance, name                                                                                | vkGetInstanceProcAddr                     => *func
-VkInstance                                                                                      | vkDestroyInstance                         =>
+===> ApplicationInfo, layers, extensions                                                             | vkCreateInstance                          => VkInstance
+===> VkInstance                                                                                      | vkEnumeratePhysicalDeviceGroups           => Vec<VkPhysicalDeviceGroupProperties>
+===> VkInstance, name                                                                                | vkGetInstanceProcAddr                     => *func
+===> VkInstance                                                                                      | vkDestroyInstance                         =>
 
-VkInstance, VkDebugReportFlags, pfnCallbak, pUserData                                           | vkCreateDebugReportCallbackEXT            => VkDebugReportCallbackEXT
-VkInstance, VkDebugReportFlags, VkDebugReportObjectTypeEXT,  obj, loc, msgCode, layer, message  | vkDebugReportMessageEXT                   =>
-VkInstance, VkDebugReportCallbackEXT                                                            | vkDestroyDebugReportCallbackEXT           =>
+===> VkInstance, VkDebugReportFlags, pfnCallbak, pUserData                                           | vkCreateDebugReportCallbackEXT            => VkDebugReportCallbackEXT
+===> VkInstance, VkDebugReportFlags, VkDebugReportObjectTypeEXT,  obj, loc, msgCode, layer, message  | vkDebugReportMessageEXT                   =>
+===> VkInstance, VkDebugReportCallbackEXT                                                            | vkDestroyDebugReportCallbackEXT           =>
 
-VkInstance, VkDebugUtilsMessengerCreateInfoEXT                                                  | vkCreateDebugUtilsMessengerEXT            => VkDebugUtilsMessengerEXT
-VkInstance, VkDebugUtilsMessageSeverityFlags VkDebugUtilsMessageTypeFlags, pCallbackData        | vkSubmitDebugUtilsMessageEXT              =>
-VkInstance, VkDebugUtilsMessengerEXT                                                            | vkDestroyDebugUtilsMessengerEXT           =>
+===> VkInstance, VkDebugUtilsMessengerCreateInfoEXT                                                  | vkCreateDebugUtilsMessengerEXT            => VkDebugUtilsMessengerEXT
+===> VkInstance, VkDebugUtilsMessageSeverityFlags VkDebugUtilsMessageTypeFlags, pCallbackData        | vkSubmitDebugUtilsMessageEXT              =>
+===> VkInstance, VkDebugUtilsMessengerEXT                                                            | vkDestroyDebugUtilsMessengerEXT           =>
 
 
 typedef enum VkDebugReportFlags {                   typedef enum VkDebugReportFlags {
@@ -149,16 +151,16 @@ List of surface creating APIs
 PhysicalDevice
 ==============
 
-VkInstance                                                                                      | vkEnumeratePhysicalDevices                => Vec<VkPhysicalDevice>
-VkPhysicalDevice                                                                                | vkGetPhysicalDeviceProperties             => VkPhysicalDeviceProperties
-VkPhysicalDevice                                                                                | vkGetPhysicalDeviceFeatures               => VkPhysicalDeviceFeatures
-VkPhysicalDevice                                                                                | vkGetPhysicalDeviceMemoryProperties       => VkPhysicalDeviceMemoryProperties
-VkPhysicalDevice                                                                                | vkEnumerateDeviceLayerProperties          => Vec<VkLayerProperties>
-VkPhysicalDevice, layer                                                                         | vkEnumerateDeviceExtensionProperties      => Vec<VkExtensionProperties>
-VkPhysicalDevice                                                                                | vkGetPhysicalDeviceQueueFamilyProperties  => Vec<VkQueueFamilyProperties>
-VkPhysicalDevice, VkFormat                                                                      | vkGetPhysicalDeviceFormatProperties       => VkFormatProperties
-VkPhysicalDevice, VkFormat, VkImageType, VkImageTiling, VkImageUsageFlags, VkImageCreateFlag    | vkGetPhysicalDeviceImageFormatProperties  => Vec<VkImageFormatProperties>
-VkPhysicalDevice, VkSurface                                                                     | vkGetPhysicalDevicePresentRectanglesKHR   => Vec<VkRect2D>
+===> VkInstance                                                                                      | vkEnumeratePhysicalDevices                => Vec<VkPhysicalDevice>
+===> VkPhysicalDevice                                                                                | vkGetPhysicalDeviceProperties             => VkPhysicalDeviceProperties
+===> VkPhysicalDevice                                                                                | vkGetPhysicalDeviceFeatures               => VkPhysicalDeviceFeatures
+===> VkPhysicalDevice                                                                                | vkGetPhysicalDeviceMemoryProperties       => VkPhysicalDeviceMemoryProperties
+===> VkPhysicalDevice                                                                                | vkEnumerateDeviceLayerProperties          => Vec<VkLayerProperties>
+===> VkPhysicalDevice, layer                                                                         | vkEnumerateDeviceExtensionProperties      => Vec<VkExtensionProperties>
+===> VkPhysicalDevice                                                                                | vkGetPhysicalDeviceQueueFamilyProperties  => Vec<VkQueueFamilyProperties>
+===> VkPhysicalDevice, VkFormat                                                                      | vkGetPhysicalDeviceFormatProperties       => VkFormatProperties
+===> VkPhysicalDevice, VkFormat, VkImageType, VkImageTiling, VkImageUsageFlags, VkImageCreateFlag    | vkGetPhysicalDeviceImageFormatProperties  => Vec<VkImageFormatProperties>
+===> VkPhysicalDevice, VkSurface                                                                     | vkGetPhysicalDevicePresentRectanglesKHR   => Vec<VkRect2D>
 
 typedef enum VkImageCreateFlag {                        typedef enum VkImageUsageFlags {                typedef enum VkImageType {  typedef struct VkImageFormatProperties {
     VK_IMAGE_CREATE_SPARSE_BINDING_BIT,                     VK_IMAGE_USAGE_TRANSFER_SRC_BIT,                VK_IMAGE_TYPE_1D,           VkExtent3D            maxExtent;
@@ -216,23 +218,23 @@ typedef enum VkFormatFeatureFlags {                             typedef struct V
 VkDevice, VkQueue, VkQueryPool
 ==============================
 
-VkPhysicalDevice, Vec<(qf, qc, qp)>, layers, extensions, VkPhysicalDeviceFeatures           | vkCreateDevice                        => VkDevice
-VkDevice, qf, qi                                                                            | vkGetDeviceQueue                      => VkQueue
-VkDevice                                                                                    | vkDeviceWaitIdle                      =>
+===> VkPhysicalDevice, Vec<(qf, qc, qp)>, layers, extensions, VkPhysicalDeviceFeatures           | vkCreateDevice                        => VkDevice
+===> VkDevice, qf, qi                                                                            | vkGetDeviceQueue                      => VkQueue
+===> VkDevice                                                                                    | vkDeviceWaitIdle                      =>
 
-VkDevice, timeout                                                                           | vkAcquireProfilingLockKHR             =>
-VkDevice                                                                                    | vkReleaseProfilingLockKHR             =>
+===> VkDevice, timeout                                                                           | vkAcquireProfilingLockKHR             =>
+===> VkDevice                                                                                    | vkReleaseProfilingLockKHR             =>
 
-VkDevice, VkRenderPass                                                                      | vkGetRenderAreaGranularity            => VkExtent2D
-VkDevice, VkSemaphore                                                                       | vkGetSemaphoreCounterValue            => uint64
+===> VkDevice, VkRenderPass                                                                      | vkGetRenderAreaGranularity            => VkExtent2D
+===> VkDevice, VkSemaphore                                                                       | vkGetSemaphoreCounterValue            => uint64
 
-VkDevice, VkQueryType, qc, VkQueryPipelineStatistic                                         | vkCreateQueryPool                     => VkQueryPool
-VkDevice, VkQueryPool, (firstQ, count)                                                      | vkGetQueryPoolResults                 => pData
-VkDevice, VkQueryPool, (firstQ, count)                                                      | vkResetQueryPool                      =>
+===> VkDevice, VkQueryType, qc, VkQueryPipelineStatistic                                         | vkCreateQueryPool                     => VkQueryPool
+===> VkDevice, VkQueryPool, (firstQ, count)                                                      | vkGetQueryPoolResults                 => pData
+===> VkDevice, VkQueryPool, (firstQ, count)                                                      | vkResetQueryPool                      =>
 
-VkQueue, Vec<VkSubmitInfo>, VkFence                                                         | vkQueueSubmit                         =>
-VkQueue, Vec<VkPresentInfoKHR>                                                              | vkQueuePresentKHR                     =>
-VkQueue                                                                                     | vkQueueWaitIdle                       =>
+===> VkQueue, Vec<VkSubmitInfo>, VkFence                                                         | vkQueueSubmit                         =>
+===> VkQueue, Vec<VkPresentInfoKHR>                                                              | vkQueuePresentKHR                     =>
+===> VkQueue                                                                                     | vkQueueWaitIdle                       =>
 
 
 typedef struct VkSubmitInfo {                                   typedef enum VkPipelineStageFlags {                         typedef enum VkDeviceEventTypeEXT {
@@ -267,21 +269,21 @@ Buffer          o           o                                                   
 BufferView                                                o
 
 
-VkDevice  VkMemoryType, size                                                                | vkAllocateMemory                      => VkDeviceMemory
-VkDevice, VkDeviceMemory                                                                    | vkGetDeviceMemoryOpaqueCaptureAddress => uint64
-VkDevice, VkDeviceMemory                                                                    | vkFreeMemory                          =>
+===> VkDevice  VkMemoryType, size                                                                | vkAllocateMemory                      => VkDeviceMemory
+===> VkDevice, VkDeviceMemory                                                                    | vkGetDeviceMemoryOpaqueCaptureAddress => uint64
+===> VkDevice, VkDeviceMemory                                                                    | vkFreeMemory                          =>
 
-VkDevice, VkDeviceMemory, offset, size                                                      | vkMapMemory                           => void **
-VkDevice, VkDeviceMemory                                                                    | vkUnmapMemory                         =>
-VkDevice, Vec<(VkDeviceMemory, offset, size)>                                               | vkInvalidateMappedMemoryRanges        =>
-VkDevice, Vec<(VkDeviceMemory, offset, size)>                                               | vkFlushMappedMemoryRanges             =>
+===> VkDevice, VkDeviceMemory, offset, size                                                      | vkMapMemory                           => void **
+===> VkDevice, VkDeviceMemory                                                                    | vkUnmapMemory                         =>
+===> VkDevice, Vec<(VkDeviceMemory, offset, size)>                                               | vkInvalidateMappedMemoryRanges        =>
+===> VkDevice, Vec<(VkDeviceMemory, offset, size)>                                               | vkFlushMappedMemoryRanges             =>
 
-VkDevice, VkBufferCreateFlag, size, VkBufferUsageFlag, VkSharingMode, queue-indexes         | vkCreateBuffer                        => VkBuffer
-VkDevice, VkBuffer, VkFormat, offset, range                                                 | vkCreateBufferView                    => VkBufferView
-VkDevice, VkBuffer, VkDeviceMemory, offset                                                  | vkBindBufferMemory                    =>
-VkDevice, VkBuffer                                                                          | vkGetBufferMemoryRequirements         => (size, align, typ)
-VkDevice, VkBuffer                                                                          | vkGetBufferDeviceAddress              => VkDeviceAddress
-VkDevice, VkBuffer                                                                          | vkGetBufferOpaqueCaptureAddress       => uint64
+===> VkDevice, VkBufferCreateFlag, size, VkBufferUsageFlag, VkSharingMode, queue-indexes         | vkCreateBuffer                        => VkBuffer
+===> VkDevice, VkBuffer, VkFormat, offset, range                                                 | vkCreateBufferView                    => VkBufferView
+===> VkDevice, VkBuffer, VkDeviceMemory, offset                                                  | vkBindBufferMemory                    =>
+===> VkDevice, VkBuffer                                                                          | vkGetBufferMemoryRequirements         => (size, align, typ)
+===> VkDevice, VkBuffer                                                                          | vkGetBufferDeviceAddress              => VkDeviceAddress
+===> VkDevice, VkBuffer                                                                          | vkGetBufferOpaqueCaptureAddress       => uint64
 
 typedef enum VkBufferCreateFlag {                           typedef enum VkBufferUsageFlag {
     VK_BUFFER_CREATE_SPARSE_BINDING_BIT,                        VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
@@ -297,11 +299,11 @@ typedef enum VkSharingMode {                                    VK_BUFFER_USAGE_
 }                                                           }
 
 
-VkDevice, VkImageCreateInfo                                                                 | vkCreateImage                         => VkImage
-VkDevice, VkImage, VkImageViewType, VkFormat, VkComponentMapping, VkImageSubresourceRange   | vkCreateImageView                     => VkImageView
-VkDevice, VkImage, VkDeviceMemory, offset                                                   | vkBindImageMemory                     =>
-VkDevice, VkImage                                                                           | vkGetImageMemoryRequirements          => (size, align, typ)
-VkDevice, VkImage, VkImageSubresource                                                       | vkGetImageSubresourceLayout           => VkSubresourceLayout
+===> VkDevice, VkImageCreateInfo                                                                 | vkCreateImage                         => VkImage
+===> VkDevice, VkImage, VkImageViewType, VkFormat, VkComponentMapping, VkImageSubresourceRange   | vkCreateImageView                     => VkImageView
+===> VkDevice, VkImage, VkDeviceMemory, offset                                                   | vkBindImageMemory                     =>
+===> VkDevice, VkImage                                                                           | vkGetImageMemoryRequirements          => (size, align, typ)
+===> VkDevice, VkImage, VkImageSubresource                                                       | vkGetImageSubresourceLayout           => VkSubresourceLayout
 
 
 typedef struct VkImageCreateInfo {                  typedef enum VkImageLayout {                                        typedef enum VkSampleCountFlag {
@@ -345,15 +347,15 @@ typedef struct VkImageSubresource {     typedef struct VkSubresourceLayout {
 Presentations
 =============
 
-VkPhysicalDevice, VkSurface                                                                 | vkGetPhysicalDeviceSurfaceCapabilitiesKHR     => VkSurfaceCapabilitiesKHR
-VkPhysicalDevice, VkSurface                                                                 | vkGetPhysicalDeviceSurfaceFormatsKHR          => Vec<VkSurfaceFormatKHR>
-VkPhysicalDevice, VkSurface                                                                 | vkGetPhysicalDeviceSurfacePresentModesKHR     => Vec<VkPresentModeKHR>
-VkPhysicalDevice, VkSurface, qf                                                             | vkGetPhysicalDeviceSurfaceSupportKHR          => bool
-VkDevice, VkSurface, VkSwapchainCreateInfoKHR                                               | vkCreateSwapchainKHR                          => VkSwapchain
-VkDevice, VkSwapchain                                                                       | vkGetSwapchainImagesKHR                       => Vec<VkImage>
-VkDevice, VkSwapchain, VkSemaphore, VkFence, timeout                                        | vkAcquireNextImageKHR                         => VkImage
+===> VkPhysicalDevice, VkSurface                                                                 | vkGetPhysicalDeviceSurfaceCapabilitiesKHR     => VkSurfaceCapabilitiesKHR
+===> VkPhysicalDevice, VkSurface                                                                 | vkGetPhysicalDeviceSurfaceFormatsKHR          => Vec<VkSurfaceFormatKHR>
+===> VkPhysicalDevice, VkSurface                                                                 | vkGetPhysicalDeviceSurfacePresentModesKHR     => Vec<VkPresentModeKHR>
+===> VkPhysicalDevice, VkSurface, qf                                                             | vkGetPhysicalDeviceSurfaceSupportKHR          => bool
+===> VkDevice, VkSurface, VkSwapchainCreateInfoKHR                                               | vkCreateSwapchainKHR                          => VkSwapchain
+===> VkDevice, VkSwapchain                                                                       | vkGetSwapchainImagesKHR                       => Vec<VkImage>
+===> VkDevice, VkSwapchain, VkSemaphore, VkFence, timeout                                        | vkAcquireNextImageKHR                         => VkImage
 
-VkDevice, VkFramebufferCreateFlag, VkRenderPass, Vec<VkImageView>, width, height, layers    | vkCreateFramebuffer                           => VkFrameBuffer
+===> VkDevice, VkFramebufferCreateFlag, VkRenderPass, Vec<VkImageView>, width, height, layers    | vkCreateFramebuffer                           => VkFrameBuffer
 
 
 
@@ -393,7 +395,7 @@ typedef struct VkSwapchainCreateInfoKHR {                   typedef enum VkFrame
 Renderpass, Sampler
 ===================
 
-VkDevice, VkSamplerCreateInfo                                                                               | vkCreateSampler               => VkSampler
+===> VkDevice, VkSamplerCreateInfo                                                                               | vkCreateSampler               => VkSampler
 
 
 typedef struct VkSamplerCreateInfo {                    typedef enum VkSamplerAddressMode {                 typedef enum VkCompareOp {
@@ -418,7 +420,7 @@ typedef struct VkSamplerCreateInfo {                    typedef enum VkSamplerAd
                                                         }
 
 
-VkDevice, VkRenderPassCreateInfo                                                                            | vkCreateRenderPass            => VkRenderPass
+===> VkDevice, VkRenderPassCreateInfo                                                                            | vkCreateRenderPass            => VkRenderPass
 
 
 typedef struct VkRenderPassCreateInfo {                 typedef enum VkAttachmentDescriptionFlag {          typedef enum VkPipelineBindPoint {
@@ -476,32 +478,62 @@ typedef enum VkAccessFlags {                        typedef enum VkPipelineStage
 DescriptorSets
 ==============
 
-pData - VkDescriptorImageInfo, VkDescriptorBufferInfo, or VkBufferView
+* A descriptor set is an opaque data structure representing a shader resource such as a buffer, buffer view, image view, sampler, or combined image sampler.
+* A descriptor set is a set of resources bound into pipeline as a group and each set has a layout, called descriptor-set-layout.
+* Each set has a layout that describes the order and type of resources in the set.
+* Two sets with same layout are considered compatible and interchangeable.
+* Multiple set, called pipeline-layout, can be aggregated and bound to a pipeline.
+* If VkDescriptorType is VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, then VkDescriptorImageInfo::VkSampler field is meaningful.
+* To return all descriptor sets allocated from a given pool back to the pool, rather than freeing individual descriptor sets, call vkResetDescriptorPool.
 
-VkDevice, VkDescriptorPoolCreateFlags, maxSets, Vec<(VkDescriptorType, count)>                  | vkCreateDescriptorPool                => VkDescriptorPool
-VkDevice, VkDescriptorPool                                                                      | vkResetDescriptorPool                 =>
-VkDevice, VkDescriptorSetLayoutCreateFlags, Vec<VkDescriptorSetLayoutBinding>                   | vkGetDescriptorSetLayoutSupport       => VkBool32
-VkDevice, VkDescriptorSetLayoutCreateFlags, Vec<VkDescriptorSetLayoutBinding>                   | vkCreateDescriptorSetLayout           => VkDescriptorSetLayout
-VkDevice, VkDescriptorPool, Vec<VkDescriptorSetLayout>                                          | vkAllocateDescriptorSets              => Vec<VkDescriptorSet>
-VkDevice, Vec<VkWriteDescriptorSet>, Vec<VkCopyDescriptorSet>                                   | vkUpdateDescriptorSets                =>
-VkDevice, VkDescriptorUpdateTemplateCreateInfo                                                  | vkCreateDescriptorUpdateTemplate      => VkDescriptorUpdateTemplate
-VkDevice, VkDescriptorSet, VkDescriptorUpdateTemplate, pData                                    | vkUpdateDescriptorSetWithTemplate     =>
-VkDevice, VkDescriptorPool, Vec<VkDescriptorSet>                                                | vkFreeDescriptorSets
+pData - VkDescriptorImageInfo or VkDescriptorBufferInfo or VkBufferView
 
-typedef enum VkDescriptorPoolCreateFlags {                              typedef enum VkDescriptorType {                     typedef enum VkShaderStageFlags {
-    VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,                      VK_DESCRIPTOR_TYPE_SAMPLER,                         VK_SHADER_STAGE_VERTEX_BIT,
-    VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT,                        VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,          VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
-}                                                                           VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,                   VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
-typedef struct VkDescriptorSetLayoutBinding {                               VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,                   VK_SHADER_STAGE_GEOMETRY_BIT,
-    uint32_t              binding;                                          VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,            VK_SHADER_STAGE_FRAGMENT_BIT,
-    VkDescriptorType      descriptorType;                                   VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,            VK_SHADER_STAGE_COMPUTE_BIT,
-    uint32_t              descriptorCount;                                  VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,                  VK_SHADER_STAGE_ALL_GRAPHICS,
-    VkShaderStageFlags    stageFlags;                                       VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,                  VK_SHADER_STAGE_ALL,
-    const VkSampler*      pImmutableSamplers;                               VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,      }
-}                                                                           VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC,
-typedef enum VkDescriptorSetLayoutCreateFlags {                             VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,
-    VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT,         }
-    VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR,
+===> VkDevice, VkDescriptorPoolCreateInfo                                                            | vkCreateDescriptorPool                => VkDescriptorPool
+===> VkDevice, VkDescriptorPool                                                                      | vkResetDescriptorPool                 =>
+
+
+typedef struct VkDescriptorPoolCreateInfo {             typedef enum VkDescriptorPoolCreateFlags {                  typedef enum VkDescriptorType {
+    VkDescriptorPoolCreateFlags    flags;                   VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,          VK_DESCRIPTOR_TYPE_SAMPLER,
+    uint32_t                       maxSets;                 VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT,            VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+    uint32_t                       poolSizeCount;       }                                                               VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
+    const VkDescriptorPoolSize*    pPoolSizes;          typedef struct VkDescriptorPoolSize {                           VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+}                                                           VkDescriptorType    type;                                   VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,
+                                                            uint32_t            descriptorCount;                        VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,
+                                                        }                                                               VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                                                                                                                        VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                                                                                                                        VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
+                                                                                                                        VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC,
+                                                                                                                        VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,
+                                                                                                                    }
+
+
+===> VkDevice, VkDescriptorSetLayoutCreateInfo                                                       | vkGetDescriptorSetLayoutSupport       => VkBool32
+===> VkDevice, VkDescriptorSetLayoutCreateInfo                                                       | vkCreateDescriptorSetLayout           => VkDescriptorSetLayout
+
+
+typedef struct VkDescriptorSetLayoutCreateInfo {            typedef enum VkDescriptorSetLayoutCreateFlags {                     typedef enum VkShaderStageFlags {
+    VkDescriptorSetLayoutCreateFlags       flags;               VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT,         VK_SHADER_STAGE_VERTEX_BIT,
+    uint32_t                               bindingCount;        VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR,            VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
+    const VkDescriptorSetLayoutBinding*    pBindings;       }                                                                       VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
+}                                                           typedef struct VkDescriptorSetLayoutBinding {                           VK_SHADER_STAGE_GEOMETRY_BIT,
+                                                                uint32_t              binding;                                      VK_SHADER_STAGE_FRAGMENT_BIT,
+                                                                VkDescriptorType      descriptorType;                               VK_SHADER_STAGE_COMPUTE_BIT,
+                                                                uint32_t              descriptorCount;                              VK_SHADER_STAGE_ALL_GRAPHICS,
+                                                                VkShaderStageFlags    stageFlags;                                   VK_SHADER_STAGE_ALL,
+                                                                const VkSampler*      pImmutableSamplers;                       }
+                                                            }
+
+
+===> VkDevice, VkDescriptorSetAllocateInfo                                                           | vkAllocateDescriptorSets              => Vec<VkDescriptorSet>
+===> VkDevice, Vec<VkWriteDescriptorSet>, Vec<VkCopyDescriptorSet>                                   | vkUpdateDescriptorSets                =>
+===> VkDevice, VkDescriptorUpdateTemplateCreateInfo                                                  | vkCreateDescriptorUpdateTemplate      => VkDescriptorUpdateTemplate
+===> VkDevice, VkDescriptorSet, VkDescriptorUpdateTemplate, pData                                    | vkUpdateDescriptorSetWithTemplate     =>
+===> VkDevice, VkDescriptorPool, Vec<VkDescriptorSet>                                                | vkFreeDescriptorSets
+
+typedef struct VkDescriptorSetAllocateInfo {
+    VkDescriptorPool                descriptorPool;
+    uint32_t                        descriptorSetCount;
+    const VkDescriptorSetLayout*    pSetLayouts;
 }
 
 typedef struct VkCopyDescriptorSet {        typedef struct VkWriteDescriptorSet {                       typedef struct VkDescriptorImageInfo {
@@ -514,6 +546,7 @@ typedef struct VkCopyDescriptorSet {        typedef struct VkWriteDescriptorSet 
     uint32_t           descriptorCount;         const VkDescriptorBufferInfo*    pBufferInfo;               VkDeviceSize    offset;
 }                                               const VkBufferView*              pTexelBufferView;          VkDeviceSize    range;
                                             }                                                           }
+
 
 typedef struct VkDescriptorUpdateTemplateCreateInfo {                       typedef enum VkDescriptorUpdateTemplateType {               typedef struct VkDescriptorUpdateTemplateEntry {
   x VkDescriptorUpdateTemplateCreateFlags     flags;                            VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET,          uint32_t            dstBinding;
@@ -530,14 +563,39 @@ typedef struct VkDescriptorUpdateTemplateCreateInfo {                       type
 Pipelines
 =========
 
-VkDevice, pCode                                                                                                 | vkCreateShaderModule          => VkShaderModule
-VkDevice, VkPipelineCacheCreateFlags, pInitialData                                                              | vkCreatePipelineCache         => VkPipelineCache
-VkDevice, VkPipelineCache                                                                                       | vkGetPipelineCacheData        => pData
-VkDevice, VkPipelineCache, Vec<VkPipelineCache>                                                                 | vkMergePipelineCaches         =>
-VkDevice, Vec<VkDescriptorSetLayout>, Vec<VkPushConstantRange>                                                  | vkCreatePipelineLayout        => VkPipelineLayout
+* Two pipelines can use same set of descriptor sets, provided they are compatible. For pipeline-layouts to be compatible:
+  * Use the same number of push constant ranges.
+  * Use the same descript set layouts (or identical layouts) in the same order.
+* Two pipeline-layouts are partially compatible if they use the same (or identical) set layouts for the first few sets.
+* Switching between two (partially) compatible pipelines doesnot require re-binding any sets upto the point where the pipeline share the layout.
 
 
-VkDevice, VkPipelineCache, Vec<VkComputePipelineCreateInfo>                                                     | vkCreateComputePipelines      => Vec<VkPipeline>
+===> VkDevice, VkShaderModuleCreateInfo                                                                                 | vkCreateShaderModule          => VkShaderModule
+===> VkDevice, VkPipelineCacheCreateInfo                                                                                | vkCreatePipelineCache         => VkPipelineCache
+===> VkDevice, VkPipelineCache                                                                                          | vkGetPipelineCacheData        => pData
+===> VkDevice, VkPipelineCache, Vec<VkPipelineCache>                                                                    | vkMergePipelineCaches         =>
+
+typedef struct VkShaderModuleCreateInfo {       typedef struct VkPipelineCacheCreateInfo {
+  x VkShaderModuleCreateFlags    flags;           x VkPipelineCacheCreateFlags    flags;
+    size_t                       codeSize;          size_t                        initialDataSize;
+    const uint32_t*              pCode;             const void*                   pInitialData;
+}                                               }
+
+
+
+===> VkDevice, VkPipelineLayoutCreateInfo                                                                               | vkCreatePipelineLayout        => VkPipelineLayout
+
+typedef struct VkPipelineLayoutCreateInfo {                     typedef struct VkPushConstantRange {
+  x VkPipelineLayoutCreateFlags     flags;                          VkShaderStageFlags    stageFlags;
+    uint32_t                        setLayoutCount;                 uint32_t              offset;
+    const VkDescriptorSetLayout*    pSetLayouts;                    uint32_t              size;
+    uint32_t                        pushConstantRangeCount;     }
+    const VkPushConstantRange*      pPushConstantRanges;
+}
+
+
+
+===> VkDevice, VkPipelineCache, Vec<VkComputePipelineCreateInfo>                                                        | vkCreateComputePipelines      => Vec<VkPipeline>
 
 typedef struct VkComputePipelineCreateInfo {                    typedef enum VkPipelineCreateFlags {
     VkPipelineCreateFlags              flags;                       VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT,
@@ -560,7 +618,7 @@ typedef struct VkPipelineShaderStageCreateInfo {                typedef struct V
 
 
 
-VkDevice, VkPipelineCache, Vec<VkGraphicsPipelineCreateInfo>                                                    | vkCreateGraphicsPipelines     => Vec<VkPipeline>
+===> VkDevice, VkPipelineCache, Vec<VkGraphicsPipelineCreateInfo>                                                    | vkCreateGraphicsPipelines     => Vec<VkPipeline>
 
 
 typedef struct VkGraphicsPipelineCreateInfo {                                   typedef struct VkPipelineVertexInputStateCreateInfo {
@@ -594,21 +652,27 @@ typedef struct VkPipelineTessellationStateCreateInfo {                          
 }                                                                               }                                                       float    minDepth;
                                                                                                                                         float    maxDepth;
                                                                                                                                     }
-typedef struct VkPipelineRasterizationStateCreateInfo {     typedef enum VkPolygonMode {
-    VkBool32        depthClampEnable;                           VK_POLYGON_MODE_FILL,
-    VkBool32        rasterizerDiscardEnable;                    VK_POLYGON_MODE_LINE,
-    VkPolygonMode   polygonMode;                                VK_POLYGON_MODE_POINT,
-    VkCullModeFlags cullMode;                               }
-    VkFrontFace     frontFace;                              typedef enum VkCullModeFlags {
-    VkBool32        depthBiasEnable;                            VK_CULL_MODE_NONE,
-    float           depthBiasConstantFactor;                    VK_CULL_MODE_FRONT_BIT,
-    float           depthBiasClamp;                             VK_CULL_MODE_BACK_BIT,
-    float           depthBiasSlopeFactor;                       VK_CULL_MODE_FRONT_AND_BACK,
-    float           lineWidth;                              }
+typedef struct VkPipelineRasterizationStateCreateInfo {     typedef enum VkPolygonMode {                typedef enum VkDynamicState {
+    VkBool32        depthClampEnable;                           VK_POLYGON_MODE_FILL,                       VK_DYNAMIC_STATE_VIEWPORT,
+    VkBool32        rasterizerDiscardEnable;                    VK_POLYGON_MODE_LINE,                       VK_DYNAMIC_STATE_SCISSOR,
+    VkPolygonMode   polygonMode;                                VK_POLYGON_MODE_POINT,                      VK_DYNAMIC_STATE_LINE_WIDTH,
+    VkCullModeFlags cullMode;                               }                                               VK_DYNAMIC_STATE_DEPTH_BIAS,
+    VkFrontFace     frontFace;                              typedef enum VkCullModeFlags {                  VK_DYNAMIC_STATE_BLEND_CONSTANTS,
+    VkBool32        depthBiasEnable;                            VK_CULL_MODE_NONE,                          VK_DYNAMIC_STATE_DEPTH_BOUNDS,
+    float           depthBiasConstantFactor;                    VK_CULL_MODE_FRONT_BIT,                     VK_DYNAMIC_STATE_STENCIL_COMPARE_MASK,
+    float           depthBiasClamp;                             VK_CULL_MODE_BACK_BIT,                      VK_DYNAMIC_STATE_STENCIL_WRITE_MASK,
+    float           depthBiasSlopeFactor;                       VK_CULL_MODE_FRONT_AND_BACK,                VK_DYNAMIC_STATE_STENCIL_REFERENCE,
+    float           lineWidth;                              }                                           }
 }                                                           typedef enum VkFrontFace {
                                                                  VK_FRONT_FACE_COUNTER_CLOCKWISE,
                                                                  VK_FRONT_FACE_CLOCKWISE,
                                                              }
+
+typedef struct VkPipelineDynamicStateCreateInfo {
+    VkPipelineDynamicStateCreateFlags    flags;
+    uint32_t                             dynamicStateCount;
+    const VkDynamicState*                pDynamicStates;
+}
 
 
 CommandBuffer
@@ -637,9 +701,9 @@ CommandBuffer
 * line-width
 
 
-VkDevice, VkCommandPoolCreateFlags, queue-family                                        | vkCreateCommandPool           => VkCommandPool
-VkDevice, VkCommandPool, VkCommandPoolResetFlags                                        | vkResetCommandPool
-VkDevice, VkCommandPool                                                                 | vkTrimCommandPool
+===> VkDevice, VkCommandPoolCreateFlags, queue-family                                        | vkCreateCommandPool           => VkCommandPool
+===> VkDevice, VkCommandPool, VkCommandPoolResetFlags                                        | vkResetCommandPool
+===> VkDevice, VkCommandPool                                                                 | vkTrimCommandPool
 
 typedef enum VkCommandPoolCreateFlags {                 typedef enum VkCommandPoolResetFlags {
     VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,                   VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT,
@@ -649,10 +713,10 @@ typedef enum VkCommandPoolCreateFlags {                 typedef enum VkCommandPo
 
 
 
-VkDevice, VkCommandPool, VkCommandBufferLevel, count                                        | vkAllocateCommandBuffers      Vec<VkCommandBuffer>
-VkCommandBuffer, VkCommandBufferUsageFlags, VkCommandBufferInheritanceInfo                  | vkBeginCommandBuffer
-VkCommandBuffer, VkQueryPool, query-index, VkQueryControlFlags                              | vkCmdBeginQuery
-VkCommandBuffer, VkRenderPassBeginInfo, VkSubpassContents                                   | vkCmdBeginRenderPass
+===> VkDevice, VkCommandPool, VkCommandBufferLevel, count                                        | vkAllocateCommandBuffers      Vec<VkCommandBuffer>
+===> VkCommandBuffer, VkCommandBufferUsageFlags, VkCommandBufferInheritanceInfo                  | vkBeginCommandBuffer
+===> VkCommandBuffer, VkQueryPool, query-index, VkQueryControlFlags                              | vkCmdBeginQuery
+===> VkCommandBuffer, VkRenderPassBeginInfo, VkSubpassContents                                   | vkCmdBeginRenderPass
 
 typedef struct VkCommandBufferInheritanceInfo {                 typedef enum VkQueryPipelineStatisticFlags {                        typedef enum VkCommandBufferUsageFlags {
     VkStructureType                  sType;                         VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT,            VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
@@ -681,16 +745,16 @@ typedef struct VkRenderPassBeginInfo {          typedef enum VkSubpassContents {
                                                                                                     }
 
 
-VkCommandBuffer, blendConstants[4]                                                          | vkCmdSetBlendConstants
-VkCommandBuffer, constantFactor, clamp, slopeFactor                                         | vkCmdSetDepthBias
-VkCommandBuffer, min, max                                                                   | vkCmdSetDepthBounds
-VkCommandBuffer, deviceMask                                                                 | vkCmdSetDeviceMask
-VkCommandBuffer, lineWidth                                                                  | vkCmdSetLineWidth
-VkCommandBuffer, first-index, count, Vec<VkRect2D>                                          | vkCmdSetScissor
-VkCommandBuffer, VkStencilFaceFlags, compareMask                                            | vkCmdSetStencilCompareMask
-VkCommandBuffer, VkStencilFaceFlags, reference                                              | vkCmdSetStencilReference
-VkCommandBuffer, VkStencilFaceFlags, writeMask                                              | vkCmdSetStencilWriteMask
-VkCommandBuffer, first-index, count, Vec<VkViewport>                                        | vkCmdSetViewport
+===> VkCommandBuffer, blendConstants[4]                                                          | vkCmdSetBlendConstants
+===> VkCommandBuffer, constantFactor, clamp, slopeFactor                                         | vkCmdSetDepthBias
+===> VkCommandBuffer, min, max                                                                   | vkCmdSetDepthBounds
+===> VkCommandBuffer, deviceMask                                                                 | vkCmdSetDeviceMask
+===> VkCommandBuffer, lineWidth                                                                  | vkCmdSetLineWidth
+===> VkCommandBuffer, first-index, count, Vec<VkRect2D>                                          | vkCmdSetScissor
+===> VkCommandBuffer, VkStencilFaceFlags, compareMask                                            | vkCmdSetStencilCompareMask
+===> VkCommandBuffer, VkStencilFaceFlags, reference                                              | vkCmdSetStencilReference
+===> VkCommandBuffer, VkStencilFaceFlags, writeMask                                              | vkCmdSetStencilWriteMask
+===> VkCommandBuffer, first-index, count, Vec<VkViewport>                                        | vkCmdSetViewport
 
 typedef enum VkStencilFaceFlags {
     VK_STENCIL_FACE_FRONT_BIT,
@@ -699,11 +763,11 @@ typedef enum VkStencilFaceFlags {
     VK_STENCIL_FRONT_AND_BACK,
 }
 
-VkCommandBuffer, VkPipelineBindPoint, VkPipelineLayout, Vec<VkDescriptorSet>, Vec<offsets>  | vkCmdBindDescriptorSets
-VkCommandBuffer, VkPipelineBindPoint, VkPipeline                                            | vkCmdBindPipeline
-VkCommandBuffer, VkBuffer, size, VkIndexType                                                | vkCmdBindIndexBuffer
-VkCommandBuffer, first-binding, count, Vec<(VkBuffer, offsets)>                             | vkCmdBindVertexBuffers
-VkCommandBuffer, VkImage, VkImageLayout, VkImage, VkImageLayout, Vec<VkImageBlit>, VkFilter | vkCmdBlitImage
+===> VkCommandBuffer, VkPipelineBindPoint, VkPipelineLayout, Vec<VkDescriptorSet>, Vec<offsets>  | vkCmdBindDescriptorSets
+===> VkCommandBuffer, VkPipelineBindPoint, VkPipeline                                            | vkCmdBindPipeline
+===> VkCommandBuffer, VkBuffer, size, VkIndexType                                                | vkCmdBindIndexBuffer
+===> VkCommandBuffer, first-binding, count, Vec<(VkBuffer, offsets)>                             | vkCmdBindVertexBuffers
+===> VkCommandBuffer, VkImage, VkImageLayout, VkImage, VkImageLayout, Vec<VkImageBlit>, VkFilter | vkCmdBlitImage
 
 
 typedef struct VkImageBlit {                        typedef struct VkImageSubresourceLayers {   typedef enum VkImageAspectFlags {       typedef enum VkIndexType {
@@ -717,15 +781,15 @@ typedef struct VkImageBlit {                        typedef struct VkImageSubres
                                                                                                 }
 
 
-VkCommandBuffer, Vec<VkClearAttachment>, Vec<VkClearRect>                                       | vkCmdClearAttachments
-VkCommandBuffer, VkImage, VkImageLayout, VkClearColorValue, Vec<VkImageSubresourceRange>        | vkCmdClearColorImage
-VkCommandBuffer, VkImage, VkImageLayout, VkClearDepthStencilValue, Vec<VkImageSubresourceRange> | vkCmdClearDepthStencilImage
-VkCommandBuffer, VkBuffer, dstOffset, size, pData                                               | vkCmdFillBuffer
-VkCommandBuffer, VkBuffer, dstOffset, size, pData                                               | vkCmdUpdateBuffer
-VkCommandBuffer, VkBuffer, VkBuffer, Vec<VkBufferCopy>                                          | vkCmdCopyBuffer
-VkCommandBuffer, VkBuffer, VkImage, VkImageLayout, Vec<VkBufferImageCopy>                       | vkCmdCopyBufferToImage
-VkCommandBuffer, VkImage, VkImageLayout, VkImage, VkImageLayout, Vec<VkImageCopy>               | vkCmdCopyImage
-VkCommandBuffer, VkImage, VkImageLayout, VkBuffer, Vec<VkBufferImageCopy>                       | vkCmdCopyImageToBuffer
+===> VkCommandBuffer, Vec<VkClearAttachment>, Vec<VkClearRect>                                       | vkCmdClearAttachments
+===> VkCommandBuffer, VkImage, VkImageLayout, VkClearColorValue, Vec<VkImageSubresourceRange>        | vkCmdClearColorImage
+===> VkCommandBuffer, VkImage, VkImageLayout, VkClearDepthStencilValue, Vec<VkImageSubresourceRange> | vkCmdClearDepthStencilImage
+===> VkCommandBuffer, VkBuffer, dstOffset, size, pData                                               | vkCmdFillBuffer
+===> VkCommandBuffer, VkBuffer, dstOffset, size, pData                                               | vkCmdUpdateBuffer
+===> VkCommandBuffer, VkBuffer, VkBuffer, Vec<VkBufferCopy>                                          | vkCmdCopyBuffer
+===> VkCommandBuffer, VkBuffer, VkImage, VkImageLayout, Vec<VkBufferImageCopy>                       | vkCmdCopyBufferToImage
+===> VkCommandBuffer, VkImage, VkImageLayout, VkImage, VkImageLayout, Vec<VkImageCopy>               | vkCmdCopyImage
+===> VkCommandBuffer, VkImage, VkImageLayout, VkBuffer, Vec<VkBufferImageCopy>                       | vkCmdCopyImageToBuffer
 
 
 typedef struct VkBufferImageCopy {                  typedef struct VkClearAttachment {          typedef struct VkClearRect {        typedef struct VkBufferCopy {
@@ -746,25 +810,25 @@ typedef struct VkImageCopy {                        typedef enum VkQueryResultFl
 }
 
 
-VkCommandBuffer, VkQueryPool, firstQuery, queryCount, VkBuffer, dstOffset, stride, VkQueryResultFlags   | vkCmdCopyQueryPoolResults
-VkCommandBuffer, VkQueryPool, firstQuery, queryCount                                                    | vkCmdResetQueryPool
-VkCommandBuffer, VkQueryPool, VkPipelineStageFlags, query                                               | vkCmdWriteTimestamp
-VkCommandBuffer, VkQueryPool, query                                                                     | vkCmdEndQuery
+===> VkCommandBuffer, VkQueryPool, firstQuery, queryCount, VkBuffer, dstOffset, stride, VkQueryResultFlags   | vkCmdCopyQueryPoolResults
+===> VkCommandBuffer, VkQueryPool, firstQuery, queryCount                                                    | vkCmdResetQueryPool
+===> VkCommandBuffer, VkQueryPool, VkPipelineStageFlags, query                                               | vkCmdWriteTimestamp
+===> VkCommandBuffer, VkQueryPool, query                                                                     | vkCmdEndQuery
 
-VkCommandBuffer, vertexCount, instanceCount, firstVertex, firstInstance                                 | vkCmdDraw
-VkCommandBuffer, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance                     | vkCmdDrawIndexed
-VkCommandBuffer, VkBuffer, offset, drawCount, stride                                                    | vkCmdDrawIndexedIndirect
-VkCommandBuffer, VkBuffer, offset, VkBuffer, countBufferOffset, maxDrawCount, stride                    | vkCmdDrawIndexedIndirectCount
-VkCommandBuffer, VkBuffer, offset, drawCount, stride                                                    | vkCmdDrawIndirect
-VkCommandBuffer, VkBuffer, offset, VkBuffer, countBufferOffset, maxDrawCount, stride                    | vkCmdDrawIndirectCount
+===> VkCommandBuffer, vertexCount, instanceCount, firstVertex, firstInstance                                 | vkCmdDraw
+===> VkCommandBuffer, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance                     | vkCmdDrawIndexed
+===> VkCommandBuffer, VkBuffer, offset, drawCount, stride                                                    | vkCmdDrawIndexedIndirect
+===> VkCommandBuffer, VkBuffer, offset, VkBuffer, countBufferOffset, maxDrawCount, stride                    | vkCmdDrawIndexedIndirectCount
+===> VkCommandBuffer, VkBuffer, offset, drawCount, stride                                                    | vkCmdDrawIndirect
+===> VkCommandBuffer, VkBuffer, offset, VkBuffer, countBufferOffset, maxDrawCount, stride                    | vkCmdDrawIndirectCount
 
-VkCommandBuffer                                                                                         | vkCmdEndRenderPass
-VkCommandBuffer, Vec<VkCommandBuffer>                                                                   | vkCmdExecuteCommands
-VkCommandBuffer, VkSubpassContents                                                                      | vkCmdNextSubpass
-VkCommandBuffer, VkBarrierInfo                                                                          | vkCmdPipelineBarrier
-VkCommandBuffer, VkPipelineLayout, VkShaderStageFlags, offset, size, pValues                            | vkCmdPushConstants
-VkCommandBuffer, VkPipelineBindPoint, VkPipelineLayout, set, Vec<VkWriteDescriptorSet>                  | vkCmdPushDescriptorSetKHR
-VkCommandBuffer, VkDescriptorUpdateTemplate, VkPipelineLayout, set, pData                               | vkCmdPushDescriptorSetWithTemplateKHR
+===> VkCommandBuffer                                                                                         | vkCmdEndRenderPass
+===> VkCommandBuffer, Vec<VkCommandBuffer>                                                                   | vkCmdExecuteCommands
+===> VkCommandBuffer, VkSubpassContents                                                                      | vkCmdNextSubpass
+===> VkCommandBuffer, VkBarrierInfo                                                                          | vkCmdPipelineBarrier
+===> VkCommandBuffer, VkPipelineLayout, VkShaderStageFlags, offset, size, pValues                            | vkCmdPushConstants
+===> VkCommandBuffer, VkPipelineBindPoint, VkPipelineLayout, set, Vec<VkWriteDescriptorSet>                  | vkCmdPushDescriptorSetKHR
+===> VkCommandBuffer, VkDescriptorUpdateTemplate, VkPipelineLayout, set, pData                               | vkCmdPushDescriptorSetWithTemplateKHR
 
 
 typedef struct VkBarrierInfo {                                  typedef struct VkImageMemoryBarrier {                   typedef struct VkBufferMemoryBarrier {
@@ -782,10 +846,10 @@ typedef struct VkBarrierInfo {                                  typedef struct V
                                                                                                                         }
 
 
-VkCommandBuffer, VkEvent, VkPipelineStageFlags                                                          | vkCmdResetEvent
-VkCommandBuffer, VkEvent, VkPipelineStageFlags                                                          | vkCmdSetEvent
-VkCommandBuffer, Vec<VkEvent>, VkBarrierInfo                                                            | vkCmdWaitEvents
-VkCommandBuffer, VkImage, VkImageLayout, VkImage, VkImageLayout, Vec<VkImageResolve>                    | vkCmdResolveImage
+===> VkCommandBuffer, VkEvent, VkPipelineStageFlags                                                          | vkCmdResetEvent
+===> VkCommandBuffer, VkEvent, VkPipelineStageFlags                                                          | vkCmdSetEvent
+===> VkCommandBuffer, Vec<VkEvent>, VkBarrierInfo                                                            | vkCmdWaitEvents
+===> VkCommandBuffer, VkImage, VkImageLayout, VkImage, VkImageLayout, Vec<VkImageResolve>                    | vkCmdResolveImage
 
 typedef struct VkImageResolve {
     VkImageSubresourceLayers    srcSubresource;
@@ -796,9 +860,9 @@ typedef struct VkImageResolve {
 }
 
 
-VkCommandBuffer                                                                                         | vkEndCommandBuffer
-VkCommandBuffer, VkCommandBufferResetFlags                                                              | vkResetCommandBuffer
-VkDevice, VkCommandPool, Vec<VkCommandBuffer>                                                           | vkFreeCommandBuffers
+===> VkCommandBuffer                                                                                         | vkEndCommandBuffer
+===> VkCommandBuffer, VkCommandBufferResetFlags                                                              | vkResetCommandBuffer
+===> VkDevice, VkCommandPool, Vec<VkCommandBuffer>                                                           | vkFreeCommandBuffers
 
 typedef enum VkCommandBufferResetFlags {
     VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT
@@ -806,6 +870,11 @@ typedef enum VkCommandBufferResetFlags {
 
 Synchronisation
 ===============
+
+* Execution between host and device is async.
+* Execution between queues within device is async.
+* Execution of commands and command-buffer start in submission order but can finish out of order.
+* Synchronization between host and device and between queues, application responsibility
 
 Implicit ordering guarantees                Fences, Sempahores, Events, Pipeline-barriers, Renderpasses
 Explicit synchronisation primitives
@@ -833,26 +902,26 @@ Event Synchronization primitives are used to insert a fine-grained dependency be
 Image subresources can be transitioned from one layout to another as part of a memory dependency
 
 
-VkDevice                                                                                                | vkCreateSemaphore
-VkDevice, VkSemaphore, value_u64                                                                        | vkSignalSemaphore
-VkDevice, VkSemaphoreWaitFlags Vec<VkSemaphore>, Vec<value_u64> timeout                                 | vkWaitSemaphores
+===> VkDevice                                                                                                | vkCreateSemaphore
+===> VkDevice, VkSemaphore, value_u64                                                                        | vkSignalSemaphore
+===> VkDevice, VkSemaphoreWaitFlags Vec<VkSemaphore>, Vec<value_u64> timeout                                 | vkWaitSemaphores
 
-VkDevice, VkEventCreateFlags                                                                            | vkCreateEvent
-VkDevice, VkEvent                                                                                       | vkGetEventStatus
-VkDevice, VkEvent                                                                                       | vkResetEvent
-VkDevice, VkEvent                                                                                       | vkSetEvent
-VkCommandBuffer, VkEvent, VkPipelineStageFlags                                                          | vkCmdResetEvent
-VkCommandBuffer, VkEvent, VkPipelineStageFlags                                                          | vkCmdSetEvent
-VkCommandBuffer, Vec<VkEvent>, VkBarrierInfo                                                            | vkCmdWaitEvents
-VkDevice, VkEvent                                                                                       | vkDestroyEvent
+===> VkDevice, VkEventCreateFlags                                                                            | vkCreateEvent
+===> VkDevice, VkEvent                                                                                       | vkGetEventStatus
+===> VkDevice, VkEvent                                                                                       | vkResetEvent
+===> VkDevice, VkEvent                                                                                       | vkSetEvent
+===> VkCommandBuffer, VkEvent, VkPipelineStageFlags                                                          | vkCmdResetEvent
+===> VkCommandBuffer, VkEvent, VkPipelineStageFlags                                                          | vkCmdSetEvent
+===> VkCommandBuffer, Vec<VkEvent>, VkBarrierInfo                                                            | vkCmdWaitEvents
+===> VkDevice, VkEvent                                                                                       | vkDestroyEvent
 
-VkDevice, VkFenceCreateFlags                                                                            | vkCreateFence
-VkDevice, VkFence, VkExternalFenceHandleTypeFlags                                                       | vkGetFenceFdKHR           => pFd
-VkDevice, VkFence, VkFenceImportFlags, VkExternalFenceHandleTypeFlags                                   | VkImportFenceFdInfoKHR
-VkDevice, VkFence                                                                                       | vkGetFenceStatus          => Result (signaled, unsignaled)
-VkDevice, Vec<VkFence>                                                                                  | vkResetFences
-VkDevice, Vec<VkFence>, waitAll, timeout                                                                | vkWaitForFences
-VkDevice, VkFence                                                                                       | vkDestroyFence
+===> VkDevice, VkFenceCreateFlags                                                                            | vkCreateFence
+===> VkDevice, VkFence, VkExternalFenceHandleTypeFlags                                                       | vkGetFenceFdKHR           => pFd
+===> VkDevice, VkFence, VkFenceImportFlags, VkExternalFenceHandleTypeFlags                                   | VkImportFenceFdInfoKHR
+===> VkDevice, VkFence                                                                                       | vkGetFenceStatus          => Result (signaled, unsignaled)
+===> VkDevice, Vec<VkFence>                                                                                  | vkResetFences
+===> VkDevice, Vec<VkFence>, waitAll, timeout                                                                | vkWaitForFences
+===> VkDevice, VkFence                                                                                       | vkDestroyFence
 
 
 typedef enum VkExternalFenceHandleTypeFlags {               typedef enum VkSemaphoreWaitFlags {             typedef enum VkFenceCreateFlags {

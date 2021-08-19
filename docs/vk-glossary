@@ -36,6 +36,9 @@ Getting started
 * Texel buffers, data interpreted as sequence of texels with the specified format. Atlease 65536 texels in range.
 * Format of Image and ImageView must be compatible, which usually means same number of bits / pixel.
 
+* Shaders invoication. Each invocation is a single track of execution.
+* Shader-module and shader entry point.
+
 Multithreading
 ==============
 
@@ -94,6 +97,17 @@ Vertex - collection of arbitrary data
 Vertex position
 Vextex size
 Viewport transform - what area of the available area we are rendering to
+
+Framebuffer
+Monochrome, Palettized, Highcolor, Truecolor, Alphachannel
+Resolution
+Colordepth
+Memory Layout; packed-pixel, planar.
+Refresh rate
+Bank switching
+Page flipping; aka Double buffering; vertical-banking-interval VBLANK, VBI.
+Bit blitting; <source> OP [mask] OP [stencil] OP <dest> upto 4 bitmaps, OP is boolean
+alpha compositing; successor to bit-blitting
 
 Vulkan
 ======

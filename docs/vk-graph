@@ -66,37 +66,50 @@ Dispatchable and Non-Dispatchable Handles
 
 There is no global state in vulkan, all states are captured within dispatchable handles (aka objects).
 
-VkInstance
-    +-> VkPhysicalDevice
-    |   +-> VkDevice <- VkDeviceCreateInfo
-    |       +-> VkQueue
-    |       +-> VkSwapchain <- VkSwapchainCreateInfoKHR
-    |       +-> VkCommandPool <- VkCommandPoolCreateInfo
-    |       +-> VkCommandBuffer <- VkCommandBufferAllocateInfo
-    |       +-> VkDeviceMemory <- VkMemoryAllocateInfo
-    |       +-> VkBuffer <- VkBufferCreateInfo
-    |       +-> VkBufferView <- VkBufferViewCreateInfo
-    |       +-> VkImage <- VkImageCreateInfo
-    |       +-> VkImageView <- VkImageViewCreateInfo
-    |       +-> VkSampler <- VkSamplerCreateInfo
-    |       +-> VkQueryPool <- VkQueryPoolCreateInfo
-    |       +-> VkShaderModule <- VkShaderModuleCreateInfo
-    |       +-> VkPipeline <- VkPipelineCache, VkGraphicsPipelineCreateInfo
-    |       +-> VkPipeline <- VkPipelineCache, VkComputePipelineCreateInfo
-    |       +-> VkPipelineLayout <- VkPipelineLayoutCreateInfo
-    |       +-> VkPipelineCache <- VkPipelineCacheCreateInfo
-    |       +-> VkEvent <- VkEventCreateInfo
-    |       +-> VkFence <- VkFenceCreateInfo
-    |       +-> VkSemaphore <- VkSemaphoreCreateInfo
-    |       +-> VkRenderPass <- VkRenderPassCreateInfo
-    |       +-> VkFramebuffer <- VkFramebufferCreateInfo
-    |       +-> VkDescriptorPool <- VkDescriptorPoolCreateInfo
-    |       +-> VkDescriptorSet <- VkDescriptorSetAllocateInfo
-    |       +-> VkDescriptorSetLayout <- VkDescriptorSetLayoutCreateInfo
-    |       +-> VkDescriptorUpdateTemplate <- VkDescriptorUpdateTemplateCreateInfo
-    +-> VkSurface
-    +-> VkDisplay
-    +-> VkDisplayMode
+
+                                                                                    Handle                          VulkanObject
+
+VkInstance                                                                          ash::Instance                   Arc<Instance>
+    |                                                                                                                   new( ApplicationInfo, Version, InstanceExtension, Layers )
+    +-> VkPhysicalDevice                                                            ash::PhysicalDevice<'a>         PhysicalDevice<'a>
+    |                                                                                                                   enumerate( Arc<Instance> )
+    |-- +-> VkDevice, VkDeviceCreateInfo                                            ash::Device                     Arc<Device>
+    |                                                                                                                   new( PhysicalDevice<'a>, &Features, &DeviceExtensions, Qf )
+    |                                                                                                                   Device::standard_pool()
+    |                                                                                                                   Device::standard_command_pool( Qf )
+    |                                                                                                                   Device::standard_descriptor_pool()
+    |------ +-> VkQueue                                                             ash::Queue
+    |------ +-> VkSwapchain, VkSwapchainCreateInfoKHR                               ash::SwapchainKHR               Swapchain<W>
+    |                                                                                                                   start()
+    |                                                                                                                   recreate()
+    |                                                                                                                   SwapchainBuilder::build() -> Vec<SwapchainImage<W>>
+    |------ +-> VkRenderPass, VkRenderPassCreateInfo                                ash::RenderPass                 RenderPassSys<'a>
+    |------ +-> VkFramebuffer, VkFramebufferCreateInfo                              ash::Framebuffer                FramebufferSys<'a>
+    |------ +-> VkDeviceMemory, VkMemoryAllocateInfo                                ash::DeviceMemory               DeviceMemory, MappedDeviceMemory
+    |------ +-> VkBuffer, VkBufferCreateInfo                                        ash::Buffer                     UnsafeBuffer
+    |------ +-> VkBufferView, VkBufferViewCreateInfo                                ash::BufferView                 BufferView<B>
+    |------ +-> VkImage, VkImageCreateInfo                                          ash::Image                      UnsafeImage
+    |------ +-> VkImageView, VkImageViewCreateInfo                                  ash::ImageView                  UnsafeImageView
+    |------ +-> VkCommandPool, VkCommandPoolCreateInfo                              ash::CommandPool                UnsafeCommandPool
+    |------ +-> VkCommandBuffer, VkCommandBufferAllocateInfo                        ash::CommandBuffer              UnsafeCommandPoolAlloc, UnsafeCommandBuffer, UnsafeCommandBufferBuilder
+    |------ +-> VkSampler, VkSamplerCreateInfo                                      ash::Sampler                    Arc<Sampler>
+    |------ +-> VkDescriptorPool, VkDescriptorPoolCreateInfo                        ash::DescriptorPool
+    |------ +-> VkDescriptorSet, VkDescriptorSetAllocateInfo                        ash::DescriptorSet              UnsafeDescriptorSet
+    |------ +-> VkDescriptorSetLayout, VkDescriptorSetLayoutCreateInfo              ash::DescriptorSetLayout        UnsafeDescriptorLayout, Arc<UnsafeDescriptorLayout>
+    |------ +-> VkDescriptorUpdateTemplate, VkDescriptorUpdateTemplateCreateInfo    ash::DescriptorUpdateTemplate
+    |------ +-> VkQueryPool, VkQueryPoolCreateInfo                                  ash::QueryPool                  QueryPool
+    |------ +-> VkShaderModule, VkShaderModuleCreateInfo                            ash::ShaderModule               Arc<ShaderModule>
+    |------ +-> VkPipeline, VkGraphicsPipelineCreateInfo                            ash::Pipeline                   GraphicsPipeline<Mv>, GraphicsPipelineSys<'a>
+    |------ +-> VkPipeline, VkComputePipelineCreateInfo                             ash::Pipeline                   ComputePipeline, ComputePipelineSys<'a>
+    |------ +-> VkPipelineLayout, VkPipelineLayoutCreateInfo                        ash::PipelineLayout             PipelineLayout, Arc<PipelineLayout>
+    |------ +-> VkPipelineCache, VkPipelineCacheCreateInfo                          ash::PipelineCache              Arc<PipelineCache>
+    |------ +-> VkEvent, VkEventCreateInfo                                          ash::Event                      Event
+    |------ +-> VkFence, VkFenceCreateInfo                                          ash::Fence                      Fence<D>
+    |------ +-> VkSemaphore, VkSemaphoreCreateInfo                                  ash::Semaphore                  Semaphore<D>
+    +-> VkSurface                                                                   ash::SurfaceKHR                 Surface<W>
+    +-> VkDisplay                                                                   ash::DisplayKHR                 Display
+    +-> VkDisplayMode                                                               ash::DisplayModeKHR             DisplayMode
+
 
 
 Instance

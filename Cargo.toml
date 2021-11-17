@@ -1,7 +1,3 @@
 [workspace]
-members = [
-    "vgi",
-    "vkinfo",
-    "fonts",
-    "samples",
-]
+
+members = ["fonts", "samples", "vgi", "vkinfo"]

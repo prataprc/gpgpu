@@ -54,6 +54,8 @@ pub mod pp;
 mod validity;
 mod vulkan;
 
+pub mod div;
+
 pub use validity::extensions_for_features;
 pub use vulkan::{api_version, layers, Builder, Vulkan};
 

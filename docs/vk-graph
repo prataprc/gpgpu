@@ -1,5 +1,7 @@
 TODO: vet all the APIs and data-structures associated with dispatchable and non-dispatchable handles.
 
+layers, extensions (instance & physical-device), features (device & format), properties (layer & physical-device & format & image-format)
+
 typedef uint64_t VkDeviceSize;
 typedef uint64_t VkDeviceAddress;
 VkExtent2D VkExtent3D { width, height, depth }

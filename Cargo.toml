@@ -1,3 +1,30 @@
-[workspace]
+[package]
+name = "vgi"
+version = "0.1.0"
+authors = ["prataprc <prataprc@gmail.com>"]
+edition = "2018"
 
-members = ["fonts", "samples", "vgi", "vkinfo"]
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+name = "cgi"
+path = "src/lib.rs"
+
+[[bin]]
+name = "vk"
+required-features = ["vk"]
+
+[dependencies]
+vulkano = "0.27"
+# uuid = "0.8"
+colored = "2.0.0"
+# winit = "0.25.0"
+# vk-parse = "0.6" # TODO: move this to build-dependencies ?
+
+structopt = { version = "0.3.20", default-features = false, optional = true }
+prettytable-rs = { version = "0.8.0", optional = true }
+# vulkano-win = { version = "0.24", path = "/home/prataprc/devrs/vulkano/vulkano-win/" }
+# vulkano-shaders = { version = "0.24", path = "/home/prataprc/devrs/vulkano/vulkano-shaders/" }
+
+[features]
+vk = ["structopt", "prettytable-rs"]

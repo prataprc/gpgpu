@@ -19,6 +19,7 @@ use std::{error, fmt, result};
 // err_at!(ParseError, std::fs::read(file_path), format!("read failed"));
 // ```
 //
+#[macro_export]
 macro_rules! err_at {
     ($v:ident, msg: $($arg:expr),+) => {{
         let prefix = format!("{}:{}", file!(), line!());
@@ -44,15 +45,6 @@ macro_rules! err_at {
         }
     }};
 }
-
-pub mod bmp;
-pub mod fonts;
-pub mod math;
-pub mod plane;
-pub mod space;
-pub mod ttf;
-
-pub mod vulkan;
 
 /// Error variants that are returned by this package's API.
 ///
@@ -86,3 +78,13 @@ impl error::Error for Error {}
 
 /// Type alias for Result return type, used by this package.
 pub type Result<T> = result::Result<T, Error>;
+
+pub mod vk;
+//pub mod bmp;
+//pub mod fonts;
+//pub mod math;
+//pub mod plane;
+//pub mod space;
+//pub mod ttf;
+
+//pub mod vulkan;

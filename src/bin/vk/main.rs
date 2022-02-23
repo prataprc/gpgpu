@@ -5,9 +5,10 @@ use std::sync::Arc;
 
 use cgi::{err_at, vk, Error, Result};
 
+mod debug;
 mod info;
 
-#[derive(Clone, StructOpt)]
+#[derive(StructOpt)]
 pub struct Opt {
     #[structopt(long = "debug")]
     debug: bool,
@@ -39,6 +40,12 @@ pub enum SubCommand {
     Device {
         #[structopt(short = "n", help = "list nth physical device")]
         phydev: Option<usize>,
+        #[structopt(long = "extensions")]
+        extensions: bool,
+        #[structopt(long = "properties")]
+        properties: bool,
+        #[structopt(long = "features")]
+        features: bool,
     },
 }
 
@@ -54,22 +61,31 @@ fn main() {
         let inst_extns = InstanceExtensions::supported_by_core().unwrap();
         let mut layers = vec![];
         if opts.debug {
-            layers.push("VK_LAYER_LUNARG_monitor");
-            layers.push("VK_LAYER_KHRONOS_validation");
+            layers.push("VK_LAYER_LUNARG_monitor".to_string());
+            layers.push("VK_LAYER_KHRONOS_validation".to_string());
         }
         if opts.api_dump {
-            layers.push("VK_LAYER_LUNARG_api_dump");
+            layers.push("VK_LAYER_LUNARG_api_dump".to_string());
         };
+        opts.layers
+            .iter()
+            .filter(|l| l.len() > 0)
+            .for_each(|l| layers.push(l.clone()));
+        layers.dedup();
+        let layers = vk::check_layer_names(layers).unwrap();
+
+        let (app_info, ver) = (vulkano::app_info_from_cargo_toml!(), Version::V1_5);
+        let lyrs = layers.iter().map(|s| s.as_str());
         err_at!(
             Fatal,
-            Instance::new(None, Version::V1_5, &inst_extns, layers.into_iter())
+            Instance::new(Some(&app_info), ver, &inst_extns, lyrs)
         )
         .unwrap()
     };
 
     let _debug_callback = match opts.debug {
-        true => DebugCallback::errors_and_warnings(&inst, debug_callback),
-        false => DebugCallback::errors_and_warnings(&inst, no_debug_callback),
+        true => DebugCallback::errors_and_warnings(&inst, debug::debug_callback),
+        false => DebugCallback::errors_and_warnings(&inst, debug::no_debug_callback),
     };
 
     // always/never color, whether or not output is piped to some other program
@@ -82,7 +98,7 @@ fn main() {
         SubCommand::Devices => info_devices(opts, inst),
         SubCommand::Surface => info_surface(opts),
         SubCommand::Formats => info_formats(opts),
-        SubCommand::Device { .. } => info_device(opts),
+        SubCommand::Device { .. } => info_device(opts, inst),
     };
 
     res.map_err(|err| println!("unexpected error: {}", err))
@@ -160,6 +176,92 @@ fn info_devices(_opts: Opt, inst: Arc<vulkano::instance::Instance>) -> Result<()
 
     for pd in PhysicalDevice::enumerate(&inst) {
         println!("PhysicalDevice {} : {}", pd.index(), pd.api_version());
+    }
+
+    Ok(())
+}
+
+fn info_device(opts: Opt, inst: Arc<vulkano::instance::Instance>) -> Result<()> {
+    use vulkano::device::physical::{
+        MemoryHeap, MemoryType, PhysicalDevice, QueueFamily,
+    };
+
+    let (device_no, is_extns, is_props, is_features) = match opts.subcmd {
+        SubCommand::Device {
+            phydev,
+            extensions,
+            properties,
+            features,
+        } => (phydev.unwrap_or(0), extensions, properties, features),
+        _ => unreachable!(),
+    };
+    let phydev = PhysicalDevice::from_index(&inst, device_no).unwrap();
+    let supported_extns = physical_device_extensions!(phydev.supported_extensions());
+    let required_extns = physical_device_extensions!(phydev.required_extensions());
+    let features = device_features!(phydev.supported_features());
+    let ps = phydev.properties();
+    let proplines = device_properties!(ps);
+
+    if is_extns {
+        println!("Supported extensions : {}", supported_extns.len());
+        for extn in supported_extns.iter() {
+            println!("  {}", extn);
+        }
+    } else if is_props {
+        println!("Properties: {}", proplines.len());
+        for line in proplines.iter() {
+            println!("  {}", line);
+        }
+    } else if is_features {
+        println!("Features: {}", features.len());
+        for line in features.iter() {
+            println!("  {}", line);
+        }
+    } else {
+        println!("API Version              : {}", phydev.api_version());
+        println!("Index                    : {}", phydev.index());
+        println!("device_id                : {:x}", ps.device_id);
+        println!("device_name              : {}", ps.device_name);
+        println!("device_type              : {:?}", ps.device_type);
+        println!("device_luid              : {:?}", ps.device_luid);
+        println!("device_uuid              : {:?}", ps.device_uuid);
+        println!(
+            "discrete_queue_priorities: {}",
+            ps.discrete_queue_priorities
+        );
+        println!("driver_id                : {:?}", ps.driver_id);
+        println!("driver_info              : {:?}", ps.driver_info);
+        println!("driver_name              : {:?}", ps.driver_name);
+        println!("driver_uuid              : {:?}", ps.driver_uuid);
+        println!("driver_version           : {:?}", ps.driver_version);
+        println!("has_primary              : {:?}", ps.has_primary);
+        println!("has_render               : {:?}", ps.has_render);
+        println!("line_width_granularity   : {}", ps.line_width_granularity);
+        println!("buffer_image_granularity : {}", ps.buffer_image_granularity);
+        println!("conformance_version      : {:?}", ps.conformance_version);
+        println!("Required extensions      : {}", required_extns.len());
+        for extn in required_extns.iter() {
+            println!("  {}", extn);
+        }
+        println!("Supported extensions     : {}", supported_extns.len());
+        println!("Properties               : {}", proplines.len());
+        println!("Features                 : {}", features.len());
+        println!();
+
+        vk::make_table(&phydev.memory_types().collect::<Vec<MemoryType>>())
+            .print_tty(!opts.no_color);
+        println!();
+
+        vk::make_table(&phydev.memory_heaps().collect::<Vec<MemoryHeap>>())
+            .print_tty(!opts.no_color);
+        println!();
+
+        vk::make_table(&phydev.queue_families().collect::<Vec<QueueFamily>>())
+            .print_tty(!opts.no_color);
+        println!();
+
+        vk::make_table(&vk::queue_pipeline_stages(&phydev)).print_tty(!opts.no_color);
+        println!();
     }
 
     Ok(())
@@ -347,91 +449,6 @@ fn info_formats(_opts: Opt) -> Result<()> {
     todo!()
 }
 
-fn info_device(_opts: Opt) -> Result<()> {
-    //use info::{device_extensions, instance_extensions, ChecklistItem};
-    //use vgi::{layers, pp::transpose};
-
-    //let layers = layers()?;
-    //let layer_names: Vec<String> = layers.iter().map(|l| l.name().to_string()).collect();
-    //let vobj: Vulkan = Builder::new()?
-    //    .with_extensions(None) // enable core instance-extensions.
-    //    .with_layers(layer_names)
-    //    .build_for_surface(vulkano_win::required_extensions())
-    //    .unwrap();
-    //let layers = vobj.enabled_layers();
-    //let pds = vobj.to_physical_devices();
-
-    //println!("{}: {}", "API Version".yellow(), vobj.api_version());
-    //println!("{}: {}", "Number of physical devices".yellow(), pds.len());
-    //println!();
-
-    //println!("{}", "List of layers".yellow());
-    //make_table(&layers).print_tty(opts.color);
-    //println!();
-
-    //println!("{}:", "Instance core extensions".yellow());
-    //make_table(&instance_extensions()).print_tty(opts.color);
-    //println!();
-
-    //println!("{}:", "Device supported extensions".yellow());
-    //let mut iter = pds.iter().map(|pd| device_extensions(pd.clone()));
-    //let mut table = match iter.next() {
-    //    Some(dextns) => {
-    //        let table = make_table(&dextns);
-    //        iter.fold(table, |mut table, dextns| {
-    //            for (r, c) in table.row_iter_mut().zip(make_table(&dextns).column_iter(1))
-    //            {
-    //                r.add_cell(c.clone())
-    //            }
-    //            table
-    //        })
-    //    }
-    //    None => make_table(&Vec::<ChecklistItem>::default()),
-    //};
-    //table.unset_titles();
-    //// add titles
-    //let mut head = row![Fy => "Extension"];
-    //pds.iter().for_each(|pd| {
-    //    head.add_cell(Cell::from(&format!("device-{}", pd.index())).style_spec("Fy"))
-    //});
-    //table.set_titles(head);
-    //table.set_format(PhysicalDevice::to_format());
-    //// print
-    //table.print_tty(opts.color);
-    //println!();
-
-    //println!("{}:", "Physical device properties".yellow());
-    //let mut table = make_table(&pds);
-    //table.unset_titles();
-    //let mut table = transpose(table);
-    //// add property column
-    //for (row, cell) in table
-    //    .row_iter_mut()
-    //    .zip(PhysicalDevice::to_head().into_iter())
-    //{
-    //    row.insert_cell(0, cell.clone())
-    //}
-    //// add titles
-    //let mut head = row![Fy => "Property/Limit"];
-    //pds.iter().for_each(|pd| {
-    //    head.add_cell(Cell::from(&format!("device-{}", pd.index())).style_spec("Fy"))
-    //});
-    //table.set_titles(head);
-    //table.set_format(PhysicalDevice::to_format());
-    //// print
-    //table.print_tty(opts.color);
-    //println!();
-
-    //make_table_pdfeatures(&vobj).print_tty(opts.color);
-    //println!();
-
-    //print_physical_devices(&pds, &opts);
-    //println!();
-
-    //Ok(())
-    todo!()
-}
-
 //fn make_table_pdfeatures(vobj: &Vulkan) -> prettytable::Table {
 //    use info::{device_features, ChecklistItem};
 //
@@ -497,23 +514,3 @@ fn info_device(_opts: Opt) -> Result<()> {
 //    }
 //    packed_table
 //}
-
-// TODO: debug-callback not happening !!
-fn debug_callback(msg: &vulkano::instance::debug::Message) {
-    let layer = format!("[{}]", msg.layer_prefix.unwrap_or_else(|| "--NA--")).cyan();
-    let typ = format!("<{}>", dbg_msg_type!(msg.ty).join(","));
-    let severity = match dbg_msg_severity!(msg.severity).as_str() {
-        "NONE" => format!("[NONE]").truecolor(100, 100, 100),
-        "VERB" => format!("[VERB]").white(),
-        "INFO" => format!("[INFO]").blue(),
-        "WARN" => format!("[WARN]").yellow(),
-        "EROR" => format!("[EROR]").red(),
-        _ => unreachable!(),
-    };
-
-    println!("{} {:17} {} {}", layer, typ, severity, msg.description);
-}
-
-fn no_debug_callback(_msg: &vulkano::instance::debug::Message) {
-    ()
-}

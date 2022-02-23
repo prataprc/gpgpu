@@ -15,7 +15,7 @@ name = "vk"
 required-features = ["vk"]
 
 [dependencies]
-vulkano = "0.27"
+vulkano = "0.28"
 # uuid = "0.8"
 colored = "2.0.0"
 # winit = "0.25.0"

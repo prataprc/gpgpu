@@ -2,8 +2,6 @@ use colored::Colorize;
 use prettytable::{cell, row};
 use vulkano::instance::LayerProperties;
 
-use crate::{Error, Result};
-
 macro_rules! format_bool {
     ($val:expr) => {
         if $val {
@@ -12,77 +10,6 @@ macro_rules! format_bool {
             "✗".red()
         }
     };
-}
-
-pub struct QueuePipelineStage {
-    stage: vulkano::sync::PipelineStage,
-    supported: Vec<bool>,
-}
-
-pub fn layer_properties() -> Result<Vec<vulkano::instance::LayerProperties>> {
-    use vulkano::instance::layers_list;
-
-    let mut layers = vec![];
-    for layer in err_at!(Fatal, layers_list())? {
-        layers.push(layer)
-    }
-
-    Ok(layers)
-}
-
-pub fn layer_names() -> Result<Vec<String>> {
-    Ok(layer_properties()?
-        .into_iter()
-        .map(|l| l.name().to_string())
-        .collect())
-}
-
-pub fn check_layer_names(layers: Vec<String>) -> Result<Vec<String>> {
-    let available = layer_names()?;
-    Ok(layers
-        .into_iter()
-        .filter(|l| available.contains(l))
-        .collect())
-}
-
-pub fn queue_pipeline_stages(
-    phydev: &vulkano::device::physical::PhysicalDevice,
-) -> Vec<QueuePipelineStage> {
-    use vulkano::sync::PipelineStage;
-
-    let stages = vec![
-        PipelineStage::TopOfPipe,
-        PipelineStage::DrawIndirect,
-        PipelineStage::VertexInput,
-        PipelineStage::VertexShader,
-        PipelineStage::TessellationControlShader,
-        PipelineStage::TessellationEvaluationShader,
-        PipelineStage::GeometryShader,
-        PipelineStage::FragmentShader,
-        PipelineStage::EarlyFragmentTests,
-        PipelineStage::LateFragmentTests,
-        PipelineStage::ColorAttachmentOutput,
-        PipelineStage::ComputeShader,
-        PipelineStage::Transfer,
-        PipelineStage::BottomOfPipe,
-        PipelineStage::Host,
-        PipelineStage::AllGraphics,
-        PipelineStage::AllCommands,
-        PipelineStage::RayTracingShader,
-    ];
-
-    stages
-        .into_iter()
-        .map(|stage| QueuePipelineStage {
-            stage: stage.clone(),
-            supported: phydev
-                .queue_families()
-                .collect::<Vec<vulkano::device::physical::QueueFamily>>()
-                .iter()
-                .map(|qf| qf.supports_stage(stage))
-                .collect(),
-        })
-        .collect()
 }
 
 #[cfg(feature = "prettytable-rs")]
@@ -232,4 +159,49 @@ impl<'a> PrettyRow for QueuePipelineStage {
                 .join("")
         ]
     }
+}
+
+pub struct QueuePipelineStage {
+    stage: vulkano::sync::PipelineStage,
+    supported: Vec<bool>,
+}
+
+pub fn queue_pipeline_stages(
+    phydev: &vulkano::device::physical::PhysicalDevice,
+) -> Vec<QueuePipelineStage> {
+    use vulkano::sync::PipelineStage;
+
+    let stages = vec![
+        PipelineStage::TopOfPipe,
+        PipelineStage::DrawIndirect,
+        PipelineStage::VertexInput,
+        PipelineStage::VertexShader,
+        PipelineStage::TessellationControlShader,
+        PipelineStage::TessellationEvaluationShader,
+        PipelineStage::GeometryShader,
+        PipelineStage::FragmentShader,
+        PipelineStage::EarlyFragmentTests,
+        PipelineStage::LateFragmentTests,
+        PipelineStage::ColorAttachmentOutput,
+        PipelineStage::ComputeShader,
+        PipelineStage::Transfer,
+        PipelineStage::BottomOfPipe,
+        PipelineStage::Host,
+        PipelineStage::AllGraphics,
+        PipelineStage::AllCommands,
+        PipelineStage::RayTracingShader,
+    ];
+
+    stages
+        .into_iter()
+        .map(|stage| QueuePipelineStage {
+            stage: stage.clone(),
+            supported: phydev
+                .queue_families()
+                .collect::<Vec<vulkano::device::physical::QueueFamily>>()
+                .iter()
+                .map(|qf| qf.supports_stage(stage))
+                .collect(),
+        })
+        .collect()
 }

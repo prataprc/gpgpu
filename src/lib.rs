@@ -79,12 +79,7 @@ impl error::Error for Error {}
 /// Type alias for Result return type, used by this package.
 pub type Result<T> = result::Result<T, Error>;
 
+pub mod util;
 pub mod vk;
+pub mod w;
 //pub mod bmp;
-//pub mod fonts;
-//pub mod math;
-//pub mod plane;
-//pub mod space;
-//pub mod ttf;
-
-//pub mod vulkan;

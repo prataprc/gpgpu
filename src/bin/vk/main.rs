@@ -3,7 +3,7 @@ use structopt::StructOpt;
 
 use std::sync::Arc;
 
-use cgi::{err_at, vk, Error, Result};
+use cgi::{err_at, util, vk, Error, Result};
 
 mod debug;
 mod info;
@@ -127,7 +127,7 @@ fn info_layers(opts: Opt) -> Result<()> {
     match opts.subcmd {
         SubCommand::Layers { verbose } if verbose => {
             let layers = vk::layer_properties()?;
-            vk::make_table(&layers).print_tty(!opts.no_color);
+            util::make_table(&layers).print_tty(!opts.no_color);
         }
         SubCommand::Layers { .. } => println!("{}", vk::layer_names()?.join("\n")),
         _ => unreachable!(),
@@ -248,19 +248,19 @@ fn info_device(opts: Opt, inst: Arc<vulkano::instance::Instance>) -> Result<()> 
         println!("Features                 : {}", features.len());
         println!();
 
-        vk::make_table(&phydev.memory_types().collect::<Vec<MemoryType>>())
+        util::make_table(&phydev.memory_types().collect::<Vec<MemoryType>>())
             .print_tty(!opts.no_color);
         println!();
 
-        vk::make_table(&phydev.memory_heaps().collect::<Vec<MemoryHeap>>())
+        util::make_table(&phydev.memory_heaps().collect::<Vec<MemoryHeap>>())
             .print_tty(!opts.no_color);
         println!();
 
-        vk::make_table(&phydev.queue_families().collect::<Vec<QueueFamily>>())
+        util::make_table(&phydev.queue_families().collect::<Vec<QueueFamily>>())
             .print_tty(!opts.no_color);
         println!();
 
-        vk::make_table(&vk::queue_pipeline_stages(&phydev)).print_tty(!opts.no_color);
+        util::make_table(&vk::queue_pipeline_stages(&phydev)).print_tty(!opts.no_color);
         println!();
     }
 

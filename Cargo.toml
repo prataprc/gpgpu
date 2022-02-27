@@ -14,12 +14,15 @@ path = "src/lib.rs"
 name = "vk"
 required-features = ["vk"]
 
+[[bin]]
+name = "winit"
+required-features = ["winit"]
+
 [dependencies]
+winit = "0.26.1"
 vulkano = "0.28"
-# uuid = "0.8"
 colored = "2.0.0"
-# winit = "0.25.0"
-# vk-parse = "0.6" # TODO: move this to build-dependencies ?
+# uuid = "0.8"
 
 structopt = { version = "0.3.20", default-features = false, optional = true }
 prettytable-rs = { version = "0.8.0", optional = true }
@@ -28,3 +31,4 @@ prettytable-rs = { version = "0.8.0", optional = true }
 
 [features]
 vk = ["structopt", "prettytable-rs"]
+winit = ["structopt", "prettytable-rs"]

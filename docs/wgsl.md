@@ -69,9 +69,7 @@ extracted by name. See example usages in the description of `frexp` and `modf`.
 * Attributes
   * An attribute modifies an object or type.
   * An attribute must not be specified more than once per object or type.
-
 * Resource, bind-group.
-
 * type-checking, expression, sub-expression, static-context, dynamic-context
 * plain-types - scalar-type, atomic-type, composite-type
   * scalar-type `u32, i32, f32, bool`

@@ -1,65 +1,81 @@
-ident                 : /([a-zA-Z_][0-9a-zA-Z][0-9a-zA-Z_]*)|([a-zA-Z][0-9a-zA-Z_]*)/
+ident                         : /([a-zA-Z_][0-9a-zA-Z][0-9a-zA-Z_]*)|([a-zA-Z][0-9a-zA-Z_]*)/
 
-_space                : /\s/
+_space                        : /\s/
 
-enable_directive      : 'enable' ident ';'
-address_space         | function
-                      | private
-                      | workgroup
-                      | uniform
-                      | storage
+enable_directive              : 'enable' ident ';'
+address_space                 | 'function'
+                              | 'private'
+                              | 'workgroup'
+                              | 'uniform'
+                              | 'storage'
 
-access_mode           : 'read'
-                      | 'write'
-                      | 'read_write'
+compound_statement            : '{' statement * '}'
 
-type_decl             : ident
-                      | 'bool'
-                      | 'f32'
-                      | 'i32'
-                      | 'u32'
-                      | 'vec2<' type_decl '>'  // type_decl is scalar type
-                      | 'vec3<' type_decl '>'  // type_decl is scalar type
-                      | 'vec4<' type_decl '>'  // type_decl is scalar type
-                      | pointer '<' address_space ',' type_decl ( ',' access_mode ) ? '>'
-                      | 'mat2x2<f32>'
-                      | 'mat2x3<f32>'
-                      | 'mat2x4<f32>'
-                      | 'mat3x2<f32>'
-                      | 'mat3x3<f32>'
-                      | 'mat3x4<f32>'
-                      | 'mat4x2<f32>'
-                      | 'mat4x3<f32>'
-                      | 'mat4x4<f32>'
-                      | 'atomic<u32>'
-                      | 'atomic<i32>'
-                      | texture_sampler_types
-                      | array_type_decl
+assignment_statement          : simple_assignment_statement
+                              | compound_assignment_statement
+                              | phony_assignment_statement
+simple_assignment_statement   : lhs_expression '=' expression
+compound_assignment_statement : lhs_expression compound_assignment_operator expression
+phony_assignment_statement    : '_' '=' expression
+compound_assignment_operator  : '+=' | '-=' | '*=' | '/=' | '%=' | '&=' | '|=' | '^=' | '>>=' | '<<='
+
+increment_statement           : lhs_expression '++'
+decrement_statement           : lhs_expression '--'
+
+continuing_compound_statement
+case_compound_statement
+
+access_mode                   : 'read'
+                              | 'write'
+                              | 'read_write'
+
+type_decl                     : ident
+                              | 'bool'
+                              | 'f32'
+                              | 'i32'
+                              | 'u32'
+                              | 'vec2<' type_decl '>'  // type_decl is scalar type
+                              | 'vec3<' type_decl '>'  // type_decl is scalar type
+                              | 'vec4<' type_decl '>'  // type_decl is scalar type
+                              | pointer '<' address_space ',' type_decl ( ',' access_mode ) ? '>'
+                              | 'mat2x2<f32>'
+                              | 'mat2x3<f32>'
+                              | 'mat2x4<f32>'
+                              | 'mat3x2<f32>'
+                              | 'mat3x3<f32>'
+                              | 'mat3x4<f32>'
+                              | 'mat4x2<f32>'
+                              | 'mat4x3<f32>'
+                              | 'mat4x4<f32>'
+                              | 'atomic<u32>'
+                              | 'atomic<i32>'
+                              | texture_sampler_types
+                              | array_type_decl
 
 
 
-array_type_decl          : 'array' '<' type_decl ( ',' element_count_expression ) ? '>'
-element_count_expression : int_literal
-                         | uint_literal
-                         | ident
+array_type_decl               : 'array' '<' type_decl ( ',' element_count_expression ) ? '>'
+element_count_expression      : int_literal
+                              | uint_literal
+                              | ident
 
 
 
-attribute             : '@' ident paren_left ( literal_or_ident comma ) * literal_or_ident comma ? paren_right
-                      | '@' ident
-literal_or_ident      : float_literal
-                      | int_literal
-                      | uint_literal
-                      | ident
+attribute                     : '@' ident paren_left ( literal_or_ident comma ) * literal_or_ident comma ? paren_right
+                              | '@' ident
+literal_or_ident              : float_literal
+                              | int_literal
+                              | uint_literal
+                              | ident
 
-const_literal         : int_literal
-                      | uint_literal
-                      | float_literal
-                      | 'true'
-                      | 'false'
-float_literal         : decimal_float_literal
-                      | hex_float_literal
-decimal_float_literal : /((-?[0-9]*\.[0-9]+|-?[0-9]+\.[0-9]*)((e|E)(\+|-)?[0-9]+)?f?)|(-?[0-9]+(e|E)(\+|-)?[0-9]+f?)/
-hex_float_literal     : /-?0[xX]((([0-9a-fA-F]*\.[0-9a-fA-F]+|[0-9a-fA-F]+\.[0-9a-fA-F]*)((p|P)(\+|-)?[0-9]+f?)?)|([0-9a-fA-F]+(p|P)(\+|-)?[0-9]+f?))/
-int_literal           : /-?0[xX][0-9a-fA-F]+|0|-?[1-9][0-9]*/
-uint_literal          : /0[xX][0-9a-fA-F]+u|0u|[1-9][0-9]*u/
+const_literal                 : int_literal
+                              | uint_literal
+                              | float_literal
+                              | 'true'
+                              | 'false'
+float_literal                 : decimal_float_literal
+                              | hex_float_literal
+decimal_float_literal         : /((-?[0-9]*\.[0-9]+|-?[0-9]+\.[0-9]*)((e|E)(\+|-)?[0-9]+)?f?)|(-?[0-9]+(e|E)(\+|-)?[0-9]+f?)/
+hex_float_literal             : /-?0[xX]((([0-9a-fA-F]*\.[0-9a-fA-F]+|[0-9a-fA-F]+\.[0-9a-fA-F]*)((p|P)(\+|-)?[0-9]+f?)?)|([0-9a-fA-F]+(p|P)(\+|-)?[0-9]+f?))/
+int_literal                   : /-?0[xX][0-9a-fA-F]+|0|-?[1-9][0-9]*/
+uint_literal                  : /0[xX][0-9a-fA-F]+u|0u|[1-9][0-9]*u/

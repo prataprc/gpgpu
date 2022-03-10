@@ -1,81 +1,132 @@
-ident                         : /([a-zA-Z_][0-9a-zA-Z][0-9a-zA-Z_]*)|([a-zA-Z][0-9a-zA-Z_]*)/
-
-_space                        : /\s/
-
-enable_directive              : 'enable' ident ';'
-address_space                 | 'function'
-                              | 'private'
-                              | 'workgroup'
-                              | 'uniform'
-                              | 'storage'
-
-compound_statement            : '{' statement * '}'
-
-assignment_statement          : simple_assignment_statement
-                              | compound_assignment_statement
-                              | phony_assignment_statement
-simple_assignment_statement   : lhs_expression '=' expression
-compound_assignment_statement : lhs_expression compound_assignment_operator expression
-phony_assignment_statement    : '_' '=' expression
-compound_assignment_operator  : '+=' | '-=' | '*=' | '/=' | '%=' | '&=' | '|=' | '^=' | '>>=' | '<<='
-
-increment_statement           : lhs_expression '++'
-decrement_statement           : lhs_expression '--'
-
-continuing_compound_statement
-case_compound_statement
-
-access_mode                   : 'read'
-                              | 'write'
-                              | 'read_write'
-
-type_decl                     : ident
-                              | 'bool'
-                              | 'f32'
-                              | 'i32'
-                              | 'u32'
-                              | 'vec2<' type_decl '>'  // type_decl is scalar type
-                              | 'vec3<' type_decl '>'  // type_decl is scalar type
-                              | 'vec4<' type_decl '>'  // type_decl is scalar type
-                              | pointer '<' address_space ',' type_decl ( ',' access_mode ) ? '>'
-                              | 'mat2x2<f32>'
-                              | 'mat2x3<f32>'
-                              | 'mat2x4<f32>'
-                              | 'mat3x2<f32>'
-                              | 'mat3x3<f32>'
-                              | 'mat3x4<f32>'
-                              | 'mat4x2<f32>'
-                              | 'mat4x3<f32>'
-                              | 'mat4x4<f32>'
-                              | 'atomic<u32>'
-                              | 'atomic<i32>'
-                              | texture_sampler_types
-                              | array_type_decl
+statement                       ::= ';'
+                                  | 'break' ';'
+                                  | 'continue' ';'
+                                  | 'discard' ';'
+                                  | 'return' expression ';'
+                                  | assignment_statement ';'
+                                  | increment_statement ';'
+                                  | decrement_statement ';'
+                                  | compound_statement
+                                  | if_statement
+                                  | switch_statement
+                                  | loop_statement
+                                  | for_statement
+                                  | while_statement
+                                  | variable_statement ';'
+                                  | func_call_statement ';'
 
 
+compound_statement              ::= '{' statement * '}'
 
-array_type_decl               : 'array' '<' type_decl ( ',' element_count_expression ) ? '>'
-element_count_expression      : int_literal
-                              | uint_literal
-                              | ident
+assignment_statement            ::= simple_assignment_statement
+                                  | compound_assignment_statement
+                                  | phony_assignment_statement
+simple_assignment_statement     ::= lhs_expression '=' expression
+compound_assignment_statement   ::= lhs_expression compound_assignment_operator expression
+phony_assignment_statement      ::= '_' '=' expression
+compound_assignment_operator    ::= '+=' | '-=' | '*=' | '/=' | '%=' | '&=' | '|=' | '^=' | '>>=' | '<<='
+control_statement               ::= if_statement
+                                  | switch_statement
+                                  | loop_statement
+break_if_statement              ::= 'break' 'if' expression ';'
+if_statement                    ::= 'if' expression compound_statement ( 'else' else_statement ) ?
+else_statement                  ::= compound_statement | if_statement
+switch_statement                ::= 'switch' expression '{' switch_body + '}'
+switch_body                     ::= 'case' case_selectors ':' case_compound_statement
+                                  | 'default' ':' case_compound_statement
+case_selectors                  ::= const_literal ( ',' const_literal ) * ',' ?
+case_compound_statement         ::= '{' statement * ('fallthrough' ';') ? '}'
+loop_statement                  ::= 'loop' '{' statement * continuing_statement ? '}'
+continuing_statement            ::= 'continuing' continuing_compound_statement
+continuing_compound_statement   ::= '{' statement * break_if_statement ? '}'
+while_statement                 ::= 'while' expression compound_statement
+for_statement                   ::= 'for' '(' for_header ')' compound_statement
+for_header                      ::= for_init ? ';' expression ? ';' for_update ?
+for_init                        ::= variable_statement
+                                  | assignment_statement
+                                  | func_call_statement
+for_update                      ::= increment_statement
+                                  | decrement_statement
+                                  | assignment_statement
+                                  | func_call_statement
+increment_statement             ::= lhs_expression '++'
+decrement_statement             ::= lhs_expression '--'
+variable_statement              ::= variable_decl
+                                  | variable_decl '=' expression
+                                  | 'let' ( ident | variable_ident_decl ) '=' expression
+variable_decl                   ::= 'var' variable_qualifier ? ( ident | variable_ident_decl )
+variable_ident_decl             ::= ident ':' type_decl
+variable_qualifier              ::= '<' address_space ( ',' access_mode ) ? '>'
+func_call_statement             ::= ident argument_expression_list
+
+
+global_variable_decl            ::= attribute * variable_decl ( '=' const_expression ) ?
+global_constant_decl            ::= 'let' ( ident | variable_ident_decl ) '=' const_expression
+                                  | attribute * 'override' ( ident | variable_ident_decl ) ( '=' expression ) ?
+const_expression                ::= type_decl '(' ( ( const_expression ',' ) * const_expression ',' ? ) ? ')'
+                                  | const_literal
+
+type_decl                       ::= ident
+                                  | 'bool'
+                                  | 'f32'
+                                  | 'i32'
+                                  | 'u32'
+                                  | 'vec2<' type_decl '>'  // type_decl is scalar type
+                                  | 'vec3<' type_decl '>'  // type_decl is scalar type
+                                  | 'vec4<' type_decl '>'  // type_decl is scalar type
+                                  | pointer '<' address_space ',' type_decl ( ',' access_mode ) ? '>'
+                                  | 'mat2x2<f32>'
+                                  | 'mat2x3<f32>'
+                                  | 'mat2x4<f32>'
+                                  | 'mat3x2<f32>'
+                                  | 'mat3x3<f32>'
+                                  | 'mat3x4<f32>'
+                                  | 'mat4x2<f32>'
+                                  | 'mat4x3<f32>'
+                                  | 'mat4x4<f32>'
+                                  | 'atomic<u32>'
+                                  | 'atomic<i32>'
+                                  | texture_sampler_types
+                                  | array_type_decl
 
 
 
-attribute                     : '@' ident paren_left ( literal_or_ident comma ) * literal_or_ident comma ? paren_right
-                              | '@' ident
-literal_or_ident              : float_literal
-                              | int_literal
-                              | uint_literal
-                              | ident
+array_type_decl                 ::= 'array' '<' type_decl ( ',' element_count_expression ) ? '>'
+element_count_expression        ::= int_literal
+                                  | uint_literal
+                                  | ident
 
-const_literal                 : int_literal
-                              | uint_literal
-                              | float_literal
-                              | 'true'
-                              | 'false'
-float_literal                 : decimal_float_literal
-                              | hex_float_literal
-decimal_float_literal         : /((-?[0-9]*\.[0-9]+|-?[0-9]+\.[0-9]*)((e|E)(\+|-)?[0-9]+)?f?)|(-?[0-9]+(e|E)(\+|-)?[0-9]+f?)/
-hex_float_literal             : /-?0[xX]((([0-9a-fA-F]*\.[0-9a-fA-F]+|[0-9a-fA-F]+\.[0-9a-fA-F]*)((p|P)(\+|-)?[0-9]+f?)?)|([0-9a-fA-F]+(p|P)(\+|-)?[0-9]+f?))/
-int_literal                   : /-?0[xX][0-9a-fA-F]+|0|-?[1-9][0-9]*/
-uint_literal                  : /0[xX][0-9a-fA-F]+u|0u|[1-9][0-9]*u/
+
+enable_directive                ::= 'enable' ident ';'
+
+attribute                       ::= '@' ident paren_left ( literal_or_ident comma ) * literal_or_ident comma ? paren_right
+                                  | '@' ident
+literal_or_ident                ::= float_literal
+                                  | int_literal
+                                  | uint_literal
+                                  | ident
+
+
+address_space                   ::= 'function'
+                                  | 'private'
+                                  | 'workgroup'
+                                  | 'uniform'
+                                  | 'storage'
+
+access_mode                     ::= 'read'
+                                  | 'write'
+                                  | 'read_write'
+
+const_literal                   ::= int_literal
+                                  | uint_literal
+                                  | float_literal
+                                  | 'true'
+                                  | 'false'
+float_literal                   ::= decimal_float_literal
+                                  | hex_float_literal
+decimal_float_literal           ::= /((-?[0-9]*\.[0-9]+|-?[0-9]+\.[0-9]*)((e|E)(\+|-)?[0-9]+)?f?)|(-?[0-9]+(e|E)(\+|-)?[0-9]+f?)/
+hex_float_literal               ::= /-?0[xX]((([0-9a-fA-F]*\.[0-9a-fA-F]+|[0-9a-fA-F]+\.[0-9a-fA-F]*)((p|P)(\+|-)?[0-9]+f?)?)|([0-9a-fA-F]+(p|P)(\+|-)?[0-9]+f?))/
+int_literal                     ::= /-?0[xX][0-9a-fA-F]+|0|-?[1-9][0-9]*/
+uint_literal                    ::= /0[xX][0-9a-fA-F]+u|0u|[1-9][0-9]*u/
+ident                           ::= /([a-zA-Z_][0-9a-zA-Z][0-9a-zA-Z_]*)|([a-zA-Z][0-9a-zA-Z_]*)/
+_space                          ::= /\s/

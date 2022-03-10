@@ -1,5 +1,5 @@
 [package]
-name = "vgi"
+name = "cgi"
 version = "0.1.0"
 authors = ["prataprc <prataprc@gmail.com>"]
 edition = "2018"
@@ -18,17 +18,25 @@ required-features = ["vk"]
 name = "winit"
 required-features = ["winit"]
 
+[[bin]]
+name = "fonts"
+required-features = ["fonts"]
+
 [dependencies]
 winit = "0.26.1"
 vulkano = "0.28"
 colored = "2.0.0"
+prettytable-rs = { version = "0.8.0" }
+wgpu = "0.12.0"
 # uuid = "0.8"
 
 structopt = { version = "0.3.20", default-features = false, optional = true }
-prettytable-rs = { version = "0.8.0", optional = true }
+ttf-parser = { version = "0.12.0", optional = true }
 # vulkano-win = { version = "0.24", path = "/home/prataprc/devrs/vulkano/vulkano-win/" }
 # vulkano-shaders = { version = "0.24", path = "/home/prataprc/devrs/vulkano/vulkano-shaders/" }
+# colored = "2.0.0"
 
 [features]
-vk = ["structopt", "prettytable-rs"]
-winit = ["structopt", "prettytable-rs"]
+vk = ["structopt"]
+winit = ["structopt"]
+fonts = ["structopt", "ttf-parser"]

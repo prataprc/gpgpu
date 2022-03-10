@@ -1,4 +1,3 @@
-#[cfg(feature = "prettytable-rs")]
 pub trait PrettyRow {
     fn to_format() -> prettytable::format::TableFormat;
 
@@ -7,7 +6,6 @@ pub trait PrettyRow {
     fn to_row(&self) -> prettytable::Row;
 }
 
-#[cfg(feature = "prettytable-rs")]
 pub fn make_table<R>(rows: &[R]) -> prettytable::Table
 where
     R: PrettyRow,

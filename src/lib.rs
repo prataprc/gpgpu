@@ -81,5 +81,5 @@ pub type Result<T> = result::Result<T, Error>;
 
 pub mod util;
 pub mod vk;
-pub mod w;
 pub mod wg;
+pub mod win;

@@ -1,11 +1,10 @@
-pub mod pretty;
+mod backends;
+pub mod config;
+mod features;
+mod limits;
+mod pretty;
 
-#[cfg(target_os = "macos")]
-pub fn backend() -> wgpu::Backends {
-    wgpu::Backends::METAL
-}
-
-#[cfg(target_os = "linux")]
-pub fn backend() -> wgpu::Backends {
-    wgpu::Backends::VULKAN
-}
+pub use backends::{backend, backend_to_string, string_to_backend};
+pub use features::{add_adapter_to_features, features, Feature};
+pub use limits::{add_adapter_to_limits, limits, Limit};
+pub use pretty::StorageReport;

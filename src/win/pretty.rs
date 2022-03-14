@@ -9,7 +9,7 @@ impl PrettyRow for MonitorHandle {
     }
 
     fn to_head() -> prettytable::Row {
-        row![Fy => "Name", "Position", "Size", "Scan-factor", "Video-modes"]
+        row![Fy => "Name", "Position", "Size", "Scale-factor", "Video-modes"]
     }
 
     fn to_row(&self) -> prettytable::Row {

@@ -160,3 +160,10 @@ pub fn info_limits(opts: &Opt) -> Result<()> {
 
     Ok(())
 }
+
+pub fn info_texture_formats(opts: &Opt) -> Result<()> {
+    let info = wg::texture_formats_info();
+    util::make_table(&info).print_tty(opts.no_color);
+
+    Ok(())
+}

@@ -3,7 +3,7 @@ use structopt::StructOpt;
 
 use std::sync::Arc;
 
-use cgi::{err_at, util, vk, Error, Result};
+use gpgpu::{err_at, util, vk, Error, Result};
 
 mod debug;
 mod info;

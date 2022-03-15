@@ -6,6 +6,7 @@ use crate::{Error, Result};
 pub struct Config {
     pub web: bool,
     pub adapter_options: AdapterOptions,
+    pub winit: WinitOptions,
 }
 
 #[derive(Clone)]
@@ -14,16 +15,45 @@ pub struct AdapterOptions {
     pub force_fallback_adapter: bool,
 }
 
+#[derive(Clone)]
+pub struct WinitOptions {
+    title: String,
+    visible: bool,
+    alway_on_top: bool,
+    maximised: bool,
+    minimised: bool,
+    resizeable: bool,
+    cursor_position: Option<Vec<i32>>,
+    cursor_visible: bool,
+    window_decorations: bool,
+    inner_size: Option<Vec<u32>>,
+    max_inner_size: Option<Vec<u32>>,
+    min_inner_size: Option<Vec<u32>>,
+    outer_position: Option<Vec<i32>>,
+    // TODO: ime_position
+    // TODO: cursor_icon
+    // TODO: fullscreen
+    // TODO: window_icon: Option<ffi::OsString>,
+}
+
+//-----
+
 #[derive(Clone, Deserialize)]
 struct TomlConfig {
     web: Option<bool>,
     adapter_options: Option<TomlAdapterOptions>,
+    winit: Option<TomlWinitOptions>,
 }
 
 #[derive(Clone, Deserialize)]
 pub struct TomlAdapterOptions {
     power_preference: Option<String>,
     force_fallback_adapter: Option<bool>,
+}
+
+#[derive(Clone)]
+pub struct WinitWindowOptions {
+    //
 }
 
 impl Default for Config {

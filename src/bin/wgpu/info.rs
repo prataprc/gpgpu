@@ -5,7 +5,7 @@ use winit::{
     monitor::{MonitorHandle, VideoMode},
 };
 
-use cgi::{
+use gpgpu::{
     util::{self, PrettyRow},
     wg, Result,
 };

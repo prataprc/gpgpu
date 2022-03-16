@@ -1,5 +1,24 @@
 web = false
 
-[adapter_options]
+[adapter]
 power_preference = "low_power"
 force_fallback_adapter = false
+
+[winit]
+title = "gpgpu"
+visible = true
+alway_on_top = false
+maximised = false
+minimised = false
+resizeable = true
+cursor_position = [0, 0]
+cursor_visible = true
+window_decorations = true
+inner_size = [800, 600]
+max_inner_size = [800, 600]
+min_inner_size = [800, 600]
+outer_position = [0, 0]
+# TODO: ime_position
+# TODO: cursor_icon
+# TODO: fullscreen
+# TODO: window_icon: Option<ffi::OsString>,

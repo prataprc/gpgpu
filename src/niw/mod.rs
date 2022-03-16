@@ -1,3 +1,4 @@
+mod config;
 mod pretty;
 mod wloop;
 
@@ -6,3 +7,5 @@ pub use wloop::{
     WinAxisMotion, WinCursorEntered, WinCursorLeft, WinCursorMoved, WinKeyboardInput,
     WinLoop, WinMouseInput, WinMouseWheel, WinTouchpadPressure,
 };
+
+pub use config::WinitConfig;

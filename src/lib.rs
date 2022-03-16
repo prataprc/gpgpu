@@ -53,6 +53,8 @@ macro_rules! err_at {
 pub enum Error {
     Fatal(String, String),
     Invalid(String, String),
+    FailConvert(String, String),
+    IOError(String, String),
     Vk(String, String),
 }
 
@@ -63,6 +65,8 @@ impl fmt::Display for Error {
         match self {
             Fatal(p, msg) => write!(f, "{} Fatal: {}", p, msg),
             Invalid(p, msg) => write!(f, "{} Invalid: {}", p, msg),
+            FailConvert(p, msg) => write!(f, "{} FailConvert: {}", p, msg),
+            IOError(p, msg) => write!(f, "{} IOError: {}", p, msg),
             Vk(p, msg) => write!(f, "{} Vk: {}", p, msg),
         }
     }
@@ -79,7 +83,7 @@ impl error::Error for Error {}
 /// Type alias for Result return type, used by this package.
 pub type Result<T> = result::Result<T, Error>;
 
+pub mod niw;
 pub mod util;
 pub mod vk;
 pub mod wg;
-pub mod win;

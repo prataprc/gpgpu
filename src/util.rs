@@ -1,3 +1,9 @@
+use serde::de::DeserializeOwned;
+
+use std::{fs, path};
+
+use crate::{Error, Result};
+
 pub trait PrettyRow {
     fn to_format() -> prettytable::format::TableFormat;
 
@@ -23,4 +29,18 @@ where
             table
         }
     }
+}
+
+/// Load toml file and parse it into type `T`.
+pub fn load_toml<P, T>(loc: P) -> Result<T>
+where
+    P: AsRef<path::Path>,
+    T: DeserializeOwned,
+{
+    use std::str::from_utf8;
+
+    let ploc: &path::Path = loc.as_ref();
+    let data = err_at!(IOError, fs::read(ploc))?;
+    let s = err_at!(FailConvert, from_utf8(&data), "not utf8 for {:?}", ploc)?;
+    err_at!(FailConvert, toml::from_str(s), "file:{:?}", ploc)
 }

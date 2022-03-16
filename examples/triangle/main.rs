@@ -3,10 +3,12 @@ use winit::{
     event_loop::{ControlFlow, EventLoopWindowTarget},
 };
 
+use gpgpu::niw;
+
 fn main() {
     env_logger::init();
 
-    let mut wloop = gpgpu::win::WinLoop::<()>::new();
+    let mut wloop = niw::WinLoop::<()>::new();
 
     wloop
         .on_win_close_requested(Some(Box::new(on_win_close_requested)))
@@ -15,21 +17,19 @@ fn main() {
     wloop.run();
 }
 
-fn on_win_close_requested(
-    _target: &EventLoopWindowTarget<()>,
-) -> gpgpu::win::HandlerRes<()> {
-    gpgpu::win::HandlerRes {
+fn on_win_close_requested(_target: &EventLoopWindowTarget<()>) -> niw::HandlerRes<()> {
+    niw::HandlerRes {
         control_flow: Some(ControlFlow::Exit),
         param: (),
     }
 }
 
 fn on_win_keyboard_input(
-    input: gpgpu::win::WinKeyboardInput,
+    input: niw::WinKeyboardInput,
     _target: &EventLoopWindowTarget<()>,
-) -> gpgpu::win::HandlerRes<()> {
+) -> niw::HandlerRes<()> {
     let control_flow = match input {
-        gpgpu::win::WinKeyboardInput {
+        niw::WinKeyboardInput {
             input:
                 KeyboardInput {
                     state: ElementState::Pressed,
@@ -41,7 +41,7 @@ fn on_win_keyboard_input(
         _ => None,
     };
 
-    gpgpu::win::HandlerRes {
+    niw::HandlerRes {
         control_flow,
         param: (),
     }

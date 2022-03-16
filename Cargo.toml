@@ -32,15 +32,11 @@ wgpu-core = "0.12.0"
 wgpu-types = "0.12.0"
 env_logger = "0.9" # TODO: used only in examples.
 log = "0.4.14"
+toml = "0.5.8"
 serde = { version = "1", features = ["derive"] }
-
-# uuid = "0.8"
 
 structopt = { version = "0.3.20", default-features = false, optional = true }
 ttf-parser = { version = "0.12.0", optional = true }
-# vulkano-win = { version = "0.24", path = "/home/prataprc/devrs/vulkano/vulkano-win/" }
-# vulkano-shaders = { version = "0.24", path = "/home/prataprc/devrs/vulkano/vulkano-shaders/" }
-# colored = "2.0.0"
 
 [features]
 vk = ["structopt"]

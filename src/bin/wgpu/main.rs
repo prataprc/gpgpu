@@ -7,7 +7,7 @@ use winit::{
     event_loop::{ControlFlow, EventLoopWindowTarget},
 };
 
-use gpgpu::{wg, Error, Result};
+use gpgpu::{niw, wg, Error, Result};
 
 use info::{
     info_adapters, info_features, info_global_report, info_limits, info_monitors,
@@ -141,21 +141,21 @@ fn handle_formats(opts: Opt) -> Result<()> {
 }
 
 fn handle_events(_opts: Opt) -> Result<()> {
-    let mut wloop = gpgpu::win::WinLoop::<()>::new();
+    let mut wloop = niw::WinLoop::<()>::new();
 
     let on_win_close_requested =
-        |_target: &EventLoopWindowTarget<()>| -> gpgpu::win::HandlerRes<()> {
-            gpgpu::win::HandlerRes {
+        |_target: &EventLoopWindowTarget<()>| -> niw::HandlerRes<()> {
+            niw::HandlerRes {
                 control_flow: Some(ControlFlow::Exit),
                 param: (),
             }
         };
 
-    let on_win_keyboard_input = |input: gpgpu::win::WinKeyboardInput,
+    let on_win_keyboard_input = |input: niw::WinKeyboardInput,
                                  _target: &EventLoopWindowTarget<()>|
-     -> gpgpu::win::HandlerRes<()> {
+     -> niw::HandlerRes<()> {
         let control_flow = match input {
-            gpgpu::win::WinKeyboardInput {
+            niw::WinKeyboardInput {
                 input:
                     KeyboardInput {
                         state: ElementState::Pressed,
@@ -167,7 +167,7 @@ fn handle_events(_opts: Opt) -> Result<()> {
             _ => None,
         };
 
-        gpgpu::win::HandlerRes {
+        niw::HandlerRes {
             control_flow,
             param: (),
         }

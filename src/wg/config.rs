@@ -1,70 +1,46 @@
 use serde::Deserialize;
 
-use crate::{Error, Result};
+use std::{convert::TryInto, path};
 
-#[derive(Clone)]
-pub struct Config {
-    pub web: bool,
-    pub adapter_options: AdapterOptions,
-    pub winit: WinitOptions,
-}
-
-#[derive(Clone)]
-pub struct AdapterOptions {
-    pub power_preference: wgpu::PowerPreference,
-    pub force_fallback_adapter: bool,
-}
-
-#[derive(Clone)]
-pub struct WinitOptions {
-    title: String,
-    visible: bool,
-    alway_on_top: bool,
-    maximised: bool,
-    minimised: bool,
-    resizeable: bool,
-    cursor_position: Option<Vec<i32>>,
-    cursor_visible: bool,
-    window_decorations: bool,
-    inner_size: Option<Vec<u32>>,
-    max_inner_size: Option<Vec<u32>>,
-    min_inner_size: Option<Vec<u32>>,
-    outer_position: Option<Vec<i32>>,
-    // TODO: ime_position
-    // TODO: cursor_icon
-    // TODO: fullscreen
-    // TODO: window_icon: Option<ffi::OsString>,
-}
-
-//-----
+use crate::{niw, util, Error, Result};
 
 #[derive(Clone, Deserialize)]
 struct TomlConfig {
     web: Option<bool>,
-    adapter_options: Option<TomlAdapterOptions>,
-    winit: Option<TomlWinitOptions>,
+    adapter_options: Option<TomlAdapterConfig>,
 }
 
 #[derive(Clone, Deserialize)]
-pub struct TomlAdapterOptions {
+pub struct TomlAdapterConfig {
     power_preference: Option<String>,
     force_fallback_adapter: Option<bool>,
 }
 
+//-----
+
 #[derive(Clone)]
-pub struct WinitWindowOptions {
-    //
+pub struct Config {
+    pub web: bool,
+    pub adapter_options: AdapterConfig,
+    pub winit: niw::WinitConfig,
+}
+
+#[derive(Clone)]
+pub struct AdapterConfig {
+    pub power_preference: wgpu::PowerPreference,
+    pub force_fallback_adapter: bool,
 }
 
 impl Default for Config {
     fn default() -> Config {
-        let adapter_options = AdapterOptions {
+        let adapter_options = AdapterConfig {
             power_preference: wgpu::PowerPreference::HighPerformance,
             force_fallback_adapter: false,
         };
         Config {
             web: false,
             adapter_options: adapter_options,
+            winit: niw::WinitConfig::default(),
         }
     }
 }
@@ -92,6 +68,26 @@ impl TryFrom<TomlConfig> for Config {
 }
 
 impl Config {
+    pub fn from_file<P>(loc: P) -> Result<Config>
+    where
+        P: AsRef<path::Path>,
+    {
+        let mut value: toml::Value = util::load_toml(loc)?;
+        let winit_config = match value.as_table_mut().unwrap().remove("winit") {
+            Some(winit_value) => niw::WinitConfig::from_toml(winit_value)?,
+            None => {
+                let c = Config::default();
+                c.winit
+            }
+        };
+
+        let tc: TomlConfig = err_at!(FailConvert, toml::from_str(&value.to_string()))?;
+        let mut conf: Config = tc.try_into()?;
+        conf.winit = winit_config;
+
+        Ok(conf)
+    }
+
     pub fn to_request_adapter_options<'a>(
         &self,
         surface: &'a wgpu::Surface,

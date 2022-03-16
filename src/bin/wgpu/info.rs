@@ -3,11 +3,13 @@ use prettytable::cell;
 use winit::{
     event_loop::EventLoop,
     monitor::{MonitorHandle, VideoMode},
+    window::WindowBuilder,
 };
 
 use gpgpu::{
+    err_at,
     util::{self, PrettyRow},
-    wg, Result,
+    wg, Error, Result,
 };
 
 use crate::Opt;
@@ -47,33 +49,53 @@ pub fn info_global_report(opts: &Opt) -> Result<()> {
 }
 
 // List monitors or show video modes for primary monitor or monitor chosen by index `n`.
-pub fn info_monitors(modes: bool, n: Option<usize>, no_color: bool) -> Result<()> {
-    let evl = EventLoop::new();
-    let monitors: Vec<MonitorHandle> = evl.available_monitors().collect();
+pub fn info_window(
+    modes: bool,
+    n: Option<usize>,
+    opts: &Opt,
+    config: &wg::Config,
+) -> Result<()> {
+    let eloop = EventLoop::new();
+    let window = {
+        let mut wb = WindowBuilder::new();
+        wb.window = config.to_window_attributes()?;
+        err_at!(Fatal, wb.build(&eloop))?
+    };
+
+    println!(
+        "Primary monitor: {:?}",
+        window.current_monitor().map(|m| m.name())
+    );
+    println!(
+        "Current monitor: {:?}",
+        window.current_monitor().map(|m| m.name())
+    );
+
+    let monitors: Vec<MonitorHandle> = window.available_monitors().collect();
 
     match n {
         Some(n) if modes => {
             // show video modes for monitor index `n`
             let modes = monitors[n].video_modes().collect::<Vec<VideoMode>>();
-            util::make_table(&modes).print_tty(!no_color);
+            util::make_table(&modes).print_tty(!opts.no_color);
         }
-        None if modes => match evl.primary_monitor() {
+        None if modes => match window.primary_monitor() {
             Some(primary) => {
                 // show video modes for primary monitor.
                 let modes = primary.video_modes().collect::<Vec<VideoMode>>();
-                util::make_table(&modes).print_tty(!no_color);
+                util::make_table(&modes).print_tty(!opts.no_color);
             }
             None => println!("{}", "No primary monitor".red()),
         },
         _ => {
-            match evl.primary_monitor() {
+            match window.primary_monitor() {
                 Some(primary) => {
-                    util::make_table(&vec![primary]).print_tty(!no_color);
+                    util::make_table(&vec![primary]).print_tty(!opts.no_color);
                 }
                 None => println!("{}", "No primary monitor".red()),
             }
             println!();
-            util::make_table(&monitors).print_tty(!no_color);
+            util::make_table(&monitors).print_tty(!opts.no_color);
         }
     }
 

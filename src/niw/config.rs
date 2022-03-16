@@ -28,7 +28,7 @@ pub struct TomlWinitConfig {
 
 //-----
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct WinitConfig {
     pub title: String,
     pub visible: bool,
@@ -63,6 +63,9 @@ impl Default for WinitConfig {
             cursor_position: None,
             cursor_visible: true,
             decorations: true,
+            #[cfg(unix)]
+            inner_size: Some(vec![800.0, 600.0]),
+            #[cfg(any(target_os = "android", target_os = "macos"))]
             inner_size: None,
             max_inner_size: None,
             min_inner_size: None,

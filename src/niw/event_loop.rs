@@ -421,7 +421,7 @@ where
             move |event: Event<T>,
                   target: &EventLoopWindowTarget<T>,
                   control_flow: &mut ControlFlow| {
-                trace!(target: "win::wloop::run", "event {:?}", event);
+                log_event(&event);
 
                 let (new_control_flow, _) = match event {
                     Event::NewEvents(start_clause) => handle_event!(
@@ -699,6 +699,18 @@ where
                 }
             },
         );
+    }
+}
+
+fn log_event<T>(event: &Event<T>)
+where
+    T: fmt::Debug,
+{
+    match event {
+        Event::NewEvents(StartCause::Poll)
+        | Event::RedrawEventsCleared
+        | Event::MainEventsCleared => (),
+        _ => trace!(target: "niw::event_loop", "event {:?}", event),
     }
 }
 

@@ -13,8 +13,8 @@ use std::{ffi, process::exit};
 use gpgpu::{err_at, niw, wg, Error, Result};
 
 use info::{
-    info_adapters, info_features, info_global_report, info_limits, info_monitors,
-    info_texture_formats,
+    info_adapters, info_features, info_global_report, info_limits, info_texture_formats,
+    info_window,
 };
 
 #[derive(Clone, StructOpt)]
@@ -33,8 +33,8 @@ pub struct Opt {
 pub enum SubCommand {
     /// List the wgpu backend available on this machine.
     Backend,
-    /// List monitors connected to this machine.
-    Monitors {
+    /// List window attributes and monitors connected to this machine.
+    Window {
         /// list video-modes available for the primary monitor.
         #[structopt(long = "modes")]
         modes: bool,
@@ -57,7 +57,10 @@ pub enum SubCommand {
 }
 
 fn main() {
+    env_logger::init();
+
     let opts = Opt::from_args();
+
     let config = match &opts.config_loc {
         Some(loc) => match wg::Config::from_file(loc) {
             Ok(config) => config,
@@ -70,12 +73,12 @@ fn main() {
     };
 
     let res = match &opts.subcmd {
-        SubCommand::Report => handle_report(opts.clone()),
+        SubCommand::Report => handle_report(opts.clone(), &config),
         SubCommand::Backend => {
             println!("{:?} backend is used", wg::backend());
             Ok(())
         }
-        SubCommand::Monitors { modes, n } => info_monitors(*modes, *n, opts.no_color),
+        SubCommand::Window { modes, n } => info_window(*modes, *n, &opts, &config),
         SubCommand::Features => handle_features(opts),
         SubCommand::Limits => handle_limits(opts),
         SubCommand::Formats => handle_formats(opts),
@@ -86,11 +89,11 @@ fn main() {
         .ok();
 }
 
-fn handle_report(opts: Opt) -> Result<()> {
+fn handle_report(opts: Opt, config: &wg::Config) -> Result<()> {
     println!();
     println!("{}", "Monitors:".red());
     println!("{}", "---------".red());
-    info_monitors(false, None, opts.no_color)?;
+    info_window(false, None, &opts, config)?;
     println!();
 
     println!("{}", "Global Memory Report:".red());

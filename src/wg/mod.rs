@@ -6,6 +6,7 @@ mod pretty;
 mod texture_formats;
 
 pub use backends::{backend, backend_to_string, string_to_backend};
+pub use config::{AdapterConfig, Config};
 pub use features::{add_adapter_to_features, features, Feature};
 pub use limits::{add_adapter_to_limits, limits, Limit};
 pub use pretty::StorageReport;

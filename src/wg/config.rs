@@ -11,7 +11,7 @@ struct TomlConfig {
 }
 
 #[derive(Clone, Deserialize)]
-pub struct TomlAdapterConfig {
+struct TomlAdapterConfig {
     power_preference: Option<String>,
     force_fallback_adapter: Option<bool>,
 }

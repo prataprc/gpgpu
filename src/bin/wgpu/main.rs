@@ -7,6 +7,8 @@ use winit::{
     event_loop::{ControlFlow, EventLoopWindowTarget},
 };
 
+use std::{ffi, process::exit};
+
 use gpgpu::{niw, wg, Error, Result};
 
 use info::{
@@ -18,6 +20,9 @@ use info::{
 pub struct Opt {
     #[structopt(long = "no-color")]
     no_color: bool,
+
+    #[structopt(long = "config")]
+    config_loc: Option<ffi::OsString>,
 
     #[structopt(subcommand)]
     subcmd: SubCommand,
@@ -46,11 +51,22 @@ pub enum SubCommand {
     /// List Texture formats.
     Formats,
     /// Start an event-loop using winit
-    Events,
+    #[structopt(name = "event_loop")]
+    EventLoop,
 }
 
 fn main() {
     let opts = Opt::from_args();
+    let config = match &opts.config_loc {
+        Some(loc) => match wg::Config::from_file(loc) {
+            Ok(config) => config,
+            Err(err) => {
+                println!("invalid config file {:?}: {}", loc, err);
+                exit(1);
+            }
+        },
+        None => wg::Config::default(),
+    };
 
     let res = match &opts.subcmd {
         SubCommand::Report => handle_report(opts.clone()),
@@ -62,7 +78,7 @@ fn main() {
         SubCommand::Features => handle_features(opts),
         SubCommand::Limits => handle_limits(opts),
         SubCommand::Formats => handle_formats(opts),
-        SubCommand::Events => handle_events(opts),
+        SubCommand::EventLoop => handle_events(opts),
     };
 
     res.map_err(|err: Error| println!("unexpected error: {}", err))

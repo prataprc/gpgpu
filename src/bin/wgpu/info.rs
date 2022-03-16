@@ -63,13 +63,14 @@ pub fn info_window(
     };
 
     println!(
-        "Primary monitor: {:?}",
+        " Primary monitor: {:?}",
         window.current_monitor().map(|m| m.name())
     );
     println!(
-        "Current monitor: {:?}",
+        " Current monitor: {:?}",
         window.current_monitor().map(|m| m.name())
     );
+    println!();
 
     let monitors: Vec<MonitorHandle> = window.available_monitors().collect();
 
@@ -130,8 +131,9 @@ pub fn info_features(opts: &Opt) -> Result<()> {
         _ => {
             let mut titles = wg::Feature::to_head();
             for a in adapters.iter() {
-                let cell = cell![Fy -> a.get_info().name];
-                titles.add_cell(cell);
+                let mut name = a.get_info().name.clone();
+                name.truncate(10);
+                titles.add_cell(cell![Fy -> name]);
             }
             table.set_titles(titles);
 
@@ -165,8 +167,9 @@ pub fn info_limits(opts: &Opt) -> Result<()> {
         _ => {
             let mut titles = wg::Limit::to_head();
             for a in adapters.iter() {
-                let cell = cell![Fy -> a.get_info().name];
-                titles.add_cell(cell);
+                let mut name = a.get_info().name.clone();
+                name.truncate(10);
+                titles.add_cell(cell![Fy -> name]);
             }
             table.set_titles(titles);
 

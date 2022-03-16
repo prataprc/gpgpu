@@ -1,11 +1,11 @@
 mod config;
+mod event_loop;
 mod pretty;
-mod wloop;
 
-pub use wloop::{
-    DeviceButton, DeviceMotion, DeviceMouseMotion, DeviceMouseWheel, HandlerRes,
+pub use event_loop::{
+    DeviceButton, DeviceMotion, DeviceMouseMotion, DeviceMouseWheel, Eloop, HandlerRes,
     WinAxisMotion, WinCursorEntered, WinCursorLeft, WinCursorMoved, WinKeyboardInput,
-    WinLoop, WinMouseInput, WinMouseWheel, WinTouchpadPressure,
+    WinMouseInput, WinMouseWheel, WinTouchpadPressure,
 };
 
 pub use config::WinitConfig;

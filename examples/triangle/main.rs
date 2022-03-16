@@ -1,6 +1,7 @@
 use winit::{
     event::*,
     event_loop::{ControlFlow, EventLoopWindowTarget},
+    window::WindowBuilder,
 };
 
 use gpgpu::niw;
@@ -8,13 +9,14 @@ use gpgpu::niw;
 fn main() {
     env_logger::init();
 
-    let mut wloop = niw::WinLoop::<()>::new();
+    let mut eloop = niw::Eloop::<()>::new();
+    let window = WindowBuilder::new().build(eloop.as_event_loop()).unwrap();
 
-    wloop
+    eloop
         .on_win_close_requested(Some(Box::new(on_win_close_requested)))
         .on_win_keyboard_input(Some(Box::new(on_win_keyboard_input)));
 
-    wloop.run();
+    eloop.run(window.id());
 }
 
 fn on_win_close_requested(_target: &EventLoopWindowTarget<()>) -> niw::HandlerRes<()> {

@@ -7,7 +7,7 @@ use winit::{
         WindowEvent,
     },
     event_loop::{ControlFlow, EventLoop, EventLoopWindowTarget},
-    window::{Theme, Window, WindowBuilder},
+    window::{Theme, WindowId},
 };
 
 use std::{fmt, marker::PhantomData, path::PathBuf};
@@ -17,11 +17,10 @@ type Handler<A, T, S> =
 type HandlerNoArg<T, S> =
     Option<Box<dyn FnMut(&EventLoopWindowTarget<T>) -> HandlerRes<S>>>;
 
-pub struct WinLoop<T>
+pub struct Eloop<T>
 where
     T: 'static,
 {
-    window: Window,
     event_loop: EventLoop<T>,
     event_handlers: Option<EventHandlers<T>>,
     window_event_handlers: Option<WindowEventHandlers<T>>,
@@ -109,7 +108,7 @@ macro_rules! handle_event {
     }};
 }
 
-impl<T> WinLoop<T>
+impl<T> Eloop<T>
 where
     T: 'static,
 {
@@ -118,10 +117,8 @@ where
         T: Default,
     {
         let event_loop = EventLoop::<T>::with_user_event();
-        let window = WindowBuilder::new().build(&event_loop).unwrap();
 
-        WinLoop {
-            window,
+        Eloop {
             event_loop,
             event_handlers: Some(EventHandlers::default()),
             window_event_handlers: Some(WindowEventHandlers::default()),
@@ -404,15 +401,18 @@ where
     }
 }
 
-impl<T> WinLoop<T>
+impl<T> Eloop<T>
 where
     T: 'static,
 {
-    pub fn run(mut self) -> !
+    pub fn as_event_loop(&self) -> &EventLoop<T> {
+        &self.event_loop
+    }
+
+    pub fn run(mut self, wid: WindowId) -> !
     where
         T: fmt::Debug,
     {
-        let wid = self.window.id();
         let mut event_handlers = self.event_handlers.take().unwrap();
         let mut window_event_handlers = self.window_event_handlers.take().unwrap();
         let mut device_event_handlers = self.device_event_handlers.take().unwrap();

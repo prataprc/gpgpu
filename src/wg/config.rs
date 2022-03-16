@@ -98,6 +98,10 @@ impl Config {
             compatible_surface: Some(surface),
         }
     }
+
+    pub fn to_window_attributes(&self) -> Result<winit::window::WindowAttributes> {
+        self.winit.to_window_attributes()
+    }
 }
 
 fn power_preference(s: &str) -> Result<wgpu::PowerPreference> {

@@ -1,4 +1,5 @@
 use winit::{
+    dpi,
     event::*,
     event_loop::{ControlFlow, EventLoopWindowTarget},
     window::WindowAttributes,
@@ -9,15 +10,26 @@ use gpgpu::niw;
 fn main() {
     env_logger::init();
 
-    let mut h = {
+    let mut win = {
         let wattrs = WindowAttributes::default();
         niw::SingleWindow::<()>::from_config(wattrs).unwrap()
     };
 
-    h.on_win_close_requested(Some(Box::new(on_win_close_requested)))
+    win.on_win_close_requested(Some(Box::new(on_win_close_requested)))
         .on_win_keyboard_input(Some(Box::new(on_win_keyboard_input)));
 
-    h.run();
+    win.run();
+}
+
+fn on_win_resized(
+    new_size: dpi::PhysicalSize<u32>,
+    _target: &EventLoopWindowTarget<()>,
+) -> niw::HandlerRes<()> {
+    state.resize(*physical_size);
+    niw::HandlerRes {
+        control_flow: Some(ControlFlow::Exit),
+        param: (),
+    }
 }
 
 fn on_win_close_requested(_target: &EventLoopWindowTarget<()>) -> niw::HandlerRes<()> {

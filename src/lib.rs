@@ -57,6 +57,7 @@ pub enum Error {
     FailConvert(String, String),
     IOError(String, String),
     Vk(String, String),
+    Wgpu(String, String),
 }
 
 impl fmt::Display for Error {
@@ -69,6 +70,7 @@ impl fmt::Display for Error {
             FailConvert(p, msg) => write!(f, "{} FailConvert: {}", p, msg),
             IOError(p, msg) => write!(f, "{} IOError: {}", p, msg),
             Vk(p, msg) => write!(f, "{} Vk: {}", p, msg),
+            Wgpu(p, msg) => write!(f, "{} Wgpu: {}", p, msg),
         }
     }
 }
@@ -85,6 +87,9 @@ impl error::Error for Error {}
 pub type Result<T> = result::Result<T, Error>;
 
 pub mod niw;
+mod traits;
 pub mod util;
 pub mod vk;
 pub mod wg;
+
+pub use traits::{AppWindow, Windowing};

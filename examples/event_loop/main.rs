@@ -1,7 +1,7 @@
 use structopt::StructOpt;
 use winit::{
-    event::{ElementState, KeyboardInput, VirtualKeyCode},
-    event_loop::{ControlFlow, EventLoopWindowTarget},
+    event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent},
+    event_loop::ControlFlow,
 };
 
 use std::{ffi, process::exit};
@@ -38,40 +38,30 @@ fn main() {
 }
 
 fn handle_events(_opts: Opt, config: wg::Config) -> Result<()> {
-    let mut h = niw::SingleWindow::<()>::from_config(config.to_window_attributes()?)?;
+    let mut win = niw::SingleWindow::<()>::from_config(config.to_window_attributes()?)?;
 
-    let on_win_close_requested =
-        |_target: &EventLoopWindowTarget<()>| -> niw::HandlerRes<()> {
-            niw::HandlerRes {
-                control_flow: Some(ControlFlow::Exit),
-                param: (),
-            }
-        };
+    let on_win_close_requested = |_: Event<()>| -> Option<ControlFlow> { None };
 
-    let on_win_keyboard_input = |input: niw::WinKeyboardInput,
-                                 _target: &EventLoopWindowTarget<()>|
-     -> niw::HandlerRes<()> {
-        let control_flow = match input {
-            niw::WinKeyboardInput {
-                input:
-                    KeyboardInput {
-                        state: ElementState::Pressed,
-                        virtual_keycode: Some(VirtualKeyCode::Escape),
-                        ..
-                    },
-                ..
-            } => Some(ControlFlow::Exit),
+    let on_win_keyboard_input = |event: Event<()>| -> Option<ControlFlow> {
+        match event {
+            Event::WindowEvent { event, .. } => match event {
+                WindowEvent::KeyboardInput {
+                    input:
+                        KeyboardInput {
+                            state: ElementState::Pressed,
+                            virtual_keycode: Some(VirtualKeyCode::Escape),
+                            ..
+                        },
+                    ..
+                } => Some(ControlFlow::Exit),
+                _ => None,
+            },
             _ => None,
-        };
-
-        niw::HandlerRes {
-            control_flow,
-            param: (),
         }
     };
 
-    h.on_win_close_requested(Some(Box::new(on_win_close_requested)))
+    win.on_win_close_requested(Some(Box::new(on_win_close_requested)))
         .on_win_keyboard_input(Some(Box::new(on_win_keyboard_input)));
 
-    h.run();
+    win.run();
 }

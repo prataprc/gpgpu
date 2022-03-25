@@ -2,9 +2,9 @@
 
 mod backends;
 pub mod config;
+mod gpu;
 pub mod pretty;
-mod state;
 
 pub use backends::{backend, backend_to_string, string_to_backend};
 pub use config::{AdapterConfig, Config};
-pub use state::State;
+pub use gpu::Gpu;

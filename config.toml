@@ -1,4 +1,6 @@
 web = false
+trace_path = ""
+present_mode = "fifo"
 
 [adapter]
 power_preference = "low_power"

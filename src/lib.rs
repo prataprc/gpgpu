@@ -87,9 +87,12 @@ impl error::Error for Error {}
 pub type Result<T> = result::Result<T, Error>;
 
 pub mod niw;
-mod traits;
 pub mod util;
 pub mod vk;
 pub mod wg;
 
-pub use traits::{AppWindow, Windowing};
+/// Trait to be implemented by window type.
+pub trait Windowing {
+    /// Return the size of window's client area as (width, height).
+    fn inner_size(&self) -> (u32, u32);
+}

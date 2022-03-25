@@ -14,6 +14,8 @@ pub struct Opt {
     config_loc: Option<ffi::OsString>,
 }
 
+type Renderer = niw::Renderer<wg::Gpu, ()>;
+
 fn main() {
     env_logger::init();
 
@@ -30,7 +32,6 @@ fn main() {
         None => wg::Config::default(),
     };
 
-    println!("Press Esc to exit");
     let res = handle_events(opts, config);
 
     res.map_err(|err: Error| println!("unexpected error: {}", err))
@@ -38,30 +39,45 @@ fn main() {
 }
 
 fn handle_events(_opts: Opt, config: wg::Config) -> Result<()> {
-    let mut win = niw::SingleWindow::<()>::from_config(config.to_window_attributes()?)?;
+    let name = "example-event-loop".to_string();
+    let mut swin = niw::SingleWindow::<wg::Gpu, (), ()>::from_config(
+        config.to_window_attributes()?,
+    )?;
 
-    let on_win_close_requested = |_: Event<()>| -> Option<ControlFlow> { None };
-
-    let on_win_keyboard_input = |event: Event<()>| -> Option<ControlFlow> {
-        match event {
-            Event::WindowEvent { event, .. } => match event {
-                WindowEvent::KeyboardInput {
-                    input:
-                        KeyboardInput {
-                            state: ElementState::Pressed,
-                            virtual_keycode: Some(VirtualKeyCode::Escape),
-                            ..
-                        },
-                    ..
-                } => Some(ControlFlow::Exit),
+    let on_win_close_requested =
+        |_: &mut Renderer, _: Event<()>| -> Option<ControlFlow> { None };
+    let on_win_keyboard_input =
+        |_: &mut Renderer, event: Event<()>| -> Option<ControlFlow> {
+            match event {
+                Event::WindowEvent { event, .. } => match event {
+                    WindowEvent::KeyboardInput {
+                        input:
+                            KeyboardInput {
+                                state: ElementState::Pressed,
+                                virtual_keycode: Some(VirtualKeyCode::Escape),
+                                ..
+                            },
+                        ..
+                    } => Some(ControlFlow::Exit),
+                    _ => None,
+                },
                 _ => None,
-            },
-            _ => None,
-        }
+            }
+        };
+    swin.on_win_close_requested(Box::new(on_win_close_requested))
+        .on_win_keyboard_input(Box::new(on_win_keyboard_input));
+
+    let r = {
+        let gpu = pollster::block_on(wg::Gpu::new(
+            name.clone(),
+            swin.as_window(),
+            wg::Config::default(),
+        ))
+        .unwrap();
+        let state = ();
+        Renderer { gpu, state }
     };
 
-    win.on_win_close_requested(Some(Box::new(on_win_close_requested)))
-        .on_win_keyboard_input(Some(Box::new(on_win_keyboard_input)));
-
-    win.run();
+    println!("Press Esc to exit");
+    swin.run(r);
 }

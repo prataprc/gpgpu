@@ -66,3 +66,17 @@ use winit::{
 
 pub use config::WinitConfig;
 pub use single_window::{Handler, SingleWindow};
+
+use crate::Windowing;
+
+pub struct Renderer<G, S = ()> {
+    pub gpu: G,
+    pub state: S,
+}
+
+impl Windowing for winit::window::Window {
+    fn inner_size(&self) -> (u32, u32) {
+        let size = self.inner_size();
+        (size.width, size.height)
+    }
+}

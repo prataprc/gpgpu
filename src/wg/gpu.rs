@@ -1,7 +1,7 @@
 use raw_window_handle::HasRawWindowHandle;
 use winit::dpi;
 
-use crate::{wg, AppWindow, Windowing, Result, Error};
+use crate::{wg, Windowing, Result, Error};
 
 pub struct Gpu {
     name: String,
@@ -13,22 +13,16 @@ pub struct Gpu {
 }
 
 impl Gpu {
-    /// * `win` abstracts one or more application window and optionally an event-loop
+    /// * `win` abstracts a window instance.
     /// * `config` is configuration parameter for working with [wg] package.
-    pub async fn new<N, W>(
-        name: String,
-        win: N,
-        config: wg::Config
-    ) -> Result<Gpu>
+    pub async fn new<W>(name: String, window: &W, config: wg::Config) -> Result<Gpu>
     where
-        N: AppWindow<W>,
         W: Windowing + HasRawWindowHandle,
     {
-        let window = win.as_window();
         let size: dpi::PhysicalSize<u32>  = window.inner_size().into();
 
         let instance = wgpu::Instance::new(wgpu::Backends::all());
-        let surface = unsafe { instance.create_surface(window) };
+        let surface = unsafe { instance.create_surface(&window) };
         let adapter = {
             let adapter_options = config.to_request_adapter_options(&surface);
             match instance.request_adapter(&adapter_options).await {

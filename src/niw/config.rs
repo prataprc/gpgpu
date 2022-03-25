@@ -2,10 +2,12 @@ use serde::Deserialize;
 
 use winit::{dpi, window};
 
+#[allow(unused_imports)]
+use crate::niw::Handle;
 use crate::{Error, Result};
 
 #[derive(Clone, Deserialize)]
-pub struct TomlWinitConfig {
+struct TomlWinitConfig {
     title: Option<String>,
     visible: Option<bool>,
     transparent: Option<bool>,
@@ -28,6 +30,7 @@ pub struct TomlWinitConfig {
 
 //-----
 
+/// Configuration options for creating [Handle]. Refer to [Handle::from_config] for details.
 #[derive(Clone, Debug)]
 pub struct WinitConfig {
     pub title: String,

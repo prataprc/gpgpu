@@ -5,12 +5,11 @@ use structopt::StructOpt;
 use winit::{
     event::{ElementState, KeyboardInput, VirtualKeyCode},
     event_loop::{ControlFlow, EventLoopWindowTarget},
-    window::WindowBuilder,
 };
 
 use std::{ffi, process::exit};
 
-use gpgpu::{err_at, niw, wg, Error, Result};
+use gpgpu::{niw, wg, Error, Result};
 
 use info::{
     info_adapters, info_features, info_global_report, info_limits, info_texture_formats,
@@ -161,12 +160,7 @@ fn handle_formats(opts: Opt) -> Result<()> {
 }
 
 fn handle_events(_opts: Opt, config: wg::Config) -> Result<()> {
-    let mut eloop = niw::Eloop::<()>::new();
-    let window = {
-        let mut wb = WindowBuilder::new();
-        wb.window = config.to_window_attributes()?;
-        err_at!(Fatal, wb.build(eloop.as_event_loop()))?
-    };
+    let mut h = niw::Handle::<()>::from_config(config.to_window_attributes()?)?;
 
     let on_win_close_requested =
         |_target: &EventLoopWindowTarget<()>| -> niw::HandlerRes<()> {
@@ -198,9 +192,8 @@ fn handle_events(_opts: Opt, config: wg::Config) -> Result<()> {
         }
     };
 
-    eloop
-        .on_win_close_requested(Some(Box::new(on_win_close_requested)))
+    h.on_win_close_requested(Some(Box::new(on_win_close_requested)))
         .on_win_keyboard_input(Some(Box::new(on_win_keyboard_input)));
 
-    eloop.run(window.id());
+    h.run();
 }

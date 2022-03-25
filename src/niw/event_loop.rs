@@ -1,4 +1,4 @@
-use log::{trace, warn};
+use log::{debug, trace, warn};
 use winit::{
     dpi::{PhysicalPosition, PhysicalSize},
     event::{
@@ -745,8 +745,10 @@ where
     match event {
         Event::NewEvents(StartCause::Poll)
         | Event::RedrawEventsCleared
-        | Event::MainEventsCleared => (),
-        _ => trace!(target: "niw::event_loop", "event {:?}", event),
+        | Event::MainEventsCleared => {
+            trace!(target: "niw::event_loop", "event {:?}", event)
+        }
+        _ => debug!(target: "niw::event_loop", "event {:?}", event),
     }
 }
 

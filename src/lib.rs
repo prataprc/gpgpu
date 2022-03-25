@@ -1,3 +1,5 @@
+//! General Purpose GPU.
+
 use std::{error, fmt, result};
 
 /// Short form to compose Error values.

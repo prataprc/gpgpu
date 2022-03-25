@@ -1,3 +1,15 @@
+//! Package implement pretty printing for [wgpu] features, limits, formats, textures etc.
+
+mod features;
+mod limits;
+mod texture_formats;
+
+pub use features::{add_adapter_to_features, features, Feature};
+pub use limits::{add_adapter_to_limits, limits, Limit};
+pub use texture_formats::{
+    texture_format_flags, texture_formats_info, texture_usages, TextureFormatInfo,
+};
+
 use prettytable::{cell, row};
 
 use crate::util::PrettyRow;

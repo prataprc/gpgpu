@@ -1,3 +1,5 @@
+//! Package define configuration parameters for [wgpu] and [winit] libraries
+
 use serde::Deserialize;
 
 use std::{convert::TryInto, path};

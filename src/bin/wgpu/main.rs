@@ -139,14 +139,14 @@ fn handle_limits(opts: Opt) -> Result<()> {
 fn handle_formats(opts: Opt) -> Result<()> {
     println!("{}", "TextureUsages:".red());
     println!("{}", "--------------".red());
-    for item in wg::texture_usages().iter() {
+    for item in wg::pretty::texture_usages().iter() {
         println!(" {}: {}", item.1, item.2)
     }
     println!();
 
     println!("{}", "TextureFormatFeatureFlags:".red());
     println!("{}", "--------------------------".red());
-    for item in wg::texture_format_flags().iter() {
+    for item in wg::pretty::texture_format_flags().iter() {
         println!(" {}: {}", item.1, item.2)
     }
     println!();

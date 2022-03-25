@@ -1,12 +1,13 @@
 //! Package implement event-loop and window handling, uses [winit] as backend.
 //!
-//! Start with [Handle] type. Instantiating an `Handle` shall create an event_loop,
-//! and an associated window object, subsequently this can be used as surface for `wgpu`.
-//! Internally `Handle` uses [winit] for `event_loop` and `window-handle`.
+//! Start with [SingleWindow] type. Constructing an `SingleWindow` shall create an
+//! event_loop, and an associated window object, subsequently this can be used as
+//! surface for `wgpu`. Internally `SingleWindow` uses [winit] for `event_loop` and
+//! `window-handle`. This is suitable for applications required only one window.
 //!
 //! For an exhaustive list of all possible events, refer [Event]. Application can
-//! subscribe handlers for individual events using the [Handle]. Following is the list
-//! of individual events and its corresponding handler types.
+//! subscribe handlers for individual events using the [SingleWindow] instance.
+//! Following is the list of individual events and its corresponding handler types.
 //!
 //! |   Event                               |   Handler type
 //! |---------------------------------------|-------------------------------------------
@@ -49,8 +50,8 @@
 //! |  [DeviceEvent::Text]                  | on_device_text([Handler]<char, T, ()>)
 
 mod config;
-mod event_loop;
 mod pretty;
+mod single_window;
 
 #[allow(unused_imports)]
 use std::path::PathBuf;
@@ -64,9 +65,9 @@ use winit::{
 };
 
 pub use config::WinitConfig;
-pub use event_loop::{
+pub use single_window::{
     DeviceButton, DeviceMotion, DeviceMouseMotion, DeviceMouseWheel, WinAxisMotion,
     WinCursorEntered, WinCursorLeft, WinCursorMoved, WinKeyboardInput, WinMouseInput,
     WinMouseWheel, WinTouchpadPressure,
 };
-pub use event_loop::{Handle, Handler, HandlerNoArg, HandlerRes};
+pub use single_window::{Handler, HandlerNoArg, HandlerRes, SingleWindow};

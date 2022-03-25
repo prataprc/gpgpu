@@ -102,7 +102,7 @@ impl Config {
     }
 
     pub fn to_window_attributes(&self) -> Result<winit::window::WindowAttributes> {
-        self.winit.to_window_attributes()
+        self.winit.clone().try_into()
     }
 }
 

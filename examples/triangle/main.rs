@@ -9,7 +9,10 @@ use gpgpu::niw;
 fn main() {
     env_logger::init();
 
-    let mut h = niw::Handle::<()>::from_config(WindowAttributes::default()).unwrap();
+    let mut h = {
+        let wattrs = WindowAttributes::default();
+        niw::SingleWindow::<()>::from_config(wattrs).unwrap()
+    };
 
     h.on_win_close_requested(Some(Box::new(on_win_close_requested)))
         .on_win_keyboard_input(Some(Box::new(on_win_keyboard_input)));

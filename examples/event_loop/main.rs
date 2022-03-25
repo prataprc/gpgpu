@@ -38,7 +38,7 @@ fn main() {
 }
 
 fn handle_events(_opts: Opt, config: wg::Config) -> Result<()> {
-    let mut h = niw::Handle::<()>::from_config(config.to_window_attributes()?)?;
+    let mut h = niw::SingleWindow::<()>::from_config(config.to_window_attributes()?)?;
 
     let on_win_close_requested =
         |_target: &EventLoopWindowTarget<()>| -> niw::HandlerRes<()> {

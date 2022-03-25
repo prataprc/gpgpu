@@ -36,9 +36,12 @@ pub type Handler<A, T, S> =
 pub type HandlerNoArg<T, S> =
     Option<Box<dyn FnMut(&EventLoopWindowTarget<T>) -> HandlerRes<S>>>;
 
-/// Type handles event-loop and window object, can be instantiated from [WinitConfig]
-/// configuration.
-pub struct Handle<T>
+/// Type instantiates an event-loop and an associated window, useful for single window
+/// applications.
+///
+/// Can be constructed from [WinitConfig] configuration, refer
+/// [SingleWindow::from_config]. This type parameterised over `T` for [EventLoop]
+pub struct SingleWindow<T>
 where
     T: 'static,
 {
@@ -130,7 +133,7 @@ macro_rules! handle_event {
     }};
 }
 
-impl<T> Handle<T>
+impl<T> SingleWindow<T>
 where
     T: 'static,
 {
@@ -146,7 +149,7 @@ where
             err_at!(Fatal, wb.build(&event_loop))?
         };
 
-        let val = Handle {
+        let val = SingleWindow {
             event_loop,
             window,
             event_handlers: Some(EventHandlers::default()),
@@ -461,7 +464,7 @@ where
     }
 }
 
-impl<T> Handle<T>
+impl<T> SingleWindow<T>
 where
     T: 'static,
 {

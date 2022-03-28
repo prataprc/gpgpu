@@ -5,7 +5,7 @@ use structopt::StructOpt;
 
 use std::{ffi, process::exit};
 
-use gpgpu::{wg, Error, Result};
+use gpgpu::{wg, Config, Error, Result};
 
 use info::{
     info_adapters, info_features, info_global_report, info_limits, info_texture_formats,
@@ -54,14 +54,14 @@ fn main() {
     let opts = Opt::from_args();
 
     let config = match &opts.config_loc {
-        Some(loc) => match wg::Config::from_file(loc) {
+        Some(loc) => match Config::from_file(loc) {
             Ok(config) => config,
             Err(err) => {
                 println!("invalid config file {:?}: {}", loc, err);
                 exit(1);
             }
         },
-        None => wg::Config::default(),
+        None => Config::default(),
     };
 
     let res = match &opts.subcmd {
@@ -80,7 +80,7 @@ fn main() {
         .ok();
 }
 
-fn handle_report(opts: Opt, config: &wg::Config) -> Result<()> {
+fn handle_report(opts: Opt, config: &Config) -> Result<()> {
     println!();
     println!("{}", "Monitors:".red());
     println!("{}", "---------".red());

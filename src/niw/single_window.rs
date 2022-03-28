@@ -8,25 +8,26 @@ use winit::{
 use std::fmt;
 
 #[allow(unused_imports)]
-use crate::niw::WinitConfig;
+use crate::ConfigWinit;
 use crate::{niw, Error, Result};
 
 /// Type to handle events with an event-argument and window-target
-pub type Handler<G, S, E> =
-    Box<dyn FnMut(&mut niw::Renderer<G, S>, Event<E>) -> Option<ControlFlow>>;
+pub type Handler<G, S, E> = Box<
+    dyn FnMut(&Window, &mut niw::Renderer<G, S>, &mut Event<E>) -> Option<ControlFlow>,
+>;
 
 /// Type instantiates an event-loop and an associated window, useful for single window
 /// applications.
 ///
-/// Can be constructed from [WinitConfig] configuration, refer
+/// Can be constructed from [ConfigWinit] configuration, refer
 /// [SingleWindow::from_config]. This type parameterised over user-event `E` for
 /// [EventLoop]
 pub struct SingleWindow<G, S, E = ()>
 where
     E: 'static,
 {
-    event_loop: EventLoop<E>,
-    window: Window,
+    event_loop: Option<EventLoop<E>>,
+    window: Option<Window>,
     event_handlers: Option<EventHandlers<G, S, E>>,
     window_event_handlers: Option<WindowEventHandlers<G, S, E>>,
     device_event_handlers: Option<DeviceEventHandlers<G, S, E>>,
@@ -49,14 +50,14 @@ where
 impl<G, S, E> Default for EventHandlers<G, S, E> {
     fn default() -> Self {
         EventHandlers {
-            on_new_events: Box::new(|_, _| None),
-            on_user_event: Box::new(|_, _| None),
-            on_suspended: Box::new(|_, _| None),
-            on_resumed: Box::new(|_, _| None),
-            on_main_events_cleared: Box::new(|_, _| None),
-            on_redraw_requested: Box::new(|_, _| None),
-            on_redraw_events_cleared: Box::new(|_, _| None),
-            on_loop_destroyed: Box::new(|_, _| None),
+            on_new_events: Box::new(|_, _, _| None),
+            on_user_event: Box::new(|_, _, _| None),
+            on_suspended: Box::new(|_, _, _| None),
+            on_resumed: Box::new(|_, _, _| None),
+            on_main_events_cleared: Box::new(|_, _, _| None),
+            on_redraw_requested: Box::new(|_, _, _| None),
+            on_redraw_events_cleared: Box::new(|_, _, _| None),
+            on_loop_destroyed: Box::new(|_, _, _| None),
         }
     }
 }
@@ -91,27 +92,27 @@ where
 impl<G, S, E> Default for WindowEventHandlers<G, S, E> {
     fn default() -> Self {
         WindowEventHandlers {
-            on_resized: Box::new(|_, _| None),
-            on_moved: Box::new(|_, _| None),
-            on_close_requested: Box::new(|_, _| None),
-            on_destroyed: Box::new(|_, _| None),
-            on_dropped_file: Box::new(|_, _| None),
-            on_hovered_file: Box::new(|_, _| None),
-            on_hovered_file_cancelled: Box::new(|_, _| None),
-            on_received_character: Box::new(|_, _| None),
-            on_focused: Box::new(|_, _| None),
-            on_keyboard_input: Box::new(|_, _| None),
-            on_modifiers_changed: Box::new(|_, _| None),
-            on_cursor_moved: Box::new(|_, _| None),
-            on_cursor_entered: Box::new(|_, _| None),
-            on_cursor_left: Box::new(|_, _| None),
-            on_mouse_wheel: Box::new(|_, _| None),
-            on_mouse_input: Box::new(|_, _| None),
-            on_touchpad_pressure: Box::new(|_, _| None),
-            on_axis_motion: Box::new(|_, _| None),
-            on_touch: Box::new(|_, _| None),
-            on_scale_factor_changed: Box::new(|_, _| None),
-            on_theme_changed: Box::new(|_, _| None),
+            on_resized: Box::new(|_, _, _| None),
+            on_moved: Box::new(|_, _, _| None),
+            on_close_requested: Box::new(|_, _, _| None),
+            on_destroyed: Box::new(|_, _, _| None),
+            on_dropped_file: Box::new(|_, _, _| None),
+            on_hovered_file: Box::new(|_, _, _| None),
+            on_hovered_file_cancelled: Box::new(|_, _, _| None),
+            on_received_character: Box::new(|_, _, _| None),
+            on_focused: Box::new(|_, _, _| None),
+            on_keyboard_input: Box::new(|_, _, _| None),
+            on_modifiers_changed: Box::new(|_, _, _| None),
+            on_cursor_moved: Box::new(|_, _, _| None),
+            on_cursor_entered: Box::new(|_, _, _| None),
+            on_cursor_left: Box::new(|_, _, _| None),
+            on_mouse_wheel: Box::new(|_, _, _| None),
+            on_mouse_input: Box::new(|_, _, _| None),
+            on_touchpad_pressure: Box::new(|_, _, _| None),
+            on_axis_motion: Box::new(|_, _, _| None),
+            on_touch: Box::new(|_, _, _| None),
+            on_scale_factor_changed: Box::new(|_, _, _| None),
+            on_theme_changed: Box::new(|_, _, _| None),
         }
     }
 }
@@ -133,14 +134,14 @@ where
 impl<G, S, E> Default for DeviceEventHandlers<G, S, E> {
     fn default() -> Self {
         DeviceEventHandlers {
-            on_added: Box::new(|_, _| None),
-            on_removed: Box::new(|_, _| None),
-            on_mouse_motion: Box::new(|_, _| None),
-            on_mouse_wheel: Box::new(|_, _| None),
-            on_motion: Box::new(|_, _| None),
-            on_button: Box::new(|_, _| None),
-            on_key: Box::new(|_, _| None),
-            on_text: Box::new(|_, _| None),
+            on_added: Box::new(|_, _, _| None),
+            on_removed: Box::new(|_, _, _| None),
+            on_mouse_motion: Box::new(|_, _, _| None),
+            on_mouse_wheel: Box::new(|_, _, _| None),
+            on_motion: Box::new(|_, _, _| None),
+            on_button: Box::new(|_, _, _| None),
+            on_key: Box::new(|_, _, _| None),
+            on_text: Box::new(|_, _, _| None),
         }
     }
 }
@@ -162,8 +163,8 @@ where
         };
 
         let val = SingleWindow {
-            event_loop,
-            window,
+            event_loop: Some(event_loop),
+            window: Some(window),
             event_handlers: Some(EventHandlers::default()),
             window_event_handlers: Some(WindowEventHandlers::default()),
             device_event_handlers: Some(DeviceEventHandlers::default()),
@@ -173,11 +174,11 @@ where
     }
 
     pub fn as_event_loop(&self) -> &EventLoop<E> {
-        &self.event_loop
+        self.event_loop.as_ref().unwrap()
     }
 
     pub fn as_window(&self) -> &Window {
-        &self.window
+        self.window.as_ref().unwrap()
     }
 
     pub fn run(mut self, mut r: niw::Renderer<G, S>) -> !
@@ -186,15 +187,19 @@ where
         S: 'static,
         E: fmt::Debug + Clone,
     {
-        let wid = self.window.id();
+        let window = self.window.take().unwrap();
+        let event_loop = self.event_loop.take().unwrap();
+        let wid = window.id();
         let mut event_handlers = self.event_handlers.take().unwrap();
         let mut window_event_handlers = self.window_event_handlers.take().unwrap();
         let mut device_event_handlers = self.device_event_handlers.take().unwrap();
 
-        self.event_loop.run(
-            move |evnt: Event<E>, _: &EventLoopWindowTarget<E>, cf: &mut ControlFlow| {
+        event_loop.run(
+            move |mut evnt: Event<E>,
+                  _: &EventLoopWindowTarget<E>,
+                  cf: &mut ControlFlow| {
                 log_event(&evnt);
-                let mut no_op: Handler<G, S, E> = Box::new(|_, _| None);
+                let mut no_op: Handler<G, S, E> = Box::new(|_, _, _| None);
 
                 let handler = match &evnt {
                     Event::NewEvents(_) => &mut event_handlers.on_new_events,
@@ -308,7 +313,7 @@ where
                     },
                 };
 
-                match handler(&mut r, evnt) {
+                match handler(&window, &mut r, &mut evnt) {
                     Some(val) => *cf = val,
                     None => (),
                 }

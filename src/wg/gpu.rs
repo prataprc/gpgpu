@@ -1,25 +1,27 @@
 use raw_window_handle::HasRawWindowHandle;
 use winit::dpi;
 
-use crate::{wg, Windowing, Result, Error};
+#[allow(unused_imports)]
+use crate::wg;
+use crate::{Config, Error, Result, Windowing};
 
 pub struct Gpu {
-    name: String,
-    surface: wgpu::Surface,
-    device: wgpu::Device,
-    queue: wgpu::Queue,
-    surface_config: wgpu::SurfaceConfiguration,
-    size: dpi::PhysicalSize<u32>,
+    pub name: String,
+    pub surface: wgpu::Surface,
+    pub device: wgpu::Device,
+    pub queue: wgpu::Queue,
+    pub surface_config: wgpu::SurfaceConfiguration,
+    pub size: dpi::PhysicalSize<u32>,
 }
 
 impl Gpu {
     /// * `win` abstracts a window instance.
     /// * `config` is configuration parameter for working with [wg] package.
-    pub async fn new<W>(name: String, window: &W, config: wg::Config) -> Result<Gpu>
+    pub async fn new<W>(name: String, window: &W, config: Config) -> Result<Gpu>
     where
         W: Windowing + HasRawWindowHandle,
     {
-        let size: dpi::PhysicalSize<u32>  = window.inner_size().into();
+        let size: dpi::PhysicalSize<u32> = window.inner_size().into();
 
         let instance = wgpu::Instance::new(wgpu::Backends::all());
         let surface = unsafe { instance.create_surface(&window) };
@@ -31,10 +33,10 @@ impl Gpu {
             }
         };
 
-        let desc =wgpu::DeviceDescriptor {
+        let desc = wgpu::DeviceDescriptor {
             label: Some(&name),
             features: wgpu::Features::empty(), // TODO: fetch from configuration
-            limits: wgpu::Limits::default(), // TODO: fetch from configuration
+            limits: wgpu::Limits::default(),   // TODO: fetch from configuration
         };
         let (device, queue) = {
             let res = adapter.request_device(&desc, config.to_trace_path()).await;
@@ -69,5 +71,62 @@ impl Gpu {
             self.surface_config.height = new_size.height;
             self.surface.configure(&self.device, &self.surface_config);
         }
+    }
+
+    pub fn get_current_texture(&mut self) -> Result<wgpu::SurfaceTexture> {
+        match self.surface.get_current_texture() {
+            Ok(val) => Ok(val),
+            // Reconfigure the surface if lost
+            Err(wgpu::SurfaceError::Lost) => err_at!(SurfaceLost, msg: ""),
+            // The system is out of memory, we should probably quit
+            Err(wgpu::SurfaceError::OutOfMemory) => err_at!(SurfaceOutOfMemory, msg: ""),
+            Err(err) => err_at!(Wgpu, Err(err)),
+        }
+    }
+
+    pub fn clear_view<C>(
+        &mut self,
+        view: &wgpu::TextureView,
+        color: C,
+    ) -> wgpu::CommandBuffer
+    where
+        C: Into<wgpu::Color>,
+    {
+        let color: wgpu::Color = color.into();
+        let mut encoder = {
+            let desc = wgpu::CommandEncoderDescriptor {
+                label: Some("clear_screen"),
+            };
+            self.device.create_command_encoder(&desc)
+        };
+        {
+            let ops = wgpu::Operations {
+                load: wgpu::LoadOp::Clear(color),
+                store: true,
+            };
+            let desc = wgpu::RenderPassDescriptor {
+                label: Some("Render Pass"),
+                color_attachments: &[wgpu::RenderPassColorAttachment {
+                    view: view,
+                    resolve_target: None,
+                    ops,
+                }],
+                depth_stencil_attachment: None,
+            };
+            encoder.begin_render_pass(&desc)
+        };
+
+        encoder.finish()
+    }
+
+    pub fn render(
+        &mut self,
+        surface_texture: wgpu::SurfaceTexture,
+        cmd_buffers: Vec<wgpu::CommandBuffer>,
+    ) -> Result<()> {
+        self.queue.submit(cmd_buffers.into_iter());
+        surface_texture.present();
+
+        Ok(())
     }
 }

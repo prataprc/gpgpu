@@ -9,7 +9,7 @@ use winit::{
 use gpgpu::{
     err_at,
     util::{self, PrettyRow},
-    wg, Error, Result,
+    wg, Config, Error, Result,
 };
 
 use crate::Opt;
@@ -53,7 +53,7 @@ pub fn info_window(
     modes: bool,
     n: Option<usize>,
     opts: &Opt,
-    config: &wg::Config,
+    config: &Config,
 ) -> Result<()> {
     let eloop = EventLoop::new();
     let window = {

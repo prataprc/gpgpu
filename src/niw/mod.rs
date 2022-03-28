@@ -49,7 +49,6 @@
 //! |  [DeviceEvent::Key]                   | on_device_key([Handler])
 //! |  [DeviceEvent::Text]                  | on_device_text([Handler])
 
-mod config;
 mod pretty;
 mod single_window;
 
@@ -64,7 +63,6 @@ use winit::{
     window::Theme,
 };
 
-pub use config::WinitConfig;
 pub use single_window::{Handler, SingleWindow};
 
 use crate::Windowing;

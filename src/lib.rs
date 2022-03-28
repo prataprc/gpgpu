@@ -58,6 +58,8 @@ pub enum Error {
     IOError(String, String),
     Vk(String, String),
     Wgpu(String, String),
+    SurfaceLost(String, String),
+    SurfaceOutOfMemory(String, String),
 }
 
 impl fmt::Display for Error {
@@ -71,6 +73,8 @@ impl fmt::Display for Error {
             IOError(p, msg) => write!(f, "{} IOError: {}", p, msg),
             Vk(p, msg) => write!(f, "{} Vk: {}", p, msg),
             Wgpu(p, msg) => write!(f, "{} Wgpu: {}", p, msg),
+            SurfaceLost(p, msg) => write!(f, "{} SurfaceLost: {}", p, msg),
+            SurfaceOutOfMemory(p, msg) => write!(f, "{} SurfaceOutOfMemory: {}", p, msg),
         }
     }
 }
@@ -86,6 +90,7 @@ impl error::Error for Error {}
 /// Type alias for Result return type, used by this package.
 pub type Result<T> = result::Result<T, Error>;
 
+mod config;
 pub mod niw;
 pub mod util;
 pub mod vk;
@@ -96,3 +101,6 @@ pub trait Windowing {
     /// Return the size of window's client area as (width, height).
     fn inner_size(&self) -> (u32, u32);
 }
+
+pub use config::{Config, ConfigAdapter, ConfigWinit};
+pub use wg::Gpu;

@@ -1,3 +1,34 @@
+```
+                            Backends
+                                |
+                                V        create_surface(W)
+                            Instance ------------------------> Surface
+                                |                               |
+                      request_adapter(options)                  | get_preferred_format(Adapter)                   describe()
+                                |                               *--------------------------------> TextureFormat ------------> TextureFormatInfo
+                                V                               | get_current_texture()
+                             Adapter                            *--------------------------------> SurfaceTexture { Texture, .. }
+                                |                                                                        |
+  is_surface_supported(Surface) |                                                                        | present()
+                                |                                                                        *-----------*
+                     features() |
+          Features <------------|
+                        limit() |
+             Limit <------------|
+                     get_info() |
+              Info <------------|
+  get_texture_format_features() |
+TextureFormatFeatures <---------|
+                                *
+```
+
+```
+                 projection                       perspective
+                 transformation                   division
+view-coordinate ---------------> clip-coordinate -------------> NDC
+
+```
+
 * Shader stages : compute, vertex, fragment
 
 #### Shader lifec-cycle

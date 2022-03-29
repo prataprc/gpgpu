@@ -1,0 +1,492 @@
+```
+BufferAddress = u64;
+BufferSize = NonZeroU64;
+DynamicOffset = u32;
+Label<'a> = Option<&'a str>;
+ShaderLocation = u32;
+```
+
+-------------------------------------------------------------------------------------
+
+```
+Backend::{ Empty, Vulkan, Metal, Dx12, Dx11, Gl, BrowserWebGpu }
+Backends
+DeviceType::{ Other, IntegratedGpu, DiscreteGpu, VirtualGpu, Cpu }
+struct Extent3d { width: u32, height: u32, depth_or_array_layers: u32 }
+struct Origin3d { x:     u32, y:      u32, z:                     u32 }
+TextureFormat
+    .describe() -----> TextureFormatInfo
+struct Color { r, g, b: f64, a: f64 }
+ColorWrites::{ ALL, ALPHA, BLUE, COLOR, GREEN, RED }
+ShaderStages::{ NONE, VERTEX, FRAGMENT, COMPUTE, VERTEX_FRAGMENT }
+BufferUsages::{ VERTEX, INDEX, INDIRECT, COPY_SRC, COPY_DST, UNIFORM, STORAGE, MAP_READ, MAP_WRITE }
+TextureUsages::{ COPY_SRC, COPY_DST, TEXTURE_BINDING, STORAGE_BINDING, RENDER_ATTACHMENT }
+TextureFormatFeatureFlags:{ STORAGE_READ_WRITE, STORAGE_ATOMICS }
+enum SurfaceStatus {
+    Good,
+    Suboptimal,
+    Timeout,
+    Outdated,
+    Lost,
+}
+enum MapMode {
+    Read,
+    Write,
+}
+enum ShaderModel {
+    Sm2,
+    Sm4,
+    Sm5,
+}
+enum LoadOp<V> {
+    Clear(V),
+    Load,
+}
+
+TextureViewDimension
+    .compatible_texture_dimension() -------------> TextureDimension
+```
+
+-------------------------------------------------------------------------------------
+
+```txt
+struct SurfaceTexture {
+    texture: Texture,
+    suboptimal: bool,
+}
+
+
+enum ShaderSource<'a> {
+    SpirV(Cow<'a, [u32]>),
+    Glsl {
+        shader: Cow<'a, str>,
+        stage: ShaderStage,
+        defines: FastHashMap<String, String>,
+    },
+    Wgsl(Cow<'a, str>),
+}
+
+
+struct BufferDescriptor<L> {
+    label: L,
+    size: BufferAddress,
+    usage: BufferUsages,
+    mapped_at_creation: bool,
+}
+struct BufferInitDescriptor<'a> {
+    label: Label<'a>,
+    contents: &'a [u8],
+    usage: BufferUsages,
+}
+struct TextureDescriptor<L> {           enum TextureDimension {     struct Extent3d {                       TextureUsages::{
+    label: L,                               D1,                          width: u32,                             COPY_SRC,
+    size: Extent3d,                         D2,                          height: u32,                            COPY_DST,
+    mip_level_count: u32,                   D3,                          depth_or_array_layers: u32              TEXTURE_BINDING,
+    sample_count: u32,                  }                           }                                            STORAGE_BINDING,
+    dimension: TextureDimension,                                                                                 RENDER_ATTACHMENT
+    format: TextureFormat,                                                                                  }
+    usage: TextureUsages,
+}
+pub struct TextureViewDescriptor<'a> {                  enum TextureViewDimension {         enum TextureAspect {
+    pub label: Label<'a>,                                   D1,                                 All,
+    pub format: Option<TextureFormat>,                      D2,                                 StencilOnly,
+    pub dimension: Option<TextureViewDimension>,            D2Array,                            DepthOnly,
+    pub aspect: TextureAspect,                              Cube,                           }
+    pub base_mip_level: u32,                                CubeArray,
+    pub mip_level_count: Option<NonZeroU32>,                D3,
+    pub base_array_layer: u32,                          }
+    pub array_layer_count: Option<NonZeroU32>,
+}
+
+
+
+struct BindGroupLayoutDescriptor<'a> {              enum BindingType {                                  enum BufferBindingType {
+    label: Label<'a>,                                   Buffer {                                            Uniform,
+    entries: &'a [BindGroupLayoutEntry],                    ty: BufferBindingType,                          Storage {
+}                                                           has_dynamic_offset: bool,                           read_only: bool,
+struct BindGroupLayoutEntry {                               min_binding_size: Option<NonZeroU64>,           },
+    binding: u32,                                       },                                              }
+    visibility: ShaderStages,                           Sampler(SamplerBindingType),                    enum SamplerBindingType {
+    ty: BindingType,                                                                                        Filtering,
+    count: Option<NonZeroU32>,                                                                              NonFiltering,
+}                                                                                                           Comparison,
+                                                                                                        }
+                                                        Texture {                                       enum TextureSampleType {                enum TextureViewDimension {
+                                                            sample_type: TextureSampleType,                 Float { filterable: bool }              D1,
+                                                            view_dimension: TextureViewDimension,           Depth,                                  D2,
+                                                            multisampled: bool,                             Sint,                                   D2Array,
+                                                        },                                                  Uint,                                   Cube,
+                                                                                                        }                                           CubeArray,
+                                                                                                                                                    D3,
+                                                                                                                                                }
+                                                        StorageTexture {                                enum StorageTextureAccess {
+                                                            access: StorageTextureAccess,                   WriteOnly,
+                                                            format: TextureFormat,                          ReadOnly,
+                                                            view_dimension: TextureViewDimension,           ReadWrite,
+                                                        },                                              }
+                                                    }
+
+
+
+struct BindGroupDescriptor<'a> {                    struct BindGroupEntry<'a> {
+    label: Label<'a>,                                   binding: u32,
+    layout: &'a BindGroupLayout,                        resource: BindingResource<'a>,
+    entries: &'a [BindGroupEntry<'a>],              }
+}
+                                                    enum BindingResource<'a> {                          struct BufferBinding<'a> {
+                                                        Buffer(BufferBinding<'a>),                          buffer: &'a Buffer,
+                                                        BufferArray(&'a [BufferBinding<'a>]),               offset: BufferAddress,
+                                                        Sampler(&'a Sampler),                               size: Option<BufferSize>,
+                                                        SamplerArray(&'a [&'a Sampler]),                }
+                                                        TextureView(&'a TextureView),
+                                                        TextureViewArray(&'a [&'a TextureView]),
+                                                    }
+
+
+
+
+
+struct PipelineLayoutDescriptor<'a> {               struct PushConstantRange {
+    label: Label<'a>,                                   stages: ShaderStages,
+    bind_group_layouts: &'a [&'a BindGroupLayout],      range: Range<u32>,
+    push_constant_ranges: &'a [PushConstantRange],  }
+}
+
+
+struct ComputePipelineDescriptor<'a> {
+    label: Label<'a>,
+    layout: Option<&'a PipelineLayout>,
+    module: &'a ShaderModule,
+    entry_point: &'a str,
+}
+struct RenderPipelineDescriptor<'a> {               struct VertexState<'a> {                            enum VertexStepMode {
+    label: Label<'a>,                                   module: &'a ShaderModule,                           Vertex,
+    layout: Option<&'a PipelineLayout>,                 entry_point: &'a str,                               Instance,
+    vertex: VertexState<'a>,                            buffers: &'a [VertexBufferLayout<'a>],          }
+    primitive: PrimitiveState,                      }                                                   struct VertexAttribute {        enum VertexFormat {
+    depth_stencil: Option<DepthStencilState>,       struct VertexBufferLayout<'a> {                         format: VertexFormat,           34 variants
+    multisample: MultisampleState,                      array_stride: BufferAddress,                        offset: u64,                }
+    fragment: Option<FragmentState<'a>>,                step_mode: VertexStepMode,                          shader_location: u32,
+    multiview: Option<NonZeroU32>,                      attributes: &'a [VertexAttribute],              }
+}                                                   }
+                                                    ------------
+                                                    struct PrimitiveState {                             enum PrimitiveTopology {       enum FrontFace {
+                                                        topology: PrimitiveTopology,                        PointList,                     Ccw,
+                                                        strip_index_format: Option<IndexFormat>,            LineList,                      Cw,
+                                                        front_face: FrontFace,                              LineStrip,                 }
+                                                        cull_mode: Option<Face>,                            TriangleList,              enum PolygonMode {
+                                                        unclipped_depth: bool,                              TriangleStrip,                 Fill,
+                                                        polygon_mode: PolygonMode,                      }                                  Line,
+                                                        conservative: bool,                             enum IndexFormat {                 Point,
+                                                    }                                                       Uint16,                    }
+                                                                                                            Uint32,                    enum Face {
+                                                                                                        }                                  Front,
+                                                                                                                                           Back,
+                                                    ---------------                                                                    }
+                                                    struct DepthStencilState {                  struct StencilFaceState {
+                                                        format: TextureFormat,                      compare: CompareFunction,
+                                                        depth_write_enabled: bool,                  fail_op: StencilOperation,
+                                                        depth_compare: CompareFunction,             depth_fail_op: StencilOperation,
+                                                        stencil: StencilState,                      pass_op: StencilOperation,
+                                                        bias: DepthBiasState,                   }
+                                                    }                                           enum CompareFunction {                  enum StencilOperation {
+                                                    struct StencilState {                           Never,                                  Keep,
+                                                        front: StencilFaceState,                    Less,                                   Zero,
+                                                        back: StencilFaceState,                     Equal,                                  Replace,
+                                                        read_mask: u32,                             LessEqual,                              Invert,
+                                                        write_mask: u32,                            Greater,                                IncrementClamp,
+                                                    }                                               NotEqual,                               DecrementClamp,
+                                                    struct DepthBiasState {                         GreaterEqual,                           IncrementWrap,
+                                                        constant: i32,                              Always,                                 DecrementWrap,
+                                                        slope_scale: f32,                       }                                       }
+                                                        clamp: f32,
+                                                    }
+                                                    ------------
+                                                    struct MultisampleState {
+                                                        count: u32,
+                                                        mask: u64,
+                                                        alpha_to_coverage_enabled: bool,
+                                                    }
+                                                    ------------
+                                                    struct FragmentState<'a> {                  struct ColorTargetState {
+                                                        module: &'a ShaderModule,                   format: TextureFormat,
+                                                        entry_point: &'a str,                       blend: Option<BlendState>,
+                                                        targets: &'a [ColorTargetState],            write_mask: ColorWrites,
+                                                    }                                           }
+
+
+
+
+struct BlendState {             struct BlendComponent {             enum BlendFactor {                                  enum BlendOperation {
+    color: BlendComponent,          src_factor: BlendFactor,            Zero, One,                                          Add, Subtract, ReverseSubtract,
+    alpha: BlendComponent,          dst_factor: BlendFactor,            Src, OneMinusSrc, SrcAlpha, OneMinusSrcAlpha,       Min, Max,
+}                                   operation: BlendOperation,          Dst, OneMinusDst, DstAlpha, OneMinusDstAlpha,   }
+                                }                                       SrcAlphaSaturated,
+                                                                        Constant,
+                                                                        OneMinusConstant,
+                                                                    }
+BlendState::REPLACE                         BlendComponent::REPLACE
+BlendState::ALPHA_BLENDING                  BlendComponent::OVER
+BlendState::PREMULTIPLIED_ALPHA_BLENDING
+
+
+
+struct RenderBundleEncoderDescriptor<'a> {                          struct RenderBundleDepthStencil {
+    label: Label<'a>,                                                   pub format: TextureFormat,
+    color_formats: &'a [TextureFormat],                                 pub depth_read_only: bool,
+    depth_stencil: Option<RenderBundleDepthStencil>,                    pub stencil_read_only: bool,
+    sample_count: u32,                                              }
+    multiview: Option<NonZeroU32>,
+}
+
+
+struct SamplerDescriptor<'a> {                      enum AddressMode {          enum CompareFunction {
+    label: Label<'a>,                                   ClampToEdge,                Never,
+    address_mode_u: AddressMode,                        Repeat,                     Less,
+    address_mode_v: AddressMode,                        MirrorRepeat,               Equal,
+    address_mode_w: AddressMode,                        ClampToBorder,              LessEqual,
+    mag_filter: FilterMode,                         }                               Greater,
+    min_filter: FilterMode,                         enum FilterMode {               NotEqual,
+    mipmap_filter: FilterMode,                          Nearest,                    GreaterEqual,
+    lod_min_clamp: f32,                                 Linear,                     Always,
+    lod_max_clamp: f32,                             }                           }
+    compare: Option<CompareFunction>,               enum SamplerBorderColor {
+    anisotropy_clamp: Option<NonZeroU8>,                TransparentBlack,
+    border_color: Option<SamplerBorderColor>,           OpaqueBlack,
+}                                                       OpaqueWhite,
+                                                    }
+
+
+struct QuerySetDescriptor<L> {                      enum QueryType {                                    PipelineStatisticsTypes {
+    label: L,                                           Occlusion,                                          CLIPPER_INVOCATIONS
+    ty: QueryType,                                      PipelineStatistics(PipelineStatisticsTypes),        CLIPPER_PRIMITIVES_OUT
+    count: u32,                                         Timestamp,                                          COMPUTE_SHADER_INVOCATIONS
+}                                                   }                                                       FRAGMENT_SHADER_INVOCATIONS
+                                                                                                            VERTEX_SHADER_INVOCATIONS
+                                                                                                        }
+
+
+struct RenderPassDescriptor<'a, 'b> {                                           struct RenderPassColorAttachment<'a> {              struct Operations<V> {
+    label: Label<'a>,                                                               view: &'a TextureView,                              load: LoadOp<V>,
+    color_attachments: &'b [RenderPassColorAttachment<'a>],                         resolve_target: Option<&'a TextureView>,            store: bool,
+    depth_stencil_attachment: Option<RenderPassDepthStencilAttachment<'a>>,         ops: Operations<Color>,                         }
+}                                                                               }
+                                                                                struct RenderPassDepthStencilAttachment<'a> {
+                                                                                    view: &'a TextureView,
+                                                                                    depth_ops: Option<Operations<f32>>,
+                                                                                    stencil_ops: Option<Operations<u32>>,
+                                                                                }
+
+
+
+struct ImageCopyBuffer<B> {         struct ImageDataLayout {
+    buffer: B,                          offset: u64,
+    layout: ImageDataLayout,            bytes_per_row: Option<NonZeroU32>,
+}                                       rows_per_image: Option<NonZeroU32>,
+                                    }
+struct ImageCopyTexture<T> {        struct Origin3d {               enum TextureAspect {
+    texture: T,                         x: u32,                         All,
+    mip_level: u32,                     y: u32,                         StencilOnly,
+    origin: Origin3d,                   z: u32,                         DepthOnly,
+    aspect: TextureAspect,          }                               }
+}
+
+
+
+
+
+
+
+
+
+
+struct TextureFormatFeatures {
+    allowed_usages: TextureUsages,
+    flags: TextureFormatFeatureFlags,
+    filterable: bool,
+}
+```
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+```
+Instance <- Instance::new(Backends)
+    .create_surface(W) --------------------------> Surface      RequestAdapterOptions {     enum PowerPreference {
+    .request_adapter(RequestAdapterOptions) --+--> Adapter          PowerPreference,            LowPower,
+    .enumerate_adapter(Backends) -------------+                     force_fallback,             HighPerformance,
+                                                                    Surface                 }
+                                                                }
+
+Surface <- Instance::create_surface(W)
+    .get_preferred_format(Adapter) ----> TextureFormat          SurfaceConfiguration {      TextureUsages::COPY_SRC             enum PresentMode {
+    .configure(SurfaceConfiguration)                                TextureUsages,          TextureUsages::COPY_DST                 Immediate,
+    .get_current_texture() ------------> SurfaceTexture             TextureFormat,          TextureUsages::TEXTURE_BINDING          Mailbox,
+                                                                    width, height           TextureUsages::STORAGE_BINDING          Fifo,
+                                                                    PresentMode             TextureUsages::RENDER_ATTACHMENT    }
+                                                                }
+
+Adapter <- Instance(Backends | RequestAdapterOptions)
+    .features() --------------------------> Features
+    .limits() ----------------------------> Limits
+    .get_info() --------------------------> AdapterInfo
+    .get_texture_format_features() -------> TextureFormatFeatures
+    .is_surface_supported(Surface)
+    .request_device(DeviceDescriptor { label, Features, Limits }) ---> (Device, Queue)
+
+Queue <- Adapter(DeviceDescriptor)
+    .get_timestamp_period(&self) -> f32
+    .write_buffer(&Buffer, offset: BufferAddress, data: &[u8])
+    .write_texture(ImageCopyTexture<'_>, data: &[u8], ImageDataLayout, size: Extent3d)
+    .submit<I: IntoIterator<Item = CommandBuffer>>(&self, command_buffers: I)
+    .on_submitted_work_done(&self) -> impl Future<Output = ()> + Send
+
+Device <- Adapter(DeviceDescriptor)
+    .poll(Maintain { Wait, Poll })
+    .features() -------------------------------------------------------------> Features
+    .limits() ---------------------------------------------------------------> Limits
+    .create_shader_module(ShaderModuleDescriptor { label, ShaderSource }) ---> ShaderModule
+    .create_command_encoder(CommandEncoderDescriptor { label }) -------------> CommandEncoder
+    .create_render_bundle_encoder(RenderBundleEncoderDescriptor) ------------> RenderBundleEncoder
+    .create_bind_group_layout(BindGroupLayoutDescriptor) --------------------> BindGroupLayout
+    .create_pipeline_layout(PipelineLayoutDescriptor) -----------------------> PipelineLayout
+    .create_bind_group(BindGroupDescriptor) ---------------------------------> BindGroup
+    .create_render_pipeline(RenderPipelineDescriptor) -----------------------> RenderPipeline
+    .create_compute_pipeline(ComputePipelineDescriptor) ---------------------> ComputePipeline
+    .create_buffer(BufferDescriptor) ----------------------------------------> Buffer
+    .create_texture(TextureDescriptor) --------------------------------------> Texture
+    .create_sampler(SamplerDescriptor) --------------------------------------> Sampler
+    .create_query_set(QuerySetDescriptor) -----------------------------------> QuerySet
+  DeviceExt
+    .create_buffer_init(&BufferInitDescriptor<'_>) --------------------------> Buffer
+    .create_texture_with_data(&Queue, &TextureDescriptor<'_>, data: &[u8]) --> Texture;
+
+CommandEncoder <- Device(CommandEncoderDescriptor)
+    .begin_render_pass(RenderPassDescriptor) ----------------------------------------------> RenderPass         struct ImageSubresourceRange {
+    .begin_compute_pass(ComputePassDescriptor{ label }) -----------------------------------> ComputePass            aspect: TextureAspect,
+    .copy_buffer_to_buffer(&Buffer, BufferAddress, &Buffer, BufferAddress, BufferAddress)                           base_mip_level: u32,
+    .copy_buffer_to_texture(ImageCopyBuffer<'_>, ImageCopyTexture<'_>, Extent3d)                                    mip_level_count: Option<NonZeroU32>,
+    .copy_texture_to_buffer(ImageCopyTexture<'_>, ImageCopyBuffer<'_>, Extent3d)                                    base_array_layer: u32,
+    .copy_texture_to_texture(ImageCopyTexture<'_>, ImageCopyTexture<'_>, Extent3d)                                  array_layer_count: Option<NonZeroU32>,
+    .clear_buffer(Buffer, BufferAddress, BufferSize)                                                            }
+    .clear_texture(Texture, ImageSubresourceRange)
+    .write_timestamp(QuerySet, query_index)
+    .resolve_query_set(&QuerySet, Range<u32>, &Buffer, BufferAddress)
+    .finish() -----------------------------------------------------------------------------> CommandBuffer
+
+RenderPass <- CommandEncoder(RenderPassDescriptor)
+    .set_bind_group(index, &'a BindGroup, &[DynamicOffset])
+    .set_index_buffer(BufferSlice<'a>, IndexFormat)
+    .set_pipeline(&'a RenderPipeline)
+    .set_vertex_buffer(slot: u32, BufferSlice<'a>)
+    .set_push_constants(ShaderStages, offset: u32, data: &[u8])
+    .set_blend_constant(Color)
+    .set_scissor_rect(x: u32, y: u32, width: u32, height: u32)
+    .set_stencil_reference(reference: u32)
+    .set_viewport(x: f32, y: f32, w: f32, h: f32, min_depth: f32, max_depth: f32)
+    .draw(self, vertices: Range<u32>, instances: Range<u32>)
+    .draw_indexed(indices: Range<u32>, base_vertex: i32, instances: Range<u32>)
+    .draw_indexed_indirect(&'a Buffer, BufferAddress)
+    .draw_indirect(&'a Buffer, BufferAddress)
+    .begin_pipeline_statistics_query(&QuerySet, query_index: u32)
+    .end_pipeline_statistics_query()
+    .execute_bundles<I: Iterator<Item = &'a RenderBundle>>(render_bundles: I)
+    .insert_debug_marker(label: &str)
+    .multi_draw_indexed_indirect(indirect_buffer: &'a Buffer, indirect_offset: BufferAddress, count)
+    .multi_draw_indexed_indirect_count(&'a Buffer, BufferAddress, count_buffer: &'a Buffer, count_offset: BufferAddress, max_count)
+    .multi_draw_indirect(indirect_buffer: &'a Buffer, indirect_offset: BufferAddress)
+    .multi_draw_indirect_count(&'a Buffer, BufferAddress, count_buffer: &'a Buffer, count_offset: BufferAddress, max_count)
+    .push_debug_group(label: &str)
+    .pop_debug_group()
+    .write_timestamp(query_set: &QuerySet, query_index: u32)
+
+ComputePass <- CommandEncoder(ComputePassDescriptor)
+    .set_bind_group(index, &'a BindGroup, &[DynamicOffset])
+    .set_pipeline(pipeline: &'a ComputePipeline)
+    .set_push_constants(offset: u32, data: &[u8])
+    .begin_pipeline_statistics_query(query_set: &QuerySet, query_index: u32)
+    .dispatch(x: u32, y: u32, z: u32)
+    .dispatch_indirect(indirect_buffer: &'a Buffer, indirect_offset: BufferAddress)
+    .end_pipeline_statistics_query()
+    .insert_debug_marker(label: &str)
+    .push_debug_group(label: &str)
+    .pop_debug_group()
+    .write_timestamp(query_set: &QuerySet, query_index: u32)
+
+RenderBundleEncoder <- Device(RenderBundleEncoderDescriptor)
+    .set_bind_group(index, &'a BindGroup, &[DynamicOffset])
+    .set_index_buffer(BufferSlice<'a>, IndexFormat)
+    .set_pipeline(&'a RenderPipeline)
+    .set_vertex_buffer(slot: u32, BufferSlice<'a>)
+    .set_push_constants(ShaderStages, offset: u32, data: &[u8])
+    .draw(self, vertices: Range<u32>, instances: Range<u32>)
+    .draw_indexed(indices: Range<u32>, base_vertex: i32, instances: Range<u32>)
+    .draw_indexed_indirect(&'a Buffer, BufferAddress)
+    .draw_indirect(&'a Buffer, BufferAddress)
+    .finish(RenderBundleDescriptor { lable }) --------------------------------------------> RenderBundle
+
+RenderPipeline <- Device(RenderPipelineDescriptor)
+    .get_bind_group_layout(index) ---------------------------------------> BindGroupLayout
+
+ComputePipeline <- Device(ComputePipelineDescriptor)
+    .get_bind_group_layout(index) ---------------------------------------> BindGroupLayout
+
+Buffer <- Device(BufferDescriptor)
+    .as_entire_binding()-----------------------> BindingResource
+    .as_entire_buffer_binding()----------------> BufferBinding
+    .slice(bound) -----------------------------> BufferSlice
+    .unmap()
+    .destroy()
+
+BufferSlice <- Buffer[..]
+    .get_mapped_range(&self) -----------------> BufferView<'a>
+    .get_mapped_range_mut(&self) -------------> BufferViewMut<'a>
+    .map_async(MapMode)
+
+Texture <- Device(TextureDescriptor)
+    .create_view(&TextureViewDescriptor<'_>) -----------> TextureView
+    .as_image_copy() -----------------------------------> ImageCopyTexture<'_>
+    .destroy(&self)
+
+SurfaceTexture <- Instance()
+    .present()
+```
+
+-------------------------------------------------------------------------------
+
+```
+BufferAsyncError
+```
+
+```
+trait Api: Clone + Sized {
+    type Instance: Instance<Self>;
+    type Surface: Surface<Self>;
+    type Adapter: Adapter<Self>;
+    type Device: Device<Self>;
+    type Queue: Queue<Self>;
+    type CommandEncoder: CommandEncoder<Self>;
+    type CommandBuffer: Send + Sync;
+    type Buffer: Debug + Send + Sync + 'static;
+    type Texture: Debug + Send + Sync + 'static;
+    type SurfaceTexture: Debug + Send + Sync + Borrow<Self::Texture>;
+    type TextureView: Debug + Send + Sync;
+    type Sampler: Debug + Send + Sync;
+    type QuerySet: Debug + Send + Sync;
+    type Fence: Debug + Send + Sync;
+    type BindGroupLayout: Send + Sync;
+    type BindGroup: Debug + Send + Sync;
+    type PipelineLayout: Send + Sync;
+    type ShaderModule: Debug + Send + Sync;
+    type RenderPipeline: Send + Sync;
+    type ComputePipeline: Send + Sync;
+}
+```
+
+What is color-blending, alpha-blending, depth-blending, stencil blending ?
+What is texture-addressing ?
+What is Fragment, and fragment components ?
+What is Buffer mapping ?
+What is depth or array layers in Texture ?
+What is base mip level ?
+What is texture-aspect ?
+What is texture-format ?

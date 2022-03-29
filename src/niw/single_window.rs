@@ -28,6 +28,7 @@ where
 {
     event_loop: Option<EventLoop<E>>,
     window: Option<Window>,
+    on_event: Option<Handler<G, S, E>>,
     event_handlers: Option<EventHandlers<G, S, E>>,
     window_event_handlers: Option<WindowEventHandlers<G, S, E>>,
     device_event_handlers: Option<DeviceEventHandlers<G, S, E>>,
@@ -165,6 +166,7 @@ where
         let val = SingleWindow {
             event_loop: Some(event_loop),
             window: Some(window),
+            on_event: Some(Box::new(|_, _, _| None)),
             event_handlers: Some(EventHandlers::default()),
             window_event_handlers: Some(WindowEventHandlers::default()),
             device_event_handlers: Some(DeviceEventHandlers::default()),
@@ -190,6 +192,7 @@ where
         let window = self.window.take().unwrap();
         let event_loop = self.event_loop.take().unwrap();
         let wid = window.id();
+        let mut on_event = self.on_event.take().unwrap();
         let mut event_handlers = self.event_handlers.take().unwrap();
         let mut window_event_handlers = self.window_event_handlers.take().unwrap();
         let mut device_event_handlers = self.device_event_handlers.take().unwrap();
@@ -200,6 +203,8 @@ where
                   cf: &mut ControlFlow| {
                 log_event(&evnt);
                 let mut no_op: Handler<G, S, E> = Box::new(|_, _, _| None);
+
+                (on_event)(&window, &mut r, &mut evnt);
 
                 let handler = match &evnt {
                     Event::NewEvents(_) => &mut event_handlers.on_new_events,
@@ -326,6 +331,11 @@ impl<G, S, E> SingleWindow<G, S, E>
 where
     E: 'static,
 {
+    pub fn on_event(&mut self, handler: Handler<G, S, E>) -> &mut Self {
+        self.on_event = Some(handler);
+        self
+    }
+
     pub fn on_new_events(&mut self, handler: Handler<G, S, E>) -> &mut Self {
         self.event_handlers.as_mut().unwrap().on_new_events = handler;
         self

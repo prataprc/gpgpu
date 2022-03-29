@@ -7,15 +7,23 @@ use winit::{
 
 use std::{ffi, process::exit};
 
-use gpgpu::{niw, wg, Config, Error, Gpu, Result};
+use gpgpu::{niw, Config, Error, Gpu, Result};
 
-#[derive(StructOpt)]
+#[derive(StructOpt, Clone)]
 pub struct Opt {
     #[structopt(long = "config")]
     config_loc: Option<ffi::OsString>,
+
+    #[structopt(long = "event")]
+    event_name: Option<String>,
 }
 
-type Renderer = niw::Renderer<Gpu, ()>;
+type Renderer = niw::Renderer<Gpu, State>;
+
+struct State {
+    events_log: niw::EventsLog,
+    opts: Opt,
+}
 
 fn main() {
     env_logger::init();
@@ -39,10 +47,10 @@ fn main() {
         .ok();
 }
 
-fn handle_events(_opts: Opt, config: Config) -> Result<()> {
+fn handle_events(opts: Opt, config: Config) -> Result<()> {
     let name = "example-event-loop".to_string();
     let mut swin =
-        niw::SingleWindow::<Gpu, (), ()>::from_config(config.to_window_attributes()?)?;
+        niw::SingleWindow::<Gpu, State, ()>::from_config(config.to_window_attributes()?)?;
 
     let on_win_close_requested =
         |_: &Window, _: &mut Renderer, _: &mut Event<()>| -> Option<ControlFlow> { None };
@@ -66,8 +74,30 @@ fn handle_events(_opts: Opt, config: Config) -> Result<()> {
             }
         };
 
+    let on_event = |_: &Window,
+                    r: &mut Renderer,
+                    event: &mut Event<()>|
+     -> Option<ControlFlow> {
+        r.state.events_log.append(event);
+        match r.state.opts.event_name.as_ref() {
+            Some(event_name) if &niw::to_event_name(event).to_string() == event_name => {
+                print!("\r{:?}", event);
+            }
+            _ => (),
+        }
+        None
+    };
+
+    let on_loop_destroyed =
+        |_: &Window, r: &mut Renderer, _: &mut Event<()>| -> Option<ControlFlow> {
+            r.state.events_log.pretty_print();
+            None
+        };
+
     swin.on_win_close_requested(Box::new(on_win_close_requested))
-        .on_win_keyboard_input(Box::new(on_win_keyboard_input));
+        .on_win_keyboard_input(Box::new(on_win_keyboard_input))
+        .on_loop_destroyed(Box::new(on_loop_destroyed))
+        .on_event(Box::new(on_event));
 
     let r = {
         let gpu = pollster::block_on(Gpu::new(
@@ -76,7 +106,10 @@ fn handle_events(_opts: Opt, config: Config) -> Result<()> {
             Config::default(),
         ))
         .unwrap();
-        let state = ();
+        let state = State {
+            events_log: niw::EventsLog::new(),
+            opts: opts.clone(),
+        };
         Renderer { gpu, state }
     };
 

@@ -49,6 +49,7 @@
 //! |  [DeviceEvent::Key]                   | on_device_key([Handler])
 //! |  [DeviceEvent::Text]                  | on_device_text([Handler])
 
+mod events_log;
 mod pretty;
 mod single_window;
 
@@ -63,6 +64,7 @@ use winit::{
     window::Theme,
 };
 
+pub use events_log::{to_event_name, EventsLog};
 pub use single_window::{Handler, SingleWindow};
 
 use crate::Windowing;

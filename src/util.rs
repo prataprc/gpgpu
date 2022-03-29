@@ -44,3 +44,16 @@ where
     let s = err_at!(FailConvert, from_utf8(&data), "not utf8 for {:?}", ploc)?;
     err_at!(FailConvert, toml::from_str(s), "file:{:?}", ploc)
 }
+
+pub fn html_to_color(s: &str) -> Result<wgpu::Color> {
+    println!("{}", s);
+    let c = tint::Color::from_hex(s);
+    println!("{:?}", c);
+    let val = wgpu::Color {
+        r: c.red,
+        g: c.green,
+        b: c.blue,
+        a: c.alpha,
+    };
+    Ok(val)
+}

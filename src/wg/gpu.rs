@@ -1,5 +1,6 @@
 use raw_window_handle::HasRawWindowHandle;
 use winit::dpi;
+use log::{error};
 
 #[allow(unused_imports)]
 use crate::wg;
@@ -42,6 +43,7 @@ impl Gpu {
             let res = adapter.request_device(&desc, config.to_trace_path()).await;
             err_at!(Wgpu, res)?
         };
+        device.on_uncaptured_error(uncaptured_error_handler);
 
         let surface_config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
@@ -129,4 +131,8 @@ impl Gpu {
 
         Ok(())
     }
+}
+
+fn uncaptured_error_handler(err: wgpu::Error) {
+    error!(target: "wg::Gpu", "uncaptured error: {}", err)
 }

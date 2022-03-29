@@ -1,22 +1,35 @@
+use structopt::StructOpt;
 use winit::{
     event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent},
     event_loop::ControlFlow,
     window::Window,
 };
 
-use gpgpu::{niw, Config, Error, Gpu};
+use gpgpu::{niw, util, Config, Error, Gpu};
 
-type Renderer = niw::Renderer<Gpu, ()>;
+#[derive(Clone, StructOpt)]
+pub struct Opt {
+    #[structopt(short = "c")]
+    color: Option<String>,
+}
+
+type Renderer = niw::Renderer<Gpu, State>;
+
+struct State {
+    color: wgpu::Color,
+}
 
 fn main() {
+    env_logger::init();
+
+    let opts = Opt::from_args();
+
     let name = "example-cls".to_string();
     let config = Config::default();
 
-    env_logger::init();
-
     let mut swin = {
         let wattrs = config.to_window_attributes().unwrap();
-        niw::SingleWindow::<Gpu, (), ()>::from_config(wattrs).unwrap()
+        niw::SingleWindow::<Gpu, State, ()>::from_config(wattrs).unwrap()
     };
 
     swin.on_win_close_requested(Box::new(on_win_close_requested))
@@ -33,7 +46,12 @@ fn main() {
             Config::default(),
         ))
         .unwrap();
-        let state = ();
+        let state = State {
+            color: util::html_to_color(
+                &opts.color.clone().unwrap_or("#FFFFFF".to_string()),
+            )
+            .unwrap(),
+        };
         Renderer { gpu, state }
     };
 
@@ -56,19 +74,12 @@ fn on_redraw_requested(
     r: &mut Renderer,
     _event: &mut Event<()>,
 ) -> Option<ControlFlow> {
-    let color = wgpu::Color {
-        r: 0.1,
-        g: 0.4,
-        b: 0.1,
-        a: 0.0,
-    };
-
     let surface_texture = r.gpu.get_current_texture().unwrap();
     let view = {
         let desc = wgpu::TextureViewDescriptor::default();
         surface_texture.texture.create_view(&desc)
     };
-    let cmd_buffers = vec![r.gpu.clear_view(&view, color)];
+    let cmd_buffers = vec![r.gpu.clear_view(&view, r.state.color)];
 
     match r.gpu.render(surface_texture, cmd_buffers) {
         Ok(_) => None,

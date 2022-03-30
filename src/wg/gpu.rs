@@ -36,7 +36,7 @@ impl Gpu {
 
         let desc = wgpu::DeviceDescriptor {
             label: Some(&name),
-            features: wgpu::Features::empty(), // TODO: fetch from configuration
+            features: adapter.features(),
             limits: wgpu::Limits::default(),   // TODO: fetch from configuration
         };
         let (device, queue) = {
@@ -75,7 +75,7 @@ impl Gpu {
         }
     }
 
-    pub fn get_current_texture(&mut self) -> Result<wgpu::SurfaceTexture> {
+    pub fn get_current_texture(&self) -> Result<wgpu::SurfaceTexture> {
         match self.surface.get_current_texture() {
             Ok(val) => Ok(val),
             // Reconfigure the surface if lost
@@ -89,7 +89,7 @@ impl Gpu {
     }
 
     pub fn clear_view<C>(
-        &mut self,
+        &self,
         view: &wgpu::TextureView,
         color: C,
     ) -> wgpu::CommandBuffer
@@ -124,7 +124,7 @@ impl Gpu {
     }
 
     pub fn render(
-        &mut self,
+        &self,
         surface_texture: wgpu::SurfaceTexture,
         cmd_buffers: Vec<wgpu::CommandBuffer>,
     ) -> Result<()> {

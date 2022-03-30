@@ -107,7 +107,7 @@ fn handle_events(opts: Opt, config: Config) -> Result<()> {
         ))
         .unwrap();
         let state = State {
-            events_log: niw::EventsLog::new(),
+            events_log: niw::EventsLog::default(),
             opts: opts.clone(),
         };
         Renderer { gpu, state }

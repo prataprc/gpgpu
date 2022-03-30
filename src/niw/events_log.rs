@@ -1,18 +1,22 @@
 use winit::event::{DeviceEvent, Event, StartCause, WindowEvent};
 
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, time};
 
 pub struct EventsLog {
-    event_names: BTreeMap<String, u32>,
+    event_names: BTreeMap<String, u64>,
+    genesis: time::Instant,
+}
+
+impl Default for EventsLog {
+    fn default() -> EventsLog {
+        EventsLog {
+            event_names: BTreeMap::new(),
+            genesis: time::Instant::now(),
+        }
+    }
 }
 
 impl EventsLog {
-    pub fn new() -> EventsLog {
-        EventsLog {
-            event_names: BTreeMap::new(),
-        }
-    }
-
     pub fn append<T>(&mut self, event: &Event<T>) {
         let name = to_event_name(event).to_string();
 
@@ -21,8 +25,13 @@ impl EventsLog {
     }
 
     pub fn pretty_print(&self) {
+        let duration = self.genesis.elapsed();
         for (key, value) in self.event_names.iter() {
-            println!("{:20}: {}", key, value)
+            let rate = match duration.as_secs() {
+                secs if secs > 0 => value / secs,
+                _ => *value,
+            };
+            println!("{:030} : {:10}/{}", key, value, rate)
         }
     }
 }

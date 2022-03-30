@@ -11,7 +11,6 @@ ShaderLocation = u32;
 ```
 Backend::{ Empty, Vulkan, Metal, Dx12, Dx11, Gl, BrowserWebGpu }
 Backends
-DeviceType::{ Other, IntegratedGpu, DiscreteGpu, VirtualGpu, Cpu }
 struct Extent3d { width: u32, height: u32, depth_or_array_layers: u32 }
 struct Origin3d { x:     u32, y:      u32, z:                     u32 }
 TextureFormat
@@ -22,26 +21,13 @@ ShaderStages::{ NONE, VERTEX, FRAGMENT, COMPUTE, VERTEX_FRAGMENT }
 BufferUsages::{ VERTEX, INDEX, INDIRECT, COPY_SRC, COPY_DST, UNIFORM, STORAGE, MAP_READ, MAP_WRITE }
 TextureUsages::{ COPY_SRC, COPY_DST, TEXTURE_BINDING, STORAGE_BINDING, RENDER_ATTACHMENT }
 TextureFormatFeatureFlags:{ STORAGE_READ_WRITE, STORAGE_ATOMICS }
-enum SurfaceStatus {
-    Good,
-    Suboptimal,
-    Timeout,
-    Outdated,
-    Lost,
-}
-enum MapMode {
-    Read,
-    Write,
-}
-enum ShaderModel {
-    Sm2,
-    Sm4,
-    Sm5,
-}
-enum LoadOp<V> {
-    Clear(V),
-    Load,
-}
+
+enum DeviceType { Other, IntegratedGpu, DiscreteGpu, VirtualGpu, Cpu }
+enum SurfaceStatus { Good, Suboptimal, Timeout, Outdated, Lost }
+enum MapMode { Read, Write }
+enum ShaderModel { Sm2, Sm4, Sm5 }
+enum LoadOp<V> { Clear(V), Load }
+enum TextureFormat { .. }
 
 TextureViewDimension
     .compatible_texture_dimension() -------------> TextureDimension
@@ -257,7 +243,7 @@ struct SamplerDescriptor<'a> {                      enum AddressMode {          
                                                     }
 
 
-struct QuerySetDescriptor<L> {                      enum QueryType {                                    PipelineStatisticsTypes {
+struct QuerySetDescriptor<L> {                      enum QueryType {                                    struct PipelineStatisticsTypes {
     label: L,                                           Occlusion,                                          CLIPPER_INVOCATIONS
     ty: QueryType,                                      PipelineStatistics(PipelineStatisticsTypes),        CLIPPER_PRIMITIVES_OUT
     count: u32,                                         Timestamp,                                          COMPUTE_SHADER_INVOCATIONS
@@ -290,13 +276,6 @@ struct ImageCopyTexture<T> {        struct Origin3d {               enum Texture
     origin: Origin3d,                   z: u32,                         DepthOnly,
     aspect: TextureAspect,          }                               }
 }
-
-
-
-
-
-
-
 
 
 
@@ -480,6 +459,14 @@ trait Api: Clone + Sized {
     type RenderPipeline: Send + Sync;
     type ComputePipeline: Send + Sync;
 }
+```
+
+```
+Labels are available for,
+Device, ShaderModule, BindGroupLayout, BindGroup, PipelineLayout
+Buffer, Texture, Sampler, QuerySet,
+CommandEncoder, RenderBundleEncoder, RenderPipeline, ComputePipeline, RenderPass, ComputePass
+debug_marker, stack of debug_group
 ```
 
 What is color-blending, alpha-blending, depth-blending, stencil blending ?

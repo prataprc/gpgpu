@@ -82,6 +82,8 @@ impl Gpu {
             Err(wgpu::SurfaceError::Lost) => err_at!(SurfaceLost, msg: ""),
             // The system is out of memory, we should probably quit
             Err(wgpu::SurfaceError::OutOfMemory) => err_at!(SurfaceOutOfMemory, msg: ""),
+            Err(wgpu::SurfaceError::Outdated) => err_at!(SurfaceOutdated, msg: ""),
+            // TODO handle Timeout error in updating the frame-buffer.
             Err(err) => err_at!(Wgpu, Err(err)),
         }
     }

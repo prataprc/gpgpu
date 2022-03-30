@@ -60,6 +60,7 @@ pub enum Error {
     Wgpu(String, String),
     SurfaceLost(String, String),
     SurfaceOutOfMemory(String, String),
+    SurfaceOutdated(String, String),
 }
 
 impl fmt::Display for Error {
@@ -75,6 +76,7 @@ impl fmt::Display for Error {
             Wgpu(p, msg) => write!(f, "{} Wgpu: {}", p, msg),
             SurfaceLost(p, msg) => write!(f, "{} SurfaceLost: {}", p, msg),
             SurfaceOutOfMemory(p, msg) => write!(f, "{} SurfaceOutOfMemory: {}", p, msg),
+            SurfaceOutdated(p, msg) => write!(f, "{} SurfaceOutdated: {}", p, msg),
         }
     }
 }

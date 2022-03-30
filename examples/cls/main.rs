@@ -74,7 +74,7 @@ fn on_redraw_requested(
     r: &mut Renderer,
     _event: &mut Event<()>,
 ) -> Option<ControlFlow> {
-    let surface_texture = r.gpu.get_current_texture().unwrap();
+    let surface_texture = r.gpu.get_current_texture().ok()?;
     let view = {
         let desc = wgpu::TextureViewDescriptor::default();
         surface_texture.texture.create_view(&desc)

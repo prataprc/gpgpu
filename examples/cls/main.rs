@@ -81,7 +81,7 @@ fn on_redraw_requested(
     };
     let cmd_buffers = vec![r.gpu.clear_view(&view, r.state.color)];
 
-    match r.gpu.render(surface_texture, cmd_buffers) {
+    match r.gpu.render(cmd_buffers, surface_texture) {
         Ok(_) => None,
         // Reconfigure the surface if lost
         Err(Error::SurfaceLost(_, _)) => {

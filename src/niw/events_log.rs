@@ -36,6 +36,7 @@ impl EventsLog {
     }
 }
 
+// TODO: Should this be moved into a common module like niw/mod.rs
 pub fn to_event_name<T>(event: &Event<T>) -> &'static str {
     match event {
         Event::NewEvents(cause) => match cause {

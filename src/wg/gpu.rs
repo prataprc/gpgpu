@@ -125,8 +125,8 @@ impl Gpu {
 
     pub fn render(
         &self,
-        surface_texture: wgpu::SurfaceTexture,
         cmd_buffers: Vec<wgpu::CommandBuffer>,
+        surface_texture: wgpu::SurfaceTexture,
     ) -> Result<()> {
         self.queue.submit(cmd_buffers.into_iter());
         surface_texture.present();

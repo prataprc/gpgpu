@@ -353,10 +353,10 @@ CommandEncoder <- Device(CommandEncoderDescriptor)
     .finish() -----------------------------------------------------------------------------> CommandBuffer
 
 RenderPass <- CommandEncoder(RenderPassDescriptor)
-    .set_bind_group(index, &'a BindGroup, &[DynamicOffset])
-    .set_index_buffer(BufferSlice<'a>, IndexFormat)
     .set_pipeline(&'a RenderPipeline)
     .set_vertex_buffer(slot: u32, BufferSlice<'a>)
+    .set_index_buffer(BufferSlice<'a>, IndexFormat)
+    .set_bind_group(index, &'a BindGroup, &[DynamicOffset])
     .set_push_constants(ShaderStages, offset: u32, data: &[u8])
     .set_blend_constant(Color)
     .set_scissor_rect(x: u32, y: u32, width: u32, height: u32)

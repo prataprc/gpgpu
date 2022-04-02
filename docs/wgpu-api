@@ -230,6 +230,19 @@ BlendState::PREMULTIPLIED_ALPHA_BLENDING
 
 
 
+struct RenderPassDescriptor<'a, 'b> {                                           struct RenderPassColorAttachment<'a> {              struct Operations<V> {
+    label: Label<'a>,                                                               view: &'a TextureView,                              load: LoadOp<V>,
+    color_attachments: &'b [RenderPassColorAttachment<'a>],                         resolve_target: Option<&'a TextureView>,            store: bool,
+    depth_stencil_attachment: Option<RenderPassDepthStencilAttachment<'a>>,         ops: Operations<Color>,                         }
+}                                                                               }
+                                                                                struct RenderPassDepthStencilAttachment<'a> {
+                                                                                    view: &'a TextureView,
+                                                                                    depth_ops: Option<Operations<f32>>,
+                                                                                    stencil_ops: Option<Operations<u32>>,
+                                                                                }
+
+
+
 struct RenderBundleEncoderDescriptor<'a> {                          struct RenderBundleDepthStencil {
     label: Label<'a>,                                                   pub format: TextureFormat,
     color_formats: &'a [TextureFormat],                                 pub depth_read_only: bool,
@@ -263,19 +276,6 @@ struct QuerySetDescriptor<L> {                      enum QueryType {            
 }                                                   }                                                       FRAGMENT_SHADER_INVOCATIONS
                                                                                                             VERTEX_SHADER_INVOCATIONS
                                                                                                         }
-
-
-struct RenderPassDescriptor<'a, 'b> {                                           struct RenderPassColorAttachment<'a> {              struct Operations<V> {
-    label: Label<'a>,                                                               view: &'a TextureView,                              load: LoadOp<V>,
-    color_attachments: &'b [RenderPassColorAttachment<'a>],                         resolve_target: Option<&'a TextureView>,            store: bool,
-    depth_stencil_attachment: Option<RenderPassDepthStencilAttachment<'a>>,         ops: Operations<Color>,                         }
-}                                                                               }
-                                                                                struct RenderPassDepthStencilAttachment<'a> {
-                                                                                    view: &'a TextureView,
-                                                                                    depth_ops: Option<Operations<f32>>,
-                                                                                    stencil_ops: Option<Operations<u32>>,
-                                                                                }
-
 
 
 struct ImageCopyBuffer<B> {         struct ImageDataLayout {

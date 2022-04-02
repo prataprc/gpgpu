@@ -9,10 +9,11 @@ ShaderLocation = u32;
 -------------------------------------------------------------------------------------
 
 ```
-Backend::{ Empty, Vulkan, Metal, Dx12, Dx11, Gl, BrowserWebGpu }
-Backends
 struct Extent3d { width: u32, height: u32, depth_or_array_layers: u32 }
 struct Origin3d { x:     u32, y:      u32, z:                     u32 }
+
+Backend::{ Empty, Vulkan, Metal, Dx12, Dx11, Gl, BrowserWebGpu }
+Backends
 TextureFormat
     .describe() -----> TextureFormatInfo
 struct Color { r, g, b: f64, a: f64 }
@@ -28,6 +29,18 @@ enum MapMode { Read, Write }
 enum ShaderModel { Sm2, Sm4, Sm5 }
 enum LoadOp<V> { Clear(V), Load }
 enum TextureFormat { .. }
+
+    TextureFormat, TextureFormatInfo, TextureFormatFeatures, TextureFormatFeatureFlags,         BufferAddress, BufferSize, BufferUsages,
+    TextureUsages, TextureAspect, TextureSampleType, StorageTextureAccess                       Buffer
+    Texture                                                                                         BufferDescriptor<L>
+        TextureDescriptor<L>                                                                        BufferBinding<'a>
+        TextureDimension                                                                            BufferBindingType
+    TextureView                                                                                     BufferSlice<'a>
+        TextureViewDescriptor<'a>                                                               BufferView<'a>, BufferViewMut<'a>
+        TextureViewDimension                                                                    ImageCopyBuffer<B>
+    ImageCopyTexture<T>
+    ImageSubresourceRange
+
 
 TextureViewDimension
     .compatible_texture_dimension() -------------> TextureDimension
@@ -106,9 +119,9 @@ struct BindGroupLayoutEntry {                               min_binding_size: Op
                                                                                                                                                     D3,
                                                                                                                                                 }
                                                         StorageTexture {                                enum StorageTextureAccess {
-                                                            access: StorageTextureAccess,                   WriteOnly,
-                                                            format: TextureFormat,                          ReadOnly,
-                                                            view_dimension: TextureViewDimension,           ReadWrite,
+                                                            access: StorageTextureAccess,                   ReadOnly,
+                                                            view_dimension: TextureViewDimension,           WriteOnly,
+                                                            format: TextureFormat,                          ReadWrite,
                                                         },                                              }
                                                     }
 
@@ -305,10 +318,10 @@ Surface <- Instance::create_surface(W)
                                                                 }
 
 Adapter <- Instance(Backends | RequestAdapterOptions)
-    .features() --------------------------> Features
-    .limits() ----------------------------> Limits
-    .get_info() --------------------------> AdapterInfo
-    .get_texture_format_features() -------> TextureFormatFeatures
+    .features() ---------------------------------------> Features
+    .limits() -----------------------------------------> Limits
+    .get_info() ---------------------------------------> AdapterInfo
+    .get_texture_format_features(TextureFormat) -------> TextureFormatFeatures
     .is_surface_supported(Surface)
     .request_device(DeviceDescriptor { label, Features, Limits }) ---> (Device, Queue)
 
@@ -366,17 +379,35 @@ RenderPass <- CommandEncoder(RenderPassDescriptor)
     .draw_indexed(indices: Range<u32>, base_vertex: i32, instances: Range<u32>)
     .draw_indexed_indirect(&'a Buffer, BufferAddress)
     .draw_indirect(&'a Buffer, BufferAddress)
-    .begin_pipeline_statistics_query(&QuerySet, query_index: u32)
-    .end_pipeline_statistics_query()
-    .execute_bundles<I: Iterator<Item = &'a RenderBundle>>(render_bundles: I)
-    .insert_debug_marker(label: &str)
     .multi_draw_indexed_indirect(indirect_buffer: &'a Buffer, indirect_offset: BufferAddress, count)
     .multi_draw_indexed_indirect_count(&'a Buffer, BufferAddress, count_buffer: &'a Buffer, count_offset: BufferAddress, max_count)
     .multi_draw_indirect(indirect_buffer: &'a Buffer, indirect_offset: BufferAddress)
     .multi_draw_indirect_count(&'a Buffer, BufferAddress, count_buffer: &'a Buffer, count_offset: BufferAddress, max_count)
+    .write_timestamp(query_set: &QuerySet, query_index: u32)
+    .begin_pipeline_statistics_query(&QuerySet, query_index: u32)
+    .end_pipeline_statistics_query()
+    .insert_debug_marker(label: &str)
     .push_debug_group(label: &str)
     .pop_debug_group()
-    .write_timestamp(query_set: &QuerySet, query_index: u32)
+    .execute_bundles<I: Iterator<Item = &'a RenderBundle>>(render_bundles: I)
+
+RenderBundleEncoder <- Device(RenderBundleEncoderDescriptor)
+    .set_pipeline(&'a RenderPipeline)
+    .set_vertex_buffer(slot: u32, BufferSlice<'a>)
+    .set_index_buffer(BufferSlice<'a>, IndexFormat)
+    .set_bind_group(index, &'a BindGroup, &[DynamicOffset])
+    .set_push_constants(ShaderStages, offset: u32, data: &[u8])
+    .draw(self, vertices: Range<u32>, instances: Range<u32>)
+    .draw_indexed(indices: Range<u32>, base_vertex: i32, instances: Range<u32>)
+    .draw_indexed_indirect(&'a Buffer, BufferAddress)
+    .draw_indirect(&'a Buffer, BufferAddress)
+    .finish(RenderBundleDescriptor { lable }) --------------------------------------------> RenderBundle
+
+RenderPipeline <- Device(RenderPipelineDescriptor)
+    .get_bind_group_layout(index) ---------------------------------------> BindGroupLayout
+
+ComputePipeline <- Device(ComputePipelineDescriptor)
+    .get_bind_group_layout(index) ---------------------------------------> BindGroupLayout
 
 ComputePass <- CommandEncoder(ComputePassDescriptor)
     .set_bind_group(index, &'a BindGroup, &[DynamicOffset])
@@ -390,24 +421,6 @@ ComputePass <- CommandEncoder(ComputePassDescriptor)
     .push_debug_group(label: &str)
     .pop_debug_group()
     .write_timestamp(query_set: &QuerySet, query_index: u32)
-
-RenderBundleEncoder <- Device(RenderBundleEncoderDescriptor)
-    .set_bind_group(index, &'a BindGroup, &[DynamicOffset])
-    .set_index_buffer(BufferSlice<'a>, IndexFormat)
-    .set_pipeline(&'a RenderPipeline)
-    .set_vertex_buffer(slot: u32, BufferSlice<'a>)
-    .set_push_constants(ShaderStages, offset: u32, data: &[u8])
-    .draw(self, vertices: Range<u32>, instances: Range<u32>)
-    .draw_indexed(indices: Range<u32>, base_vertex: i32, instances: Range<u32>)
-    .draw_indexed_indirect(&'a Buffer, BufferAddress)
-    .draw_indirect(&'a Buffer, BufferAddress)
-    .finish(RenderBundleDescriptor { lable }) --------------------------------------------> RenderBundle
-
-RenderPipeline <- Device(RenderPipelineDescriptor)
-    .get_bind_group_layout(index) ---------------------------------------> BindGroupLayout
-
-ComputePipeline <- Device(ComputePipelineDescriptor)
-    .get_bind_group_layout(index) ---------------------------------------> BindGroupLayout
 
 Buffer <- Device(BufferDescriptor)
     .as_entire_binding()-----------------------> BindingResource

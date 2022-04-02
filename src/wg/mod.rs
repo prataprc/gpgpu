@@ -2,6 +2,7 @@
 
 mod backends;
 mod gpu;
+pub mod models2;
 pub mod pretty;
 pub mod ui;
 

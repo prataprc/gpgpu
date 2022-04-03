@@ -472,12 +472,13 @@ trait Api: Clone + Sized {
 ```
 
 ```
-Labels are available for,
-Device, ShaderModule, BindGroupLayout, BindGroup, PipelineLayout
-Buffer, Texture, Sampler, QuerySet,
-CommandEncoder, RenderBundleEncoder, RenderPipeline, ComputePipeline, RenderPass, ComputePass
-debug_marker, stack of debug_group
+* `Labels` are available for:
+  * Device, ShaderModule, BindGroupLayout, PipelineLayout, Buffer, Texture, Sampler, QuerySet,
+  * CommandEncoder, RenderBundleEncoder, RenderPipeline, ComputePipeline, RenderPass, ComputePass, BindGroup,
+* `debug_marker`, stack of debug_group
 ```
+
+-----
 
 What is color-blending, alpha-blending, depth-blending, stencil-blending ?
 What is texture-addressing ?

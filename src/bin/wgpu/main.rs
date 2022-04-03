@@ -8,8 +8,8 @@ use std::{ffi, process::exit};
 use gpgpu::{wg, Config, Error, Result};
 
 use info::{
-    info_adapters, info_features, info_global_report, info_limits, info_texture_formats,
-    info_window,
+    info_adapters, info_features, info_global_report, info_limits, info_queue,
+    info_texture_formats, info_window,
 };
 
 #[derive(Clone, StructOpt)]
@@ -95,6 +95,11 @@ fn handle_report(opts: Opt, config: &Config) -> Result<()> {
     println!("{}", "Adapters:".red());
     println!("{}", "--------".red());
     info_adapters(&opts)?;
+    println!();
+
+    println!("{}", "Queue:".red());
+    println!("{}", "------".red());
+    info_queue(&opts)?;
     println!();
 
     Ok(())

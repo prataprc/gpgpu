@@ -48,6 +48,31 @@ pub fn info_global_report(opts: &Opt) -> Result<()> {
     Ok(())
 }
 
+pub fn info_queue(_opts: &Opt) -> Result<()> {
+    let inst = wgpu::Instance::new(wg::backend().into());
+    let adapters: Vec<wgpu::Adapter> =
+        inst.enumerate_adapters(wgpu::Backends::all()).collect();
+
+    for adapter in adapters.iter() {
+        let desc = wgpu::DeviceDescriptor {
+            label: Some("gpgpu"),
+            features: adapter.features(),
+            limits: wgpu::Limits::default(), // TODO: fetch from configuration
+        };
+        let (_, queue) = {
+            let r = pollster::block_on(async { adapter.request_device(&desc, None).await });
+            err_at!(Fatal, r)
+        }?;
+        println!(
+            "Queue timestamp period for {:?} is {}ns",
+            adapter.get_info().name,
+            queue.get_timestamp_period()
+        );
+    }
+
+    Ok(())
+}
+
 // List monitors or show video modes for primary monitor or monitor chosen by index `n`.
 pub fn info_window(
     modes: bool,

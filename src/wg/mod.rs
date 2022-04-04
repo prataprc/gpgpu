@@ -2,9 +2,7 @@
 
 mod backends;
 mod gpu;
-pub mod models2;
 pub mod pretty;
-pub mod ui;
 
 pub use backends::{backend, backend_to_string, string_to_backend};
 pub use gpu::Gpu;

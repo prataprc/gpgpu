@@ -5,7 +5,7 @@ use winit::{
     window::Window,
 };
 
-use gpgpu::{niw, util, wg, Config, Error, Gpu};
+use gpgpu::{models, niw, util, Config, Error, Gpu};
 
 #[derive(Clone, StructOpt)]
 pub struct Opt {
@@ -78,130 +78,12 @@ fn on_main_events_cleared(
     None
 }
 
-//fn on_redraw_requested(
-//    _: &Window,
-//    r: &mut Renderer,
-//    _event: &mut Event<()>,
-//) -> Option<ControlFlow> {
-//    let module = {
-//        let desc = wgpu::ShaderModuleDescriptor {
-//            label: Some("Shader module"),
-//            source: wgpu::ShaderSource::Wgsl(include_str!("shader.wgsl").into()),
-//        };
-//        r.gpu.device.create_shader_module(&desc)
-//    };
-//    let render_pipeline_layout = {
-//        let desc = wgpu::PipelineLayoutDescriptor {
-//            label: Some("Render Pipeline Layout"),
-//            bind_group_layouts: &[],
-//            push_constant_ranges: &[],
-//        };
-//        r.gpu.device.create_pipeline_layout(&desc)
-//    };
-//    let render_pipeline = {
-//        let fragment_targets = vec![wgpu::ColorTargetState {
-//            format: r.gpu.surface_config.format,
-//            blend: Some(wgpu::BlendState::REPLACE),
-//            write_mask: wgpu::ColorWrites::ALL,
-//        }];
-//        let desc = wgpu::RenderPipelineDescriptor {
-//            label: Some("Render Pipeline"),
-//            layout: Some(&render_pipeline_layout),
-//            vertex: wgpu::VertexState {
-//                module: &module,
-//                entry_point: "vs_main",
-//                buffers: &[],
-//            },
-//            primitive: wgpu::PrimitiveState {
-//                topology: wgpu::PrimitiveTopology::TriangleList,
-//                strip_index_format: None,
-//                front_face: wgpu::FrontFace::Ccw,
-//                cull_mode: Some(wgpu::Face::Back),
-//                // Setting this to anything other than Fill requires
-//                // Features::NON_FILL_POLYGON_MODE
-//                polygon_mode: wgpu::PolygonMode::Fill,
-//                // Requires Features::DEPTH_CLIP_CONTROL
-//                unclipped_depth: false,
-//                // Requires Features::CONSERVATIVE_RASTERIZATION
-//                conservative: false,
-//            },
-//            depth_stencil: None,
-//            multisample: wgpu::MultisampleState {
-//                count: 1,
-//                mask: !0,
-//                alpha_to_coverage_enabled: false,
-//            },
-//            fragment: Some(wgpu::FragmentState {
-//                module: &module,
-//                entry_point: "fs_main",
-//                targets: fragment_targets.as_slice(),
-//            }),
-//            multiview: None,
-//        };
-//        r.gpu.device.create_render_pipeline(&desc)
-//    };
-//
-//    let surface_texture = r.gpu.get_current_texture().ok()?;
-//    let view = {
-//        let desc = wgpu::TextureViewDescriptor::default();
-//        surface_texture.texture.create_view(&desc)
-//    };
-//
-//    let mut encoder = {
-//        let desc = wgpu::CommandEncoderDescriptor {
-//            label: Some("clear_screen"),
-//        };
-//        r.gpu.device.create_command_encoder(&desc)
-//    };
-//    {
-//        let mut render_pass = {
-//            let ops = wgpu::Operations {
-//                load: wgpu::LoadOp::Clear(r.state.bg.clone()),
-//                store: true,
-//            };
-//            let desc = wgpu::RenderPassDescriptor {
-//                label: Some("Render Pass"),
-//                color_attachments: &[
-//                    // This is what @location(0) in the fragment shader targets
-//                    wgpu::RenderPassColorAttachment {
-//                        view: &view,
-//                        resolve_target: None,
-//                        ops,
-//                    },
-//                ],
-//                depth_stencil_attachment: None,
-//            };
-//            encoder.begin_render_pass(&desc)
-//        };
-//        render_pass.set_pipeline(&render_pipeline);
-//        render_pass.draw(0..3, 0..1);
-//    }
-//
-//    let cmd_buffers = vec![encoder.finish()];
-//
-//    match r.gpu.render(cmd_buffers, surface_texture) {
-//        Ok(_) => None,
-//        // Reconfigure the surface if lost
-//        Err(Error::SurfaceLost(_, _)) => {
-//            r.gpu.resize(r.gpu.size);
-//            None
-//        }
-//        // The system is out of memory, we should probably quit
-//        Err(Error::SurfaceOutOfMemory(_, _)) => Some(ControlFlow::Exit),
-//        // All other errors (Outdated, Timeout) should be resolved by the next frame
-//        Err(e) => {
-//            eprintln!("{:?}", e);
-//            None
-//        }
-//    }
-//}
-
 fn on_redraw_requested(
     _: &Window,
     r: &mut Renderer,
     _event: &mut Event<()>,
 ) -> Option<ControlFlow> {
-    let mut triangle = wg::ui::Triangle::new();
+    let mut triangle = models::triangle::Triangle::new();
     triangle.finalize(&r.gpu.device);
 
     let mut triangle_pipeline = triangle.create_pipeline();

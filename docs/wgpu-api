@@ -87,15 +87,30 @@ struct TextureDescriptor<L> {           enum TextureDimension {     struct Exten
     usage: TextureUsages,
 }
 pub struct TextureViewDescriptor<'a> {                  enum TextureViewDimension {         enum TextureAspect {
-    pub label: Label<'a>,                                   D1,                                 All,
-    pub format: Option<TextureFormat>,                      D2,                                 StencilOnly,
-    pub dimension: Option<TextureViewDimension>,            D2Array,                            DepthOnly,
-    pub aspect: TextureAspect,                              Cube,                           }
-    pub base_mip_level: u32,                                CubeArray,
-    pub mip_level_count: Option<NonZeroU32>,                D3,
-    pub base_array_layer: u32,                          }
-    pub array_layer_count: Option<NonZeroU32>,
+    label: Label<'a>,                                       D1,                                 All,
+    format: Option<TextureFormat>,                          D2,                                 StencilOnly,
+    dimension: Option<TextureViewDimension>,                D2Array,                            DepthOnly,
+    aspect: TextureAspect,                                  Cube,                           }
+    base_mip_level: u32,                                    CubeArray,
+    mip_level_count: Option<NonZeroU32>,                    D3,
+    base_array_layer: u32,                              }
+    array_layer_count: Option<NonZeroU32>,
 }
+struct SamplerDescriptor<'a> {                      enum AddressMode {          enum CompareFunction {
+    label: Label<'a>,                                   ClampToEdge,                Never,
+    address_mode_u: AddressMode,                        Repeat,                     Less,
+    address_mode_v: AddressMode,                        MirrorRepeat,               Equal,
+    address_mode_w: AddressMode,                        ClampToBorder,              LessEqual,
+    mag_filter: FilterMode,                         }                               Greater,
+    min_filter: FilterMode,                         enum FilterMode {               NotEqual,
+    mipmap_filter: FilterMode,                          Nearest,                    GreaterEqual,
+    lod_min_clamp: f32,                                 Linear,                     Always,
+    lod_max_clamp: f32,                             }                           }
+    compare: Option<CompareFunction>,               enum SamplerBorderColor {
+    anisotropy_clamp: Option<NonZeroU8>,                TransparentBlack,
+    border_color: Option<SamplerBorderColor>,           OpaqueBlack,
+}                                                       OpaqueWhite,
+                                                    }
 
 
 
@@ -110,14 +125,12 @@ struct BindGroupLayoutEntry {                               min_binding_size: Op
     count: Option<NonZeroU32>,                                                                              NonFiltering,
 }                                                                                                           Comparison,
                                                                                                         }
-                                                        Texture {                                       enum TextureSampleType {                enum TextureViewDimension {
-                                                            sample_type: TextureSampleType,                 Float { filterable: bool }              D1,
-                                                            view_dimension: TextureViewDimension,           Depth,                                  D2,
-                                                            multisampled: bool,                             Sint,                                   D2Array,
-                                                        },                                                  Uint,                                   Cube,
-                                                                                                        }                                           CubeArray,
-                                                                                                                                                    D3,
-                                                                                                                                                }
+                                                        Texture {                                       enum TextureSampleType {
+                                                            sample_type: TextureSampleType,                 Float { filterable: bool }
+                                                            view_dimension: TextureViewDimension,           Depth,
+                                                            multisampled: bool,                             Sint,
+                                                        },                                                  Uint,
+                                                                                                        }
                                                         StorageTexture {                                enum StorageTextureAccess {
                                                             access: StorageTextureAccess,                   ReadOnly,
                                                             view_dimension: TextureViewDimension,           WriteOnly,
@@ -218,9 +231,10 @@ struct RenderPipelineDescriptor<'a> {               struct VertexState<'a> {    
 
 struct BlendState {             struct BlendComponent {             enum BlendFactor {                                  enum BlendOperation {
     color: BlendComponent,          src_factor: BlendFactor,            Zero, One,                                          Add, Subtract, ReverseSubtract,
-    alpha: BlendComponent,          dst_factor: BlendFactor,            Src, OneMinusSrc, SrcAlpha, OneMinusSrcAlpha,       Min, Max,
-}                                   operation: BlendOperation,          Dst, OneMinusDst, DstAlpha, OneMinusDstAlpha,   }
-                                }                                       SrcAlphaSaturated,
+    alpha: BlendComponent,          dst_factor: BlendFactor,            Src, OneMinusSrc,                                   Min, Max,
+}                                   operation: BlendOperation,          SrcAlpha, OneMinusSrcAlpha, SrcAlphaSaturated,  }
+                                }                                       Dst, OneMinusDst,
+                                                                        DstAlpha, OneMinusDstAlpha,
                                                                         Constant,
                                                                         OneMinusConstant,
                                                                     }
@@ -250,23 +264,6 @@ struct RenderBundleEncoderDescriptor<'a> {                          struct Rende
     sample_count: u32,                                              }
     multiview: Option<NonZeroU32>,
 }
-
-
-struct SamplerDescriptor<'a> {                      enum AddressMode {          enum CompareFunction {
-    label: Label<'a>,                                   ClampToEdge,                Never,
-    address_mode_u: AddressMode,                        Repeat,                     Less,
-    address_mode_v: AddressMode,                        MirrorRepeat,               Equal,
-    address_mode_w: AddressMode,                        ClampToBorder,              LessEqual,
-    mag_filter: FilterMode,                         }                               Greater,
-    min_filter: FilterMode,                         enum FilterMode {               NotEqual,
-    mipmap_filter: FilterMode,                          Nearest,                    GreaterEqual,
-    lod_min_clamp: f32,                                 Linear,                     Always,
-    lod_max_clamp: f32,                             }                           }
-    compare: Option<CompareFunction>,               enum SamplerBorderColor {
-    anisotropy_clamp: Option<NonZeroU8>,                TransparentBlack,
-    border_color: Option<SamplerBorderColor>,           OpaqueBlack,
-}                                                       OpaqueWhite,
-                                                    }
 
 
 struct QuerySetDescriptor<L> {                      enum QueryType {                                    struct PipelineStatisticsTypes {
@@ -377,12 +374,12 @@ RenderPass <- CommandEncoder(RenderPassDescriptor)
     .set_viewport(x: f32, y: f32, w: f32, h: f32, min_depth: f32, max_depth: f32)
     .draw(self, vertices: Range<u32>, instances: Range<u32>)
     .draw_indexed(indices: Range<u32>, base_vertex: i32, instances: Range<u32>)
-    .draw_indexed_indirect(&'a Buffer, BufferAddress)
     .draw_indirect(&'a Buffer, BufferAddress)
-    .multi_draw_indexed_indirect(indirect_buffer: &'a Buffer, indirect_offset: BufferAddress, count)
-    .multi_draw_indexed_indirect_count(&'a Buffer, BufferAddress, count_buffer: &'a Buffer, count_offset: BufferAddress, max_count)
+    .draw_indexed_indirect(&'a Buffer, BufferAddress)
     .multi_draw_indirect(indirect_buffer: &'a Buffer, indirect_offset: BufferAddress)
     .multi_draw_indirect_count(&'a Buffer, BufferAddress, count_buffer: &'a Buffer, count_offset: BufferAddress, max_count)
+    .multi_draw_indexed_indirect(indirect_buffer: &'a Buffer, indirect_offset: BufferAddress, count)
+    .multi_draw_indexed_indirect_count(&'a Buffer, BufferAddress, count_buffer: &'a Buffer, count_offset: BufferAddress, max_count)
     .write_timestamp(query_set: &QuerySet, query_index: u32)
     .begin_pipeline_statistics_query(&QuerySet, query_index: u32)
     .end_pipeline_statistics_query()
@@ -399,8 +396,8 @@ RenderBundleEncoder <- Device(RenderBundleEncoderDescriptor)
     .set_push_constants(ShaderStages, offset: u32, data: &[u8])
     .draw(self, vertices: Range<u32>, instances: Range<u32>)
     .draw_indexed(indices: Range<u32>, base_vertex: i32, instances: Range<u32>)
-    .draw_indexed_indirect(&'a Buffer, BufferAddress)
     .draw_indirect(&'a Buffer, BufferAddress)
+    .draw_indexed_indirect(&'a Buffer, BufferAddress)
     .finish(RenderBundleDescriptor { lable }) --------------------------------------------> RenderBundle
 
 RenderPipeline <- Device(RenderPipelineDescriptor)
@@ -482,7 +479,7 @@ CommandEncoder, RenderBundleEncoder, RenderPipeline, ComputePipeline, RenderPass
 debug_marker, stack of debug_group
 ```
 
-What is color-blending, alpha-blending, depth-blending, stencil blending ?
+What is color-blending, alpha-blending, depth-blending, stencil-blending ?
 What is texture-addressing ?
 What is Fragment, and fragment components ?
 What is Buffer mapping ?
@@ -491,3 +488,8 @@ What is base mip level ?
 What is texture-aspect ?
 What is texture-format ?
 What is texture-type, normal-maps, diffuse-maps, bump-maps, specular-maps ?
+What is perspective camera ?
+What is Normalized Device Coordinate ?
+What is Fragment/Pixel Coordinate ?
+What is UVW Coordinate ?
+What is Texture-Coordinate ? Framebuffer-Coordinate ? Viewport Coordinate ?

@@ -1,76 +1,54 @@
-pub struct Triangle {
-    bind_group_layouts: Vec<wgpu::BindGroupLayout>,
-    push_constants: Vec<wgpu::PushConstantRange>,
-    module: Option<wgpu::ShaderModule>,
-    pipeline_layout: Option<wgpu::PipelineLayout>,
+use crate::{models, models::Shader};
+
+pub struct ColorShader {
+    module: wgpu::ShaderModule,
+    pipeline_layout: wgpu::PipelineLayout,
+    color_target_states: Vec<wgpu::ColorTargetState>,
 }
 
-impl Triangle {
-    pub fn new() -> Triangle {
-        Triangle {
-            bind_group_layouts: Vec::default(),
-            push_constants: Vec::default(),
-            module: None,
-            pipeline_layout: None,
+impl ColorShader {
+    pub fn new(device: &wgpu::Device) -> ColorShader {
+        let module = {
+            let text = include_str!("triangle.wgsl");
+            let desc = wgpu::ShaderModuleDescriptor {
+                label: Some("Triangle-Shader"),
+                source: wgpu::ShaderSource::Wgsl(text.into()),
+            };
+            device.create_shader_module(&desc)
+        };
+        let pipeline_layout = {
+            let desc = wgpu::PipelineLayoutDescriptor {
+                label: Some("Triangle-Pipeline-Layout"),
+                bind_group_layouts: &[],
+                push_constant_ranges: &[],
+            };
+            device.create_pipeline_layout(&desc)
+        };
+        ColorShader {
+            module,
+            pipeline_layout,
+            color_target_states: Vec::default(),
         }
     }
 
-    pub fn set_bind_group_layouts<I>(&mut self, layouts: I) -> &mut Self
+    pub fn set_color_target_states<I>(&mut self, states: I) -> &mut Self
     where
-        I: Iterator<Item = wgpu::BindGroupLayout>,
+        I: Iterator<Item = wgpu::ColorTargetState>,
     {
-        self.bind_group_layouts = layouts.collect();
-        self
-    }
-
-    pub fn set_push_constants<I>(&mut self, constants: I) -> &mut Self
-    where
-        I: Iterator<Item = wgpu::PushConstantRange>,
-    {
-        self.push_constants = constants.collect();
-        self
-    }
-
-    pub fn finalize(&mut self, device: &wgpu::Device) -> &Self {
-        let bind_group_layouts = self
-            .bind_group_layouts
-            .iter()
-            .collect::<Vec<&wgpu::BindGroupLayout>>();
-        let push_constants = self.push_constants.clone();
-
-        self.pipeline_layout = {
-            let desc = wgpu::PipelineLayoutDescriptor {
-                label: Some("Triangle-Pipeline-Layout"),
-                bind_group_layouts: bind_group_layouts.as_slice(),
-                push_constant_ranges: push_constants.as_slice(),
-            };
-            Some(device.create_pipeline_layout(&desc))
-        };
-
-        self.module = {
-            let desc = wgpu::ShaderModuleDescriptor {
-                label: Some("Triangle-Shader"),
-                source: wgpu::ShaderSource::Wgsl(include_str!("triangle.wgsl").into()),
-            };
-            Some(device.create_shader_module(&desc))
-        };
-
+        self.color_target_states = states.collect();
         self
     }
 }
 
-impl Triangle {
-    pub fn create_pipeline(&self) -> TrianglePipeline {
-        let module = self.module.as_ref().unwrap();
-        let layout = self.pipeline_layout.as_ref();
-
+impl models::Shader for ColorShader {
+    fn to_render_pipeline(&self, device: &wgpu::Device) -> wgpu::RenderPipeline {
         let desc = wgpu::RenderPipelineDescriptor {
             label: Some("Triangle-Pipeline"),
-            layout,
+            layout: Some(&self.pipeline_layout),
             vertex: wgpu::VertexState {
-                module: &module,
+                module: &self.module,
                 entry_point: "vs_main",
-                buffers: &[],
+                buffers: &[Vertex::desc()],
             },
             primitive: wgpu::PrimitiveState {
                 topology: wgpu::PrimitiveTopology::TriangleList,
@@ -88,46 +66,90 @@ impl Triangle {
                 alpha_to_coverage_enabled: false,
             },
             fragment: Some(wgpu::FragmentState {
-                module,
+                module: &self.module,
                 entry_point: "fs_main",
-                targets: &[],
+                targets: self.color_target_states.as_slice(),
             }),
             multiview: None,
         };
 
-        TrianglePipeline {
-            desc,
-            color_target_states: Vec::default(),
-            pipeline: None,
+        device.create_render_pipeline(&desc)
+    }
+
+    fn to_compute_pipeline(&self, _: &wgpu::Device) -> wgpu::ComputePipeline {
+        panic!("Model triangle does not support compute pipeline")
+    }
+}
+
+pub struct Triangle<S>
+where
+    S: models::Shader,
+{
+    shader: S,
+    vertices: Vec<Vertex>,
+}
+
+impl<S> Triangle<S>
+where
+    S: models::Shader,
+{
+    pub fn with_shader(shader: S) -> Triangle<S> {
+        Triangle {
+            shader,
+            vertices: Vec::default(),
         }
     }
-}
 
-pub struct TrianglePipeline<'a> {
-    desc: wgpu::RenderPipelineDescriptor<'a>,
-    color_target_states: Vec<wgpu::ColorTargetState>,
-    pipeline: Option<wgpu::RenderPipeline>,
-}
-
-impl<'a> TrianglePipeline<'a> {
-    pub fn set_color_target_states<I>(&mut self, states: I) -> &mut Self
-    where
-        I: Iterator<Item = wgpu::ColorTargetState>,
-    {
-        self.color_target_states = states.collect();
+    pub fn set_vertices(&mut self, vertices: &[Vertex]) -> &mut Self {
+        self.vertices = vertices.to_vec();
         self
     }
+}
 
-    pub fn finalize(&mut self, device: &wgpu::Device) -> &Self {
-        let color_target_states = self.color_target_states.clone();
-
-        let mut desc = self.desc.clone();
-        desc.fragment.as_mut().unwrap().targets = color_target_states.as_slice();
-        self.pipeline = Some(device.create_render_pipeline(&desc));
-        self
+impl models::Model for Triangle<ColorShader> {
+    fn to_pipeline(&self, device: &wgpu::Device) -> wgpu::RenderPipeline {
+        self.shader.to_render_pipeline(device)
     }
 
-    pub fn as_render_pipeline(&self) -> &wgpu::RenderPipeline {
-        self.pipeline.as_ref().unwrap()
+    fn to_vertex_buffers(&self, device: &wgpu::Device) -> Vec<(usize, wgpu::Buffer)> {
+        let vertex_buffer = Vertex::to_buffer(device, self.vertices.as_slice());
+        vec![vertex_buffer].into_iter().enumerate().collect()
+    }
+
+    fn draw(&self, _: &wgpu::Device, pass: &mut wgpu::RenderPass) {
+        pass.draw(0..3, 0..1);
+    }
+}
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct Vertex {
+    pub position: [f32; 3],
+    pub color: [f32; 3],
+}
+
+impl Vertex {
+    const ATTRIBS: [wgpu::VertexAttribute; 2] =
+        wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x3];
+
+    fn desc<'a>() -> wgpu::VertexBufferLayout<'a> {
+        use std::mem;
+
+        wgpu::VertexBufferLayout {
+            array_stride: mem::size_of::<Self>() as wgpu::BufferAddress,
+            step_mode: wgpu::VertexStepMode::Vertex,
+            attributes: &Self::ATTRIBS,
+        }
+    }
+
+    pub fn to_buffer(device: &wgpu::Device, vertices: &[Vertex]) -> wgpu::Buffer {
+        use wgpu::util::DeviceExt;
+
+        let desc = wgpu::util::BufferInitDescriptor {
+            label: Some("Vertex Buffer"),
+            contents: bytemuck::cast_slice(vertices),
+            usage: wgpu::BufferUsages::VERTEX,
+        };
+        device.create_buffer_init(&desc)
     }
 }

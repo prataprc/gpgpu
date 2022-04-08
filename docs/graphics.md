@@ -1,5 +1,16 @@
-primitive
-primitive-edges
+vertex          color               waves
+edges           brightness          oscillation
+primitives      depth               harmonics
+modelling       transparency        frequency
+geometry        opacity             amplitude
+                diffuse             photon-absorb
+                irridescence        photon-reflect
+                conductors          photon-transmit
+                dielectrics         photon-energy
+
+ray-geometry-intersection
+compositing
+
 aliasing and anti-aliasing
 super-sampling
 multi-sampling
@@ -7,9 +18,6 @@ coverage
 bit-blitting function
 alpha-blending function
 centroid-interpolation-qualifier function
-
-vertex-array-data
-  vertex attributes mapping
 
 image-format - color,depth,stencil,depth/stencil
   color - float, signed-normalised-int, unsigned-normalised-int, int, uint

@@ -23,6 +23,7 @@ struct TomlConfig {
     trace_path: Option<ffi::OsString>,
     present_mode: Option<String>,
     adapter_options: Option<TomlConfigAdapter>,
+    winit: Option<TomlConfigWinit>,
 }
 
 // Local type that is friendly for converting from toml Value.
@@ -100,6 +101,9 @@ impl TryFrom<TomlConfig> for Config {
         if let Some(val) = (|| adapter_options?.force_fallback_adapter)() {
             c.adapter_options.force_fallback_adapter = val;
         }
+        if let Some(val) = toml_config.winit {
+            c.winit = val.into()
+        }
 
         Ok(c)
     }
@@ -111,20 +115,8 @@ impl Config {
     where
         P: AsRef<path::Path>,
     {
-        let mut value: toml::Value = util::load_toml(loc)?;
-        let winit_config = match value.as_table_mut().unwrap().remove("winit") {
-            Some(winit_value) => ConfigWinit::from_toml(winit_value)?,
-            None => {
-                let c = Config::default();
-                c.winit
-            }
-        };
-
-        let tc: TomlConfig = err_at!(FailConvert, toml::from_str(&value.to_string()))?;
-        let mut conf: Config = tc.try_into()?;
-        conf.winit = winit_config;
-
-        Ok(conf)
+        let value: TomlConfig = util::load_toml(loc)?;
+        value.try_into()
     }
 
     /// Return [RequestAdapterOptions] that can be used to fetch a new compatible adapter,
@@ -229,7 +221,7 @@ impl Default for ConfigWinit {
             #[cfg(all(unix, not(target_os = "macos")))]
             inner_size: Some(vec![800.0, 600.0]),
             #[cfg(any(target_os = "android", target_os = "macos"))]
-            inner_size: None,
+            inner_size: Some(vec![800.0, 600.0]),
             max_inner_size: None,
             min_inner_size: None,
             position: None,

@@ -1,4 +1,4 @@
-use crate::{models, models::Shader};
+use crate::wg::{self, Shader};
 
 pub struct ColorShader {
     module: wgpu::ShaderModule,
@@ -40,39 +40,24 @@ impl ColorShader {
     }
 }
 
-impl models::Shader for ColorShader {
+impl wg::Shader for ColorShader {
     fn to_render_pipeline(&self, device: &wgpu::Device) -> wgpu::RenderPipeline {
+        let vertex = wgpu::VertexState {
+            module: &self.module,
+            entry_point: "vs_main",
+            buffers: &[Vertex::desc()],
+        };
+
         let desc = wgpu::RenderPipelineDescriptor {
             label: Some("Triangle-Pipeline"),
             layout: Some(&self.pipeline_layout),
-            vertex: wgpu::VertexState {
-                module: &self.module,
-                entry_point: "vs_main",
-                buffers: &[Vertex::desc()],
-            },
-            primitive: wgpu::PrimitiveState {
-                topology: wgpu::PrimitiveTopology::TriangleList,
-                strip_index_format: None,
-                front_face: wgpu::FrontFace::Ccw,
-                cull_mode: Some(wgpu::Face::Back),
-                polygon_mode: wgpu::PolygonMode::Fill,
-                unclipped_depth: false,
-                conservative: false,
-            },
-            depth_stencil: None,
-            multisample: wgpu::MultisampleState {
-                count: 1,
-                mask: !0,
-                alpha_to_coverage_enabled: false,
-            },
             fragment: Some(wgpu::FragmentState {
                 module: &self.module,
                 entry_point: "fs_main",
                 targets: self.color_target_states.as_slice(),
             }),
-            multiview: None,
+            ..wg::render_pipeline_desc(vertex)
         };
-
         device.create_render_pipeline(&desc)
     }
 
@@ -83,7 +68,7 @@ impl models::Shader for ColorShader {
 
 pub struct Triangle<S>
 where
-    S: models::Shader,
+    S: wg::Shader,
 {
     shader: S,
     vertices: Vec<Vertex>,
@@ -91,7 +76,7 @@ where
 
 impl<S> Triangle<S>
 where
-    S: models::Shader,
+    S: wg::Shader,
 {
     pub fn with_shader(shader: S) -> Triangle<S> {
         Triangle {
@@ -106,7 +91,7 @@ where
     }
 }
 
-impl models::Model for Triangle<ColorShader> {
+impl wg::Model for Triangle<ColorShader> {
     fn to_pipeline(&self, device: &wgpu::Device) -> wgpu::RenderPipeline {
         self.shader.to_render_pipeline(device)
     }

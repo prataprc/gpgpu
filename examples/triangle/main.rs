@@ -5,10 +5,7 @@ use winit::{
     window::Window,
 };
 
-use gpgpu::{
-    models::{self, Model},
-    niw, util, Config, Error, Gpu,
-};
+use gpgpu::{models, niw, util, wg::Model, Config, Error, Gpu};
 
 #[derive(Clone, StructOpt)]
 pub struct Opt {

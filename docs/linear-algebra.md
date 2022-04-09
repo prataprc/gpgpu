@@ -6,9 +6,21 @@ matrix  |                    |  unit-vector Â       |   minor of matrix        
 normal  |                    |  dot-product A.B     |   cofactor of matrix        | rotate transform
         |                    |  cross-product AxB   |   adjoint of matrix         | perpective transform
         |                    |  vector-angle θ      |   inverse of matrix         | shear transform
-        |                    |                      |                             | affine transform
+        |                    |                      |   orthogonal matrix         | affine transform
+        |                    |                      |   perspective matrix        |
 
 * vector-angle = invcos(unit-A.unit-B) that is, dot product of unit-vectors
+
+foreshortening              model-space             world-matrix
+sterioscoping-vision        world-space             view-matrix
+origin                      camera/view-space       projection-matrix
+vertices                    clip/projection-space   view-port
+topology-model              screen-space
+polygons
+mesh
+viewing-frustum
+perspective-projection
+scene
 
 Spherical coordinate system (r, teta, phi), teta is polar-angle, phi is azhimuth angle.
 

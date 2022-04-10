@@ -5,7 +5,9 @@ use winit::{
     window::Window,
 };
 
-use gpgpu::{models, niw, util, wg::Model, Config, Error, Gpu};
+use gpgpu::{niw, util, Config, Error, Gpu};
+
+mod triangle;
 
 #[derive(Clone, StructOpt)]
 pub struct Opt {
@@ -27,16 +29,16 @@ struct State {
     scale: f32,
 }
 
-const VERTICES: &[models::triangle::Vertex] = &[
-    models::triangle::Vertex {
+const VERTICES: &[triangle::Vertex] = &[
+    triangle::Vertex {
         position: [0.0, 0.5, 0.0],
         color: [1.0, 0.0, 0.0],
     },
-    models::triangle::Vertex {
+    triangle::Vertex {
         position: [-0.5, -0.5, 0.0],
         color: [0.0, 1.0, 0.0],
     },
-    models::triangle::Vertex {
+    triangle::Vertex {
         position: [0.5, -0.5, 0.0],
         color: [0.0, 0.0, 1.0],
     },
@@ -98,23 +100,8 @@ fn on_redraw_requested(
     r: &mut Renderer,
     _event: &mut Event<()>,
 ) -> Option<ControlFlow> {
-    let mut triangle = {
-        let mut shader = models::triangle::ColorShader::new(&r.gpu.device);
-        shader.set_color_target_states(
-            vec![wgpu::ColorTargetState {
-                format: r.gpu.surface_config.format,
-                blend: Some(wgpu::BlendState::REPLACE),
-                write_mask: wgpu::ColorWrites::ALL,
-            }]
-            .into_iter(),
-        );
-        models::triangle::Triangle::with_shader(shader)
-    };
-    let vertex_buffers = {
-        triangle.set_vertices(VERTICES);
-        triangle.to_vertex_buffers(&r.gpu.device)
-    };
-    let pipeline = triangle.to_pipeline(&r.gpu.device);
+    let vertex_buffer = triangle::Vertex::to_buffer(&r.gpu.device, VERTICES);
+    let pipeline = triangle::render_pipeline(&r.gpu.device, r.gpu.surface_config.format);
 
     let surface_texture = r.gpu.get_current_texture().ok()?;
     let view = {
@@ -149,10 +136,8 @@ fn on_redraw_requested(
             encoder.begin_render_pass(&desc)
         };
         render_pass.set_pipeline(&pipeline);
-        for (slot, buffer) in vertex_buffers.iter() {
-            render_pass.set_vertex_buffer(*slot as u32, buffer.slice(..));
-        }
-        triangle.draw(&r.gpu.device, &mut render_pass);
+        render_pass.set_vertex_buffer(0, vertex_buffer.slice(..));
+        render_pass.draw(0..3, 0..1);
     }
 
     let cmd_buffers = vec![encoder.finish()];

@@ -138,28 +138,3 @@ impl Gpu {
 fn uncaptured_error_handler(err: wgpu::Error) {
     error!(target: "wg::Gpu", "uncaptured error: {}", err)
 }
-
-pub fn render_pipeline_desc(vertex: wgpu::VertexState) -> wgpu::RenderPipelineDescriptor {
-    wgpu::RenderPipelineDescriptor {
-        label: None,
-        layout: None,
-        vertex,
-        primitive: wgpu::PrimitiveState {
-            topology: wgpu::PrimitiveTopology::TriangleList,
-            strip_index_format: None,
-            front_face: wgpu::FrontFace::Ccw,
-            cull_mode: Some(wgpu::Face::Back),
-            polygon_mode: wgpu::PolygonMode::Fill,
-            unclipped_depth: false,
-            conservative: false,
-        },
-        depth_stencil: None,
-        multisample: wgpu::MultisampleState {
-            count: 1,
-            mask: !0,
-            alpha_to_coverage_enabled: false,
-        },
-        fragment: None,
-        multiview: None,
-    }
-}

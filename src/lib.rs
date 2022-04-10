@@ -93,7 +93,6 @@ impl error::Error for Error {}
 pub type Result<T> = result::Result<T, Error>;
 
 mod config;
-pub mod models;
 pub mod niw;
 pub mod util;
 pub mod vk;

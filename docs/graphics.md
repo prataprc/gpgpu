@@ -1,12 +1,15 @@
-vertex          color               waves
-edges           brightness          oscillation
-primitives      depth               harmonics
-modelling       transparency        frequency
-geometry        opacity             amplitude
-                diffuse             photon-absorb
-                irridescence        photon-reflect
-                conductors          photon-transmit
-                dielectrics         photon-energy
+vertex          color               waves               foreshortening              model-space             world-matrix
+edges           brightness          oscillation         sterioscoping-vision        world-space             view-matrix
+primitives      depth               harmonics           origin                      camera/view-space       projection-matrix
+modelling       transparency        frequency           vertices                    clip/projection-space   view-port
+geometry        opacity             amplitude           topology-model              screen-space
+camera          diffuse             photon-absorb       polygons
+lights          irridescence        photon-reflect      mesh
+                conductors          photon-transmit     viewing-frustum
+                dielectrics         photon-energy       perspective-projection
+                                                        scene
+
+
 
 ray-geometry-intersection
 compositing
@@ -27,25 +30,6 @@ texture-coordinates
 autofill for RGBA, RGB to 0 and A to 1.0
 sampler
 image-load-store
-
-
-geometry
---------
-
-points, vectors, normals.
-curve, tangent-line. surface, tangent-plane.
-normalization of vectors (TBD)
-linear operations on points in a coordinate.
-  transformation, change of basis, change of coordinates
-transformation
-  translate
-  scale
-  rotate
-In linear algebra,
-  1 or 2 or 3 axes form the "basis" of a coordinate system.
-  a basis is set of linearly independent vectors.
-  in a linear combination (aka span) can represent a plan (2-axes) or space (3-axes)
-psuedo-vectors and surface-normals.
 
 
 GPU

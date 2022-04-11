@@ -1,31 +1,20 @@
- Ideas  |  Point             |  Vector              | Matrix                      | Transforms
---------|--------------------|----------------------|-----------------------------|------------------------
-points  |   position         |  direction           |   determinant               | identity transform
-vector  |   homogenous-point |  magnitude |A|       |   basis (Change of basis)   | translate transform
-matrix  |                    |  unit-vector Â       |   minor of matrix           | scale transform
-normal  |                    |  dot-product A.B     |   cofactor of matrix        | rotate transform
-        |                    |  cross-product AxB   |   adjoint of matrix         | perpective transform
-        |                    |  vector-angle θ      |   inverse of matrix         | shear transform
-        |                    |                      |   orthogonal matrix         | affine transform
-        |                    |                      |   perspective matrix        |
+ Ideas    |  Point             |  Vector              | Matrix                      | Transforms
+----------|--------------------|----------------------|-----------------------------|------------------------
+points    |   position         |  direction           |   determinant               | identity transform
+vector    |   homogenous-point |  magnitude |A|       |   basis (Change of basis)   | translate transform
+matrix    |                    |  unit-vector Â       |   minor of matrix           | scale transform
+normal    |                    |  dot-product A.B     |   cofactor of matrix        | rotate transform
+tangent   |                    |  cross-product AxB   |   adjoint of matrix         | perpective transform
+bitangent |                    |  vector-angle θ      |   inverse of matrix         | shear transform
+surface   |                    |                      |   orthogonal matrix         | affine transform
+          |                    |                      |   perspective matrix        |
 
 * vector-angle = invcos(unit-A.unit-B) that is, dot product of unit-vectors
 
-foreshortening              model-space             world-matrix
-sterioscoping-vision        world-space             view-matrix
-origin                      camera/view-space       projection-matrix
-vertices                    clip/projection-space   view-port
-topology-model              screen-space
-polygons
-mesh
-viewing-frustum
-perspective-projection
-scene
-
 Spherical coordinate system (r, teta, phi), teta is polar-angle, phi is azhimuth angle.
 
-Tx  Ty  Tz  0       tangent
-Bx  By  Bz  0       bi-tangent
+Tx  Ty  Tz  0       tangent    (right)
+Bx  By  Bz  0       bi-tangent (forward)
 Nx  Ny  Nz  0       normal
 0   0   0   1
 

@@ -133,8 +133,25 @@ impl Gpu {
 
         Ok(())
     }
+
+    pub fn to_extent3d(&self) -> wgpu::Extent3d {
+        let width = self.surface_config.width;
+        let height = self.surface_config.height;
+        let depth_or_array_layers = 1;
+        wgpu::Extent3d { width, height, depth_or_array_layers }
+    }
 }
 
 fn uncaptured_error_handler(err: wgpu::Error) {
     error!(target: "wg::Gpu", "uncaptured error: {}", err)
+}
+
+pub fn texture_to_copy(texture: &wgpu::Texture) -> wgpu::ImageCopyTexture {
+    let origin = wgpu::Origin3d { x: 0, y: 0, z: 0 };
+    wgpu::ImageCopyTexture {
+        texture,
+        mip_level: 0,
+        origin,
+        aspect: wgpu::TextureAspect::All,
+    }
 }

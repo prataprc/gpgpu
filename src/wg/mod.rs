@@ -5,4 +5,4 @@ mod gpu;
 pub mod pretty;
 
 pub use backends::{backend, backend_to_string, string_to_backend};
-pub use gpu::Gpu;
+pub use gpu::{texture_to_copy, Gpu};

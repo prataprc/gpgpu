@@ -7,7 +7,7 @@ use winit::{
 
 use gpgpu::{niw, util, Config, Error, Gpu};
 
-mod triangle;
+mod render;
 
 #[derive(Clone, StructOpt)]
 pub struct Opt {
@@ -29,16 +29,16 @@ struct State {
     scale: f32,
 }
 
-const VERTICES: &[triangle::Vertex] = &[
-    triangle::Vertex {
+const VERTICES: &[render::Vertex] = &[
+    render::Vertex {
         position: [0.0, 0.5, 0.0],
         color: [1.0, 0.0, 0.0],
     },
-    triangle::Vertex {
+    render::Vertex {
         position: [-0.5, -0.5, 0.0],
         color: [0.0, 1.0, 0.0],
     },
-    triangle::Vertex {
+    render::Vertex {
         position: [0.5, -0.5, 0.0],
         color: [0.0, 0.0, 1.0],
     },
@@ -100,8 +100,8 @@ fn on_redraw_requested(
     r: &mut Renderer,
     _event: &mut Event<()>,
 ) -> Option<ControlFlow> {
-    let vertex_buffer = triangle::Vertex::to_buffer(&r.gpu.device, VERTICES);
-    let pipeline = triangle::render_pipeline(&r.gpu.device, r.gpu.surface_config.format);
+    let vertex_buffer = render::Vertex::to_buffer(&r.gpu.device, VERTICES);
+    let pipeline = render::render_pipeline(&r.gpu.device, r.gpu.surface_config.format);
 
     let surface_texture = r.gpu.get_current_texture().ok()?;
     let view = {

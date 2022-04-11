@@ -3,7 +3,7 @@ pub fn render_pipeline(
     format: wgpu::TextureFormat,
 ) -> wgpu::RenderPipeline {
     let module = {
-        let text = include_str!("triangle.wgsl");
+        let text = include_str!("shader.wgsl");
         let desc = wgpu::ShaderModuleDescriptor {
             label: Some("Triangle-Shader"),
             source: wgpu::ShaderSource::Wgsl(text.into()),

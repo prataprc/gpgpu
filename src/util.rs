@@ -1,6 +1,6 @@
 use serde::de::DeserializeOwned;
 
-use std::{fs, path};
+use std::{fmt, fs, path};
 
 use crate::{Error, Result};
 
@@ -28,6 +28,43 @@ where
             table.set_format(R::to_format());
             table
         }
+    }
+}
+
+pub trait PrettyPrint {
+    fn print(&self);
+}
+
+impl<T> PrettyPrint for cgmath::Vector4<T>
+where
+    T: fmt::Display,
+{
+    fn print(&self) {
+        println!("{:.4} {:.4} {:.4} {:.4} ", self.x, self.y, self.z, self.w);
+    }
+}
+
+impl<T> PrettyPrint for cgmath::Matrix4<T>
+where
+    T: fmt::Display,
+{
+    fn print(&self) {
+        println!(
+            "{:.4} {:.4} {:.4} {:.4}",
+            self.x.x, self.y.x, self.z.x, self.w.x
+        );
+        println!(
+            "{:.4} {:.4} {:.4} {:.4}",
+            self.x.y, self.y.y, self.z.y, self.w.y
+        );
+        println!(
+            "{:.4} {:.4} {:.4} {:.4}",
+            self.x.z, self.y.z, self.z.z, self.w.z
+        );
+        println!(
+            "{:.4} {:.4} {:.4} {:.4}",
+            self.x.w, self.y.w, self.z.w, self.w.w
+        );
     }
 }
 

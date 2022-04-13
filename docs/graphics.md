@@ -9,6 +9,9 @@ lights          irridescence        photon-reflect      mesh
                 dielectrics         photon-energy       perspective-projection
                                                         scene
 
+pitch-(x)
+yaw---(y)
+roll--(z)
 
 
 ray-geometry-intersection

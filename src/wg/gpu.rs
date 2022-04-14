@@ -140,6 +140,11 @@ impl Gpu {
         let depth_or_array_layers = 1;
         wgpu::Extent3d { width, height, depth_or_array_layers }
     }
+
+    // width / height of the surface
+    pub fn to_aspect_ratio(&self) -> f32 {
+        (self.surface_config.width as f32) / (self.surface_config.height as f32)
+    }
 }
 
 fn uncaptured_error_handler(err: wgpu::Error) {

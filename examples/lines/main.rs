@@ -70,8 +70,7 @@ fn main() {
         .unwrap();
         let p = Perspective {
             fov: Deg(90.0),
-            aspect: (gpu.surface_config.width as f32)
-                / (gpu.surface_config.height as f32),
+            aspect: gpu.to_aspect_ratio(),
             near: 100.0,
             far: 2000.0,
         };
@@ -131,6 +130,8 @@ fn on_redraw_requested(
         };
         r.gpu.device.create_command_encoder(&desc)
     };
+
+    r.state.p.aspect = r.gpu.to_aspect_ratio();
 
     let mut transforms = r.state.transforms;
     transforms

@@ -38,7 +38,7 @@ toml = "0.5.8"
 tint = "1.0.1"
 serde = { version = "1", features = ["derive"] }
 structopt = { version = "0.3.20", default-features = false }
-bytemuck = { version = "1.4", features = [ "derive" ] }
+bytemuck = { version = "1.9.1", features = [ "derive" ] }
 cgmath = "0.18.0"
 rand = { version = "0.8.4", features = ["std_rng"] }
 

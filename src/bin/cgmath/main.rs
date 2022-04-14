@@ -24,7 +24,7 @@ enum SubCommand {
     Angle,
     Info,
     Scale {
-        #[structopt(long = "vertices")]
+        #[structopt(long = "wireframe")]
         loc: Option<path::PathBuf>,
 
         #[structopt(short = "r", long = "ratio")]
@@ -34,14 +34,14 @@ enum SubCommand {
         xyz: Option<Vec<f32>>,
     },
     Translate {
-        #[structopt(long = "vertices")]
+        #[structopt(long = "wireframe")]
         loc: Option<path::PathBuf>,
 
         #[structopt(long = "xyz", default_value = "1.0,1.0,1.0", use_delimiter = true)]
         xyz: Vec<f32>,
     },
     Rotate {
-        #[structopt(long = "vertices")]
+        #[structopt(long = "wireframe")]
         loc: Option<path::PathBuf>,
 
         #[structopt(short = "x", default_value = "0.0")]
@@ -53,15 +53,8 @@ enum SubCommand {
         #[structopt(short = "z", default_value = "0.0")]
         z: f32,
     },
-    Frustum {
-        #[structopt(long = "vertices")]
-        loc: Option<path::PathBuf>,
-
-        #[structopt(long = "args", use_delimiter = true)]
-        args: Vec<f32>,
-    },
-    Projection {
-        #[structopt(long = "vertices")]
+    Perspective {
+        #[structopt(long = "wireframe")]
         loc: Option<path::PathBuf>,
 
         #[structopt(long = "args", use_delimiter = true)]
@@ -80,36 +73,36 @@ fn main() {
         SubCommand::Scale { .. } => handle_scale(&opts),
         SubCommand::Translate { .. } => handle_translate(&opts),
         SubCommand::Rotate { .. } => handle_rotate(&opts),
-        SubCommand::Frustum { .. } => handle_frustum(&opts),
-        SubCommand::Projection { .. } => handle_projection(&opts),
+        SubCommand::Perspective { .. } => handle_perspective(&opts),
     };
 
     res.map_err(|e| println!("Error {}", e)).ok();
 }
 
 fn handle_scale(opts: &Opt) -> Result<()> {
-    use gpgpu::wg::wireframe::Vertices;
+    use gpgpu::{wireframe::Wireframe, Transforms};
 
     let (loc, ratio, xyz) = match &opts.subcmd {
         SubCommand::Scale { loc, ratio, xyz } => (loc, ratio, xyz),
         _ => unreachable!(),
     };
 
+    let mut transform = Transforms::empty();
+    if let Some(ratio) = ratio {
+        transform.scale_by(*ratio)
+    } else if let Some([x]) = xyz.as_deref() {
+        transform.scale_xyz_by(*x, 1.0, 1.0)
+    } else if let Some([x, y]) = xyz.as_deref() {
+        transform.scale_xyz_by(*x, *y, 1.0)
+    } else if let Some([x, y, z]) = xyz.as_deref() {
+        transform.scale_xyz_by(*x, *y, *z)
+    } else {
+        transform.scale_by(1.0)
+    };
+
     match loc {
         Some(loc) => {
-            let in_verts = Vertices::from_file(loc)?;
-
-            let out_verts = if let Some(ratio) = ratio {
-                in_verts.scale(*ratio)
-            } else if let Some([x]) = xyz.as_deref() {
-                in_verts.scale_xyz(*x, 1.0, 1.0)
-            } else if let Some([x, y]) = xyz.as_deref() {
-                in_verts.scale_xyz(*x, *y, 1.0)
-            } else if let Some([x, y, z]) = xyz.as_deref() {
-                in_verts.scale_xyz(*x, *y, *z)
-            } else {
-                in_verts.scale(1.0)
-            };
+            let in_verts = Wireframe::from_file(loc)?;
 
             println!("Input");
             println!("{}", in_verts);
@@ -117,22 +110,10 @@ fn handle_scale(opts: &Opt) -> Result<()> {
             println!();
 
             println!("Output");
-            println!("{}", out_verts);
+            println!("{}", in_verts.transform(transform.model()))
         }
         None => {
-            let mat = if let Some(ratio) = ratio {
-                Matrix4::from_scale(*ratio)
-            } else if let Some([x]) = xyz.as_deref() {
-                Matrix4::from_nonuniform_scale(*x, 1.0, 1.0)
-            } else if let Some([x, y]) = xyz.as_deref() {
-                Matrix4::from_nonuniform_scale(*x, *y, 1.0)
-            } else if let Some([x, y, z]) = xyz.as_deref() {
-                Matrix4::from_nonuniform_scale(*x, *y, *z)
-            } else {
-                Matrix4::from_scale(1.0)
-            };
-
-            mat.print();
+            transform.model().print();
         }
     }
 
@@ -140,26 +121,27 @@ fn handle_scale(opts: &Opt) -> Result<()> {
 }
 
 fn handle_translate(opts: &Opt) -> Result<()> {
-    use gpgpu::wg::wireframe::Vertices;
+    use gpgpu::{wireframe::Wireframe, Transforms};
 
     let (loc, xyz) = match &opts.subcmd {
         SubCommand::Translate { loc, xyz } => (loc, xyz),
         _ => unreachable!(),
     };
 
+    let mut transform = Transforms::empty();
+    if let [x] = xyz.as_slice() {
+        transform.translate_by((*x, 0.0, 0.0).into())
+    } else if let [x, y] = xyz.as_slice() {
+        transform.translate_by((*x, *y, 0.0).into())
+    } else if let [x, y, z] = xyz.as_slice() {
+        transform.translate_by((*x, *y, *z).into())
+    } else {
+        transform.translate_by((0.0, 0.0, 0.0).into())
+    };
+
     match loc {
         Some(loc) => {
-            let in_verts = Vertices::from_file(loc)?;
-
-            let out_verts = if let [x] = xyz.as_slice() {
-                in_verts.translate((*x, 0.0, 0.0).into())
-            } else if let [x, y] = xyz.as_slice() {
-                in_verts.translate((*x, *y, 0.0).into())
-            } else if let [x, y, z] = xyz.as_slice() {
-                in_verts.translate((*x, *y, *z).into())
-            } else {
-                in_verts.translate((0.0, 0.0, 0.0).into())
-            };
+            let in_verts = Wireframe::from_file(loc)?;
 
             println!("Input");
             println!("{}", in_verts);
@@ -167,38 +149,28 @@ fn handle_translate(opts: &Opt) -> Result<()> {
             println!();
 
             println!("Output");
-            println!("{}", out_verts);
+            println!("{}", in_verts.transform(transform.model()));
         }
-        None => {
-            let tv: Vector3<f32> = if let [x] = xyz.as_slice() {
-                (*x, 0.0, 0.0).into()
-            } else if let [x, y] = xyz.as_slice() {
-                (*x, *y, 0.0).into()
-            } else if let [x, y, z] = xyz.as_slice() {
-                (*x, *y, *z).into()
-            } else {
-                (0.0, 0.0, 0.0).into()
-            };
-            let mat = Matrix4::from_translation(tv);
-            mat.print()
-        }
+        None => transform.model().print(),
     }
 
     Ok(())
 }
 
 fn handle_rotate(opts: &Opt) -> Result<()> {
-    use gpgpu::wg::wireframe::Vertices;
+    use gpgpu::{wireframe::Wireframe, Transforms};
 
     let (loc, x, y, z) = match &opts.subcmd {
         SubCommand::Rotate { loc, x, y, z } => (loc, Deg(*x), Deg(*y), Deg(*z)),
         _ => unreachable!(),
     };
 
+    let mut transform = Transforms::empty();
+    transform.rotate_by(Some(x), Some(y), Some(z));
+
     match loc {
         Some(loc) => {
-            let in_verts = Vertices::from_file(loc)?;
-            let out_verts = in_verts.rotate(Some(x), Some(y), Some(z));
+            let in_verts = Wireframe::from_file(loc)?;
 
             println!("Input");
             println!("{}", in_verts);
@@ -206,7 +178,7 @@ fn handle_rotate(opts: &Opt) -> Result<()> {
             println!();
 
             println!("Output");
-            println!("{}", out_verts);
+            println!("{}", in_verts.transform(transform.model()));
         }
         None => {
             let matx = Matrix4::from_angle_x(x);
@@ -222,27 +194,34 @@ fn handle_rotate(opts: &Opt) -> Result<()> {
             println!("Z-axis rotation");
             matz.print();
             println!();
+            println!("XYZ rotation");
+            transform.model().print();
+            println!();
         }
     }
 
     Ok(())
 }
 
-fn handle_frustum(opts: &Opt) -> Result<()> {
-    use gpgpu::wg::wireframe::Vertices;
+fn handle_perspective(opts: &Opt) -> Result<()> {
+    use gpgpu::{wireframe::Wireframe, Perspective, Transforms};
 
-    let (loc, frustum) = match &opts.subcmd {
-        SubCommand::Frustum { loc, args: a } => {
-            let frustum = cgmath::frustum(a[0], a[1], a[2], a[3], a[4], a[5]);
-            (loc, frustum)
-        }
+    let (loc, fov, aspect, near, far) = match &opts.subcmd {
+        SubCommand::Perspective { loc, args: a } => (loc, Deg(a[0]), a[1], a[2], a[3]),
         _ => unreachable!(),
     };
 
+    let mut transform = Transforms::empty();
+    transform.perspective_by(Perspective {
+        fov,
+        aspect,
+        near,
+        far,
+    });
+
     match loc {
         Some(loc) => {
-            let in_verts = Vertices::from_file(loc)?;
-            let out_verts = in_verts.transform(frustum);
+            let in_verts = Wireframe::from_file(loc)?;
 
             println!("Input");
             println!("{}", in_verts);
@@ -250,44 +229,11 @@ fn handle_frustum(opts: &Opt) -> Result<()> {
             println!();
 
             println!("Output");
-            println!("{}", out_verts);
-        }
-        None => {
-            println!("Frustum matrix");
-            frustum.print();
-        }
-    }
-
-    Ok(())
-}
-
-fn handle_projection(opts: &Opt) -> Result<()> {
-    use gpgpu::wg::wireframe::Vertices;
-
-    let (loc, perspective) = match &opts.subcmd {
-        SubCommand::Projection { loc, args: a } => {
-            let perspective = cgmath::perspective(Deg(a[0]), a[1], a[2], a[3]);
-            (loc, perspective)
-        }
-        _ => unreachable!(),
-    };
-
-    match loc {
-        Some(loc) => {
-            let in_verts = Vertices::from_file(loc)?;
-            let out_verts = in_verts.transform(perspective);
-
-            println!("Input");
-            println!("{}", in_verts);
-
-            println!();
-
-            println!("Output");
-            println!("{}", out_verts);
+            println!("{}", in_verts.transform(transform.projection()));
         }
         None => {
             println!("Projection matrix");
-            perspective.print();
+            transform.projection().print();
         }
     }
 

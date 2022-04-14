@@ -1,4 +1,3 @@
-use rand::random;
 use structopt::StructOpt;
 use winit::{
     event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent},
@@ -6,7 +5,9 @@ use winit::{
     window::Window,
 };
 
-use gpgpu::{niw, util, wg, Config, Error, Gpu};
+use std::path;
+
+use gpgpu::{niw, util, wireframe::Wireframe, Config, Error, Gpu};
 
 mod render;
 
@@ -18,8 +19,11 @@ pub struct Opt {
     #[structopt(short = "fg")]
     fg: Option<String>,
 
-    #[structopt(short = "n", default_value = "100")]
-    n_points: u32,
+    #[structopt(short = "scale")]
+    scale: Option<f32>,
+
+    #[structopt(short = "vertices", default_value = "vertices.txt")]
+    vertices: path::PathBuf,
 }
 
 type Renderer = niw::Renderer<Gpu, State>;
@@ -27,8 +31,8 @@ type Renderer = niw::Renderer<Gpu, State>;
 struct State {
     bg: wgpu::Color,
     fg: wgpu::Color,
-    n_points: u32,
-    texture: wgpu::Texture,
+    scale: f32,
+    wireframe: Wireframe,
 }
 
 fn main() {
@@ -36,7 +40,7 @@ fn main() {
 
     let opts = Opt::from_args();
 
-    let name = "example-points".to_string();
+    let name = "example-triangle".to_string();
     let config = Config::default();
 
     let mut swin = {
@@ -58,28 +62,14 @@ fn main() {
             Config::default(),
         ))
         .unwrap();
-        let texture = {
-            let size = gpu.to_extent3d();
-            let usage =
-                wgpu::TextureUsages::COPY_SRC | wgpu::TextureUsages::RENDER_ATTACHMENT;
-            let desc = wgpu::TextureDescriptor {
-                label: Some("point-render"),
-                size,
-                mip_level_count: 1,
-                sample_count: 1,
-                dimension: wgpu::TextureDimension::D2,
-                format: gpu.surface_config.format,
-                usage,
-            };
-            gpu.device.create_texture(&desc)
-        };
+        let wireframe = Wireframe::from_bytes(fs::read(opts.vertices).unwrap()).unwrap();
         let state = State {
-            bg: util::html_to_color(&opts.bg.clone().unwrap_or("#000000".to_string()))
+            bg: util::html_to_color(&opts.bg.clone().unwrap_or("#123456".to_string()))
                 .unwrap(),
-            fg: util::html_to_color(&opts.fg.clone().unwrap_or("#123456".to_string()))
+            fg: util::html_to_color(&opts.fg.clone().unwrap_or("#000000".to_string()))
                 .unwrap(),
-            n_points: opts.n_points,
-            texture,
+            scale: opts.fg.unwrap_or("1.0".to_string()).parse().unwrap(),
+            wireframe,
         };
         Renderer { gpu, state }
     };
@@ -103,62 +93,18 @@ fn on_redraw_requested(
     r: &mut Renderer,
     _event: &mut Event<()>,
 ) -> Option<ControlFlow> {
-    let vertices: Vec<render::Vertex> = (0..r.state.n_points)
-        .map(|_| {
-            let wgpu::Color { r, g, b, .. } = r.state.fg;
-            let x = ((random::<i32>() as f64) / (i32::MAX as f64)) as f32;
-            let y = ((random::<i32>() as f64) / (i32::MAX as f64)) as f32;
-            // println!("{} {}", x, y);
-            render::Vertex {
-                position: [x, y, 0.0],
-                color: [r as f32, g as f32, b as f32],
-            }
-        })
-        .collect();
-    let vertex_buffer = render::Vertex::to_buffer(&r.gpu.device, vertices.as_slice());
-    let pipeline = render::render_pipeline(&r.gpu);
-
     let surface_texture = r.gpu.get_current_texture().ok()?;
-    let render_view = {
+    let view = {
         let desc = wgpu::TextureViewDescriptor::default();
-        r.state.texture.create_view(&desc)
+        surface_texture.texture.create_view(&desc)
     };
 
     let mut encoder = {
         let desc = wgpu::CommandEncoderDescriptor {
-            label: Some("example-points"),
+            label: Some("clear_screen"),
         };
         r.gpu.device.create_command_encoder(&desc)
     };
-    {
-        let mut render_pass = {
-            let ops = wgpu::Operations {
-                load: wgpu::LoadOp::Load,
-                store: true,
-            };
-            let desc = wgpu::RenderPassDescriptor {
-                label: Some("Render Pass"),
-                color_attachments: &[
-                    // This is what @location(0) in the fragment shader targets
-                    wgpu::RenderPassColorAttachment {
-                        view: &render_view,
-                        resolve_target: None,
-                        ops,
-                    },
-                ],
-                depth_stencil_attachment: None,
-            };
-            encoder.begin_render_pass(&desc)
-        };
-        render_pass.set_pipeline(&pipeline);
-        render_pass.set_vertex_buffer(0, vertex_buffer.slice(..));
-        render_pass.draw(0..r.state.n_points, 0..1);
-    }
-    {
-        let src = r.state.texture.as_image_copy();
-        let dst = surface_texture.texture.as_image_copy();
-        encoder.copy_texture_to_texture(src, dst, r.gpu.to_extent3d())
-    }
 
     let cmd_buffers = vec![encoder.finish()];
 

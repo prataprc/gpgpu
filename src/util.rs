@@ -1,6 +1,6 @@
 use serde::de::DeserializeOwned;
 
-use std::{fmt, fs, path};
+use std::{fmt, fs, path, str::FromStr};
 
 use crate::{Error, Result};
 
@@ -93,4 +93,21 @@ pub fn html_to_color(s: &str) -> Result<wgpu::Color> {
         a: c.alpha,
     };
     Ok(val)
+}
+
+pub fn parse_csv<T>(txt: &str) -> Result<Vec<T>>
+where
+    T: FromStr,
+    <T as FromStr>::Err: fmt::Display,
+{
+    let items: Vec<Result<T>> = txt
+        .split(",")
+        .map(|a| err_at!(FailConvert, a.parse()))
+        .collect();
+    let mut outs = vec![];
+    for item in items.into_iter() {
+        outs.push(item?)
+    }
+
+    Ok(outs)
 }

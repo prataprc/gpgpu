@@ -94,9 +94,11 @@ pub type Result<T> = result::Result<T, Error>;
 
 mod config;
 pub mod niw;
+mod transforms;
 pub mod util;
 pub mod vk;
 pub mod wg;
+pub mod wireframe;
 
 /// Trait to be implemented by window type.
 pub trait Windowing {
@@ -105,4 +107,5 @@ pub trait Windowing {
 }
 
 pub use config::{Config, ConfigAdapter, ConfigWinit};
+pub use transforms::{Ortho, Perspective, Transforms};
 pub use wg::Gpu;

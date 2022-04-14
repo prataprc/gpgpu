@@ -1,3 +1,3 @@
 mod wireframe;
 
-pub use wireframe::Wireframe;
+pub use wireframe::{Vertex, Wireframe};

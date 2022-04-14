@@ -10,6 +10,7 @@ pub const OPENGL_TO_WGPU_MATRIX: Matrix4<f32> = Matrix4::new(
     0.0, 0.0, 0.5, 1.0,
 );
 
+#[derive(Clone, Copy)]
 pub struct Perspective<A>
 where
     A: Into<Rad<f32>>,
@@ -20,6 +21,7 @@ where
     pub far: f32,
 }
 
+#[derive(Clone, Copy)]
 pub struct Ortho {
     pub left: f32,
     pub right: f32,
@@ -30,6 +32,7 @@ pub struct Ortho {
 }
 
 // Model, View, Projection transform
+#[derive(Clone, Copy)]
 pub struct Transforms {
     // model
     scale: Matrix4<f32>,
@@ -43,6 +46,7 @@ pub struct Transforms {
     projection: Projection,
 }
 
+#[derive(Clone, Copy)]
 enum Projection {
     P(Matrix4<f32>),
     O(Matrix4<f32>),
@@ -163,7 +167,7 @@ impl Transforms {
         device.create_bind_group_layout(&desc)
     }
 
-    pub fn to_bind_group<A>(
+    pub fn to_bind_group(
         &self,
         device: &wgpu::Device,
         layout: &wgpu::BindGroupLayout,

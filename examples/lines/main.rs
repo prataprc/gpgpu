@@ -1,3 +1,4 @@
+use cgmath::{Deg, Point3, Vector3};
 use structopt::StructOpt;
 use winit::{
     event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent},
@@ -5,24 +6,24 @@ use winit::{
     window::Window,
 };
 
-use std::path;
+use std::{fs, path};
 
-use gpgpu::{niw, util, wireframe::Wireframe, Config, Error, Gpu};
-
-mod render;
+use gpgpu::{
+    niw, util, wireframe::Wireframe, Config, Error, Gpu, Perspective, Transforms,
+};
 
 #[derive(Clone, StructOpt)]
 pub struct Opt {
-    #[structopt(short = "bg")]
+    #[structopt(long = "bg")]
     bg: Option<String>,
 
-    #[structopt(short = "fg")]
+    #[structopt(long = "fg")]
     fg: Option<String>,
 
-    #[structopt(short = "scale")]
-    scale: Option<f32>,
+    #[structopt(long = "rotate")]
+    rotate: Option<f32>,
 
-    #[structopt(short = "vertices", default_value = "vertices.txt")]
+    #[structopt(long = "vertices")]
     vertices: path::PathBuf,
 }
 
@@ -31,7 +32,12 @@ type Renderer = niw::Renderer<Gpu, State>;
 struct State {
     bg: wgpu::Color,
     fg: wgpu::Color,
-    scale: f32,
+    rotate_by: Deg<f32>,
+    eye: Point3<f32>,
+    center: Point3<f32>,
+    up: Vector3<f32>,
+    p: Perspective<Deg<f32>>,
+    transforms: Transforms,
     wireframe: Wireframe,
 }
 
@@ -62,13 +68,33 @@ fn main() {
             Config::default(),
         ))
         .unwrap();
-        let wireframe = Wireframe::from_bytes(fs::read(opts.vertices).unwrap()).unwrap();
+        let p = Perspective {
+            fov: Deg(90.0),
+            aspect: (gpu.surface_config.width as f32)
+                / (gpu.surface_config.height as f32),
+            near: 100.0,
+            far: 2000.0,
+        };
+
+        let mut wireframe = {
+            let data = fs::read(opts.vertices).unwrap();
+            Wireframe::from_bytes(&data).unwrap()
+        };
+        wireframe
+            .set_color_format(gpu.surface_config.format)
+            .prepare(&gpu.device);
+
         let state = State {
             bg: util::html_to_color(&opts.bg.clone().unwrap_or("#123456".to_string()))
                 .unwrap(),
             fg: util::html_to_color(&opts.fg.clone().unwrap_or("#000000".to_string()))
                 .unwrap(),
-            scale: opts.fg.unwrap_or("1.0".to_string()).parse().unwrap(),
+            rotate_by: Deg(opts.rotate.unwrap_or(0.0)),
+            eye: Point3::new(0.0, 0.0, 300.0),
+            center: Point3::new(0.0, 0.0, 0.0),
+            up: Vector3::unit_y(),
+            p,
+            transforms: Transforms::empty(),
             wireframe,
         };
         Renderer { gpu, state }
@@ -105,6 +131,22 @@ fn on_redraw_requested(
         };
         r.gpu.device.create_command_encoder(&desc)
     };
+
+    let mut transforms = r.state.transforms;
+    transforms
+        .rotate_by(
+            Some(r.state.rotate_by),
+            Some(r.state.rotate_by),
+            Some(r.state.rotate_by),
+        )
+        .look_at_rh(r.state.eye, r.state.center, r.state.up)
+        .perspective_by(r.state.p);
+
+    r.state.wireframe.transform_mut(transforms.model());
+
+    r.state
+        .wireframe
+        .render(&transforms, &r.gpu.device, &mut encoder, &view);
 
     let cmd_buffers = vec![encoder.finish()];
 

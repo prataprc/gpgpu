@@ -119,6 +119,10 @@ fn on_redraw_requested(
     let pipeline = render::render_pipeline(&r.gpu);
 
     let surface_texture = r.gpu.get_current_texture().ok()?;
+    //let surface_view = {
+    //    let desc = wgpu::TextureViewDescriptor::default();
+    //    surface_texture.texture.create_view(&desc)
+    //};
     let render_view = {
         let desc = wgpu::TextureViewDescriptor::default();
         r.state.texture.create_view(&desc)

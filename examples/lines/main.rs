@@ -9,7 +9,8 @@ use winit::{
 use std::{fs, path};
 
 use gpgpu::{
-    niw, util, wireframe::Wireframe, Config, Error, Gpu, Perspective, Transforms,
+    niw, util, wireframe::Wireframe, Config, Error, Perspective, Render, Screen,
+    Transforms,
 };
 
 #[derive(Clone, StructOpt)]
@@ -20,19 +21,18 @@ pub struct Opt {
     #[structopt(long = "fg")]
     fg: Option<String>,
 
-    #[structopt(long = "rotate")]
-    rotate: Option<f32>,
+    #[structopt(long = "rotate", default_value = "0", use_delimiter = true)]
+    rotate: Vec<f32>,
 
     #[structopt(long = "vertices")]
     vertices: path::PathBuf,
 }
 
-type Renderer = niw::Renderer<Gpu, State>;
-
+#[derive(Clone)]
 struct State {
     bg: wgpu::Color,
     fg: wgpu::Color,
-    rotate_by: Deg<f32>,
+    rotate_by: [Option<Deg<f32>>; 3],
     eye: Point3<f32>,
     center: Point3<f32>,
     up: Vector3<f32>,
@@ -51,7 +51,7 @@ fn main() {
 
     let mut swin = {
         let wattrs = config.to_window_attributes().unwrap();
-        niw::SingleWindow::<Gpu, State, ()>::from_config(wattrs).unwrap()
+        niw::SingleWindow::<Render<State>, ()>::from_config(wattrs).unwrap()
     };
 
     swin.on_win_close_requested(Box::new(on_win_close_requested))
@@ -62,41 +62,52 @@ fn main() {
         .on_redraw_requested(Box::new(on_redraw_requested));
 
     let r = {
-        let gpu = pollster::block_on(Gpu::new(
+        let screen = pollster::block_on(Screen::new(
             name.clone(),
             swin.as_window(),
             Config::default(),
         ))
         .unwrap();
+        let size = screen.to_physical_size();
+        let format = screen.to_texture_format();
+
         let p = Perspective {
             fov: Deg(90.0),
-            aspect: gpu.to_aspect_ratio(),
-            near: 100.0,
-            far: 2000.0,
+            aspect: screen.to_aspect_ratio(),
+            near: (size.width as f32) / 2.0,
+            far: 10000.0,
         };
 
         let mut wireframe = {
+            let mut transforms = Transforms::empty();
+            transforms.scale_by(swin.as_window().scale_factor() as f32);
             let data = fs::read(opts.vertices).unwrap();
-            Wireframe::from_bytes(&data).unwrap()
+            Wireframe::from_bytes(&data)
+                .unwrap()
+                .transform(transforms.model())
         };
-        wireframe
-            .set_color_format(gpu.surface_config.format)
-            .prepare(&gpu.device);
+        wireframe.set_color_format(format).prepare(&screen.device);
 
         let state = State {
             bg: util::html_to_color(&opts.bg.clone().unwrap_or("#123456".to_string()))
                 .unwrap(),
             fg: util::html_to_color(&opts.fg.clone().unwrap_or("#000000".to_string()))
                 .unwrap(),
-            rotate_by: Deg(opts.rotate.unwrap_or(0.0)),
-            eye: Point3::new(0.0, 0.0, 300.0),
+            rotate_by: match opts.rotate.as_slice() {
+                [] => [Some(Deg(0.0)), Some(Deg(0.0)), Some(Deg(0.0))],
+                [x] => [Some(Deg(*x)), Some(Deg(0.0)), Some(Deg(0.0))],
+                [x, y] => [Some(Deg(*x)), Some(Deg(*y)), Some(Deg(0.0))],
+                [x, y, z] => [Some(Deg(*x)), Some(Deg(*y)), Some(Deg(*z))],
+                [x, y, z, ..] => [Some(Deg(*x)), Some(Deg(*y)), Some(Deg(*z))],
+            },
+            eye: Point3::new(0.0, 0.0, size.width as f32 * 2.0),
             center: Point3::new(0.0, 0.0, 0.0),
             up: Vector3::unit_y(),
             p,
             transforms: Transforms::empty(),
             wireframe,
         };
-        Renderer { gpu, state }
+        Render::new(screen, state)
     };
 
     println!("Press Esc to exit");
@@ -106,7 +117,7 @@ fn main() {
 // RedrawRequested will only trigger once, unless we manually request it.
 fn on_main_events_cleared(
     w: &Window,
-    _r: &mut Renderer,
+    _r: &mut Render<State>,
     _event: &mut Event<()>,
 ) -> Option<ControlFlow> {
     w.request_redraw();
@@ -115,10 +126,12 @@ fn on_main_events_cleared(
 
 fn on_redraw_requested(
     _: &Window,
-    r: &mut Renderer,
+    r: &mut Render<State>,
     _event: &mut Event<()>,
 ) -> Option<ControlFlow> {
-    let surface_texture = r.gpu.get_current_texture().ok()?;
+    let state = r.as_state();
+
+    let surface_texture = r.screen.get_current_texture().ok()?;
     let view = {
         let desc = wgpu::TextureViewDescriptor::default();
         surface_texture.texture.create_view(&desc)
@@ -128,34 +141,33 @@ fn on_redraw_requested(
         let desc = wgpu::CommandEncoderDescriptor {
             label: Some("clear_screen"),
         };
-        r.gpu.device.create_command_encoder(&desc)
+        r.screen.device.create_command_encoder(&desc)
     };
 
-    r.state.p.aspect = r.gpu.to_aspect_ratio();
-
-    let mut transforms = r.state.transforms;
+    let mut transforms = state.transforms;
     transforms
-        .rotate_by(
-            Some(r.state.rotate_by),
-            Some(r.state.rotate_by),
-            Some(r.state.rotate_by),
-        )
-        .look_at_rh(r.state.eye, r.state.center, r.state.up)
-        .perspective_by(r.state.p);
+        .rotate_by(state.rotate_by[0], state.rotate_by[1], state.rotate_by[2])
+        .look_at_rh(state.eye, state.center, state.up)
+        .perspective_by(state.p);
 
-    r.state.wireframe.transform_mut(transforms.model());
-
-    r.state
+    state
         .wireframe
-        .render(&transforms, &r.gpu.device, &mut encoder, &view);
+        .render(&transforms, &r.screen.device, &mut encoder, &view);
+
+    {
+        let mut new_state = r.to_state();
+        new_state.wireframe.transform_mut(transforms.model());
+        new_state.p.aspect = r.screen.to_aspect_ratio();
+        r.set_state(new_state)
+    }
 
     let cmd_buffers = vec![encoder.finish()];
 
-    match r.gpu.render(cmd_buffers, surface_texture) {
+    match r.screen.render(cmd_buffers, surface_texture) {
         Ok(_) => None,
         // Reconfigure the surface if lost
         Err(Error::SurfaceLost(_, _)) => {
-            r.gpu.resize(r.gpu.size);
+            r.screen.resize(r.screen.to_physical_size());
             None
         }
         // The system is out of memory, we should probably quit
@@ -170,12 +182,12 @@ fn on_redraw_requested(
 
 fn on_win_resized(
     _: &Window,
-    r: &mut Renderer,
+    r: &mut Render<State>,
     event: &mut Event<()>,
 ) -> Option<ControlFlow> {
     match event {
         Event::WindowEvent { event, .. } => match event {
-            WindowEvent::Resized(size) => r.gpu.resize(*size),
+            WindowEvent::Resized(size) => r.screen.resize(*size),
             _ => unreachable!(),
         },
         _ => unreachable!(),
@@ -186,7 +198,7 @@ fn on_win_resized(
 
 fn on_win_scale_factor_changed(
     _: &Window,
-    r: &mut Renderer,
+    r: &mut Render<State>,
     event: &mut Event<()>,
 ) -> Option<ControlFlow> {
     match event {
@@ -197,7 +209,7 @@ fn on_win_scale_factor_changed(
                 // resized to whatever value is pointed to by the new_inner_size
                 // reference. By default, this will contain the size suggested by the
                 // OS, but it can be changed to any value.
-                r.gpu.resize(**new_inner_size)
+                r.screen.resize(**new_inner_size)
             }
             _ => unreachable!(),
         },
@@ -209,7 +221,7 @@ fn on_win_scale_factor_changed(
 
 fn on_win_close_requested(
     _: &Window,
-    _r: &mut Renderer,
+    _r: &mut Render<State>,
     _: &mut Event<()>,
 ) -> Option<ControlFlow> {
     Some(ControlFlow::Exit)
@@ -217,7 +229,7 @@ fn on_win_close_requested(
 
 fn on_win_keyboard_input(
     _: &Window,
-    _r: &mut Renderer,
+    _r: &mut Render<State>,
     event: &mut Event<()>,
 ) -> Option<ControlFlow> {
     match event {

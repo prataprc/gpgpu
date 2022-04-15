@@ -6,7 +6,7 @@ use winit::{
     window::Window,
 };
 
-use gpgpu::{niw, util, wg, Config, Error, Gpu};
+use gpgpu::{niw, util, Config, Error, Render, Screen};
 
 mod render;
 
@@ -21,8 +21,6 @@ pub struct Opt {
     #[structopt(short = "n", default_value = "100")]
     n_points: u32,
 }
-
-type Renderer = niw::Renderer<Gpu, State>;
 
 struct State {
     bg: wgpu::Color,
@@ -41,7 +39,7 @@ fn main() {
 
     let mut swin = {
         let wattrs = config.to_window_attributes().unwrap();
-        niw::SingleWindow::<Gpu, State, ()>::from_config(wattrs).unwrap()
+        niw::SingleWindow::<Render<State>, ()>::from_config(wattrs).unwrap()
     };
 
     swin.on_win_close_requested(Box::new(on_win_close_requested))
@@ -52,14 +50,14 @@ fn main() {
         .on_redraw_requested(Box::new(on_redraw_requested));
 
     let r = {
-        let gpu = pollster::block_on(Gpu::new(
+        let screen = pollster::block_on(Screen::new(
             name.clone(),
             swin.as_window(),
             Config::default(),
         ))
         .unwrap();
         let texture = {
-            let size = gpu.to_extent3d();
+            let size = screen.to_extent3d();
             let usage =
                 wgpu::TextureUsages::COPY_SRC | wgpu::TextureUsages::RENDER_ATTACHMENT;
             let desc = wgpu::TextureDescriptor {
@@ -68,10 +66,10 @@ fn main() {
                 mip_level_count: 1,
                 sample_count: 1,
                 dimension: wgpu::TextureDimension::D2,
-                format: gpu.surface_config.format,
+                format: screen.to_texture_format(),
                 usage,
             };
-            gpu.device.create_texture(&desc)
+            screen.device.create_texture(&desc)
         };
         let state = State {
             bg: util::html_to_color(&opts.bg.clone().unwrap_or("#000000".to_string()))
@@ -81,7 +79,7 @@ fn main() {
             n_points: opts.n_points,
             texture,
         };
-        Renderer { gpu, state }
+        Render::new(screen, state)
     };
 
     println!("Press Esc to exit");
@@ -91,7 +89,7 @@ fn main() {
 // RedrawRequested will only trigger once, unless we manually request it.
 fn on_main_events_cleared(
     w: &Window,
-    _r: &mut Renderer,
+    _r: &mut Render<State>,
     _event: &mut Event<()>,
 ) -> Option<ControlFlow> {
     w.request_redraw();
@@ -100,12 +98,14 @@ fn on_main_events_cleared(
 
 fn on_redraw_requested(
     _: &Window,
-    r: &mut Renderer,
+    r: &mut Render<State>,
     _event: &mut Event<()>,
 ) -> Option<ControlFlow> {
-    let vertices: Vec<render::Vertex> = (0..r.state.n_points)
+    let state = r.as_state();
+
+    let vertices: Vec<render::Vertex> = (0..state.n_points)
         .map(|_| {
-            let wgpu::Color { r, g, b, .. } = r.state.fg;
+            let wgpu::Color { r, g, b, .. } = state.fg;
             let x = ((random::<i32>() as f64) / (i32::MAX as f64)) as f32;
             let y = ((random::<i32>() as f64) / (i32::MAX as f64)) as f32;
             // println!("{} {}", x, y);
@@ -115,24 +115,24 @@ fn on_redraw_requested(
             }
         })
         .collect();
-    let vertex_buffer = render::Vertex::to_buffer(&r.gpu.device, vertices.as_slice());
-    let pipeline = render::render_pipeline(&r.gpu);
+    let vertex_buffer = render::Vertex::to_buffer(&r.screen.device, vertices.as_slice());
+    let pipeline = render::render_pipeline(&r.screen);
 
-    let surface_texture = r.gpu.get_current_texture().ok()?;
+    let surface_texture = r.screen.get_current_texture().ok()?;
     //let surface_view = {
     //    let desc = wgpu::TextureViewDescriptor::default();
     //    surface_texture.texture.create_view(&desc)
     //};
     let render_view = {
         let desc = wgpu::TextureViewDescriptor::default();
-        r.state.texture.create_view(&desc)
+        state.texture.create_view(&desc)
     };
 
     let mut encoder = {
         let desc = wgpu::CommandEncoderDescriptor {
             label: Some("example-points"),
         };
-        r.gpu.device.create_command_encoder(&desc)
+        r.screen.device.create_command_encoder(&desc)
     };
     {
         let mut render_pass = {
@@ -156,21 +156,21 @@ fn on_redraw_requested(
         };
         render_pass.set_pipeline(&pipeline);
         render_pass.set_vertex_buffer(0, vertex_buffer.slice(..));
-        render_pass.draw(0..r.state.n_points, 0..1);
+        render_pass.draw(0..state.n_points, 0..1);
     }
     {
-        let src = r.state.texture.as_image_copy();
+        let src = state.texture.as_image_copy();
         let dst = surface_texture.texture.as_image_copy();
-        encoder.copy_texture_to_texture(src, dst, r.gpu.to_extent3d())
+        encoder.copy_texture_to_texture(src, dst, r.screen.to_extent3d())
     }
 
     let cmd_buffers = vec![encoder.finish()];
 
-    match r.gpu.render(cmd_buffers, surface_texture) {
+    match r.screen.render(cmd_buffers, surface_texture) {
         Ok(_) => None,
         // Reconfigure the surface if lost
         Err(Error::SurfaceLost(_, _)) => {
-            r.gpu.resize(r.gpu.size);
+            r.screen.resize(r.screen.to_physical_size());
             None
         }
         // The system is out of memory, we should probably quit
@@ -185,12 +185,12 @@ fn on_redraw_requested(
 
 fn on_win_resized(
     _: &Window,
-    r: &mut Renderer,
+    r: &mut Render<State>,
     event: &mut Event<()>,
 ) -> Option<ControlFlow> {
     match event {
         Event::WindowEvent { event, .. } => match event {
-            WindowEvent::Resized(size) => r.gpu.resize(*size),
+            WindowEvent::Resized(size) => r.screen.resize(*size),
             _ => unreachable!(),
         },
         _ => unreachable!(),
@@ -201,7 +201,7 @@ fn on_win_resized(
 
 fn on_win_scale_factor_changed(
     _: &Window,
-    r: &mut Renderer,
+    r: &mut Render<State>,
     event: &mut Event<()>,
 ) -> Option<ControlFlow> {
     match event {
@@ -212,7 +212,7 @@ fn on_win_scale_factor_changed(
                 // resized to whatever value is pointed to by the new_inner_size
                 // reference. By default, this will contain the size suggested by the
                 // OS, but it can be changed to any value.
-                r.gpu.resize(**new_inner_size)
+                r.screen.resize(**new_inner_size)
             }
             _ => unreachable!(),
         },
@@ -224,7 +224,7 @@ fn on_win_scale_factor_changed(
 
 fn on_win_close_requested(
     _: &Window,
-    _r: &mut Renderer,
+    _r: &mut Render<State>,
     _: &mut Event<()>,
 ) -> Option<ControlFlow> {
     Some(ControlFlow::Exit)
@@ -232,7 +232,7 @@ fn on_win_close_requested(
 
 fn on_win_keyboard_input(
     _: &Window,
-    _r: &mut Renderer,
+    _r: &mut Render<State>,
     event: &mut Event<()>,
 ) -> Option<ControlFlow> {
     match event {

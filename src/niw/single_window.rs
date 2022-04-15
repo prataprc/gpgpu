@@ -1,5 +1,6 @@
 use log::{debug, trace, warn};
 use winit::{
+    dpi,
     event::{DeviceEvent, Event, StartCause, WindowEvent},
     event_loop::{ControlFlow, EventLoop, EventLoopWindowTarget},
     window::{Window, WindowAttributes, WindowBuilder},
@@ -9,12 +10,11 @@ use std::fmt;
 
 #[allow(unused_imports)]
 use crate::ConfigWinit;
-use crate::{niw, Error, Result};
+use crate::{Error, Result};
 
-/// Type to handle events with an event-argument and window-target
-pub type Handler<G, S, E> = Box<
-    dyn FnMut(&Window, &mut niw::Renderer<G, S>, &mut Event<E>) -> Option<ControlFlow>,
->;
+/// Type to handle events with an event-argument `E`, window-target and context `C`.
+pub type Handler<C, E> =
+    Box<dyn FnMut(&Window, &mut C, &mut Event<E>) -> Option<ControlFlow>>;
 
 /// Type instantiates an event-loop and an associated window, useful for single window
 /// applications.
@@ -22,33 +22,33 @@ pub type Handler<G, S, E> = Box<
 /// Can be constructed from [ConfigWinit] configuration, refer
 /// [SingleWindow::from_config]. This type parameterised over user-event `E` for
 /// [EventLoop]
-pub struct SingleWindow<G, S, E = ()>
+pub struct SingleWindow<C, E = ()>
 where
     E: 'static,
 {
     event_loop: Option<EventLoop<E>>,
     window: Option<Window>,
-    on_event: Option<Handler<G, S, E>>,
-    event_handlers: Option<EventHandlers<G, S, E>>,
-    window_event_handlers: Option<WindowEventHandlers<G, S, E>>,
-    device_event_handlers: Option<DeviceEventHandlers<G, S, E>>,
+    on_event: Option<Handler<C, E>>,
+    event_handlers: Option<EventHandlers<C, E>>,
+    window_event_handlers: Option<WindowEventHandlers<C, E>>,
+    device_event_handlers: Option<DeviceEventHandlers<C, E>>,
 }
 
-struct EventHandlers<G, S, E>
+struct EventHandlers<C, E>
 where
     E: 'static,
 {
-    on_new_events: Handler<G, S, E>,
-    on_user_event: Handler<G, S, E>,
-    on_suspended: Handler<G, S, E>,
-    on_resumed: Handler<G, S, E>,
-    on_main_events_cleared: Handler<G, S, E>,
-    on_redraw_requested: Handler<G, S, E>,
-    on_redraw_events_cleared: Handler<G, S, E>,
-    on_loop_destroyed: Handler<G, S, E>,
+    on_new_events: Handler<C, E>,
+    on_user_event: Handler<C, E>,
+    on_suspended: Handler<C, E>,
+    on_resumed: Handler<C, E>,
+    on_main_events_cleared: Handler<C, E>,
+    on_redraw_requested: Handler<C, E>,
+    on_redraw_events_cleared: Handler<C, E>,
+    on_loop_destroyed: Handler<C, E>,
 }
 
-impl<G, S, E> Default for EventHandlers<G, S, E> {
+impl<C, E> Default for EventHandlers<C, E> {
     fn default() -> Self {
         EventHandlers {
             on_new_events: Box::new(|_, _, _| None),
@@ -63,34 +63,34 @@ impl<G, S, E> Default for EventHandlers<G, S, E> {
     }
 }
 
-struct WindowEventHandlers<G, S, E>
+struct WindowEventHandlers<C, E>
 where
     E: 'static,
 {
-    on_resized: Handler<G, S, E>,
-    on_moved: Handler<G, S, E>,
-    on_close_requested: Handler<G, S, E>,
-    on_destroyed: Handler<G, S, E>,
-    on_dropped_file: Handler<G, S, E>,
-    on_hovered_file: Handler<G, S, E>,
-    on_hovered_file_cancelled: Handler<G, S, E>,
-    on_received_character: Handler<G, S, E>,
-    on_focused: Handler<G, S, E>,
-    on_keyboard_input: Handler<G, S, E>,
-    on_modifiers_changed: Handler<G, S, E>,
-    on_cursor_moved: Handler<G, S, E>,
-    on_cursor_entered: Handler<G, S, E>,
-    on_cursor_left: Handler<G, S, E>,
-    on_mouse_wheel: Handler<G, S, E>,
-    on_mouse_input: Handler<G, S, E>,
-    on_touchpad_pressure: Handler<G, S, E>,
-    on_axis_motion: Handler<G, S, E>,
-    on_touch: Handler<G, S, E>,
-    on_scale_factor_changed: Handler<G, S, E>,
-    on_theme_changed: Handler<G, S, E>,
+    on_resized: Handler<C, E>,
+    on_moved: Handler<C, E>,
+    on_close_requested: Handler<C, E>,
+    on_destroyed: Handler<C, E>,
+    on_dropped_file: Handler<C, E>,
+    on_hovered_file: Handler<C, E>,
+    on_hovered_file_cancelled: Handler<C, E>,
+    on_received_character: Handler<C, E>,
+    on_focused: Handler<C, E>,
+    on_keyboard_input: Handler<C, E>,
+    on_modifiers_changed: Handler<C, E>,
+    on_cursor_moved: Handler<C, E>,
+    on_cursor_entered: Handler<C, E>,
+    on_cursor_left: Handler<C, E>,
+    on_mouse_wheel: Handler<C, E>,
+    on_mouse_input: Handler<C, E>,
+    on_touchpad_pressure: Handler<C, E>,
+    on_axis_motion: Handler<C, E>,
+    on_touch: Handler<C, E>,
+    on_scale_factor_changed: Handler<C, E>,
+    on_theme_changed: Handler<C, E>,
 }
 
-impl<G, S, E> Default for WindowEventHandlers<G, S, E> {
+impl<C, E> Default for WindowEventHandlers<C, E> {
     fn default() -> Self {
         WindowEventHandlers {
             on_resized: Box::new(|_, _, _| None),
@@ -118,21 +118,21 @@ impl<G, S, E> Default for WindowEventHandlers<G, S, E> {
     }
 }
 
-struct DeviceEventHandlers<G, S, E>
+struct DeviceEventHandlers<C, E>
 where
     E: 'static,
 {
-    on_added: Handler<G, S, E>,
-    on_removed: Handler<G, S, E>,
-    on_mouse_motion: Handler<G, S, E>,
-    on_mouse_wheel: Handler<G, S, E>,
-    on_motion: Handler<G, S, E>,
-    on_button: Handler<G, S, E>,
-    on_key: Handler<G, S, E>,
-    on_text: Handler<G, S, E>,
+    on_added: Handler<C, E>,
+    on_removed: Handler<C, E>,
+    on_mouse_motion: Handler<C, E>,
+    on_mouse_wheel: Handler<C, E>,
+    on_motion: Handler<C, E>,
+    on_button: Handler<C, E>,
+    on_key: Handler<C, E>,
+    on_text: Handler<C, E>,
 }
 
-impl<G, S, E> Default for DeviceEventHandlers<G, S, E> {
+impl<C, E> Default for DeviceEventHandlers<C, E> {
     fn default() -> Self {
         DeviceEventHandlers {
             on_added: Box::new(|_, _, _| None),
@@ -147,15 +147,32 @@ impl<G, S, E> Default for DeviceEventHandlers<G, S, E> {
     }
 }
 
-impl<G, S, E> SingleWindow<G, S, E>
+impl<C, E> SingleWindow<C, E>
 where
     E: 'static,
 {
-    pub fn from_config(attrs: WindowAttributes) -> Result<Self>
+    pub fn from_config(mut attrs: WindowAttributes) -> Result<Self>
     where
         E: Default,
     {
         let event_loop = EventLoop::<E>::with_user_event();
+        let scale_factor = match event_loop.primary_monitor() {
+            Some(mont) => mont.scale_factor() as f32,
+            None => match event_loop.available_monitors().next() {
+                Some(mont) => mont.scale_factor() as f32,
+                None => 1.0_f32,
+            },
+        };
+        attrs.inner_size = match attrs.inner_size {
+            Some(dpi::Size::Physical(dpi::PhysicalSize { width, height })) => {
+                let size = dpi::PhysicalSize {
+                    width: ((width as f32) * scale_factor).floor() as u32,
+                    height: ((height as f32) * scale_factor).floor() as u32,
+                };
+                Some(dpi::Size::Physical(size))
+            }
+            val => val,
+        };
 
         let window = {
             let mut wb = WindowBuilder::new();
@@ -183,10 +200,9 @@ where
         self.window.as_ref().unwrap()
     }
 
-    pub fn run(mut self, mut r: niw::Renderer<G, S>) -> !
+    pub fn run(mut self, mut r: C) -> !
     where
-        G: 'static,
-        S: 'static,
+        C: 'static,
         E: fmt::Debug + Clone,
     {
         let window = self.window.take().unwrap();
@@ -202,7 +218,7 @@ where
                   _: &EventLoopWindowTarget<E>,
                   cf: &mut ControlFlow| {
                 log_event(&evnt);
-                let mut no_op: Handler<G, S, E> = Box::new(|_, _, _| None);
+                let mut no_op: Handler<C, E> = Box::new(|_, _, _| None);
 
                 (on_event)(&window, &mut r, &mut evnt);
 
@@ -327,46 +343,46 @@ where
     }
 }
 
-impl<G, S, E> SingleWindow<G, S, E>
+impl<C, E> SingleWindow<C, E>
 where
     E: 'static,
 {
-    pub fn on_event(&mut self, handler: Handler<G, S, E>) -> &mut Self {
+    pub fn on_event(&mut self, handler: Handler<C, E>) -> &mut Self {
         self.on_event = Some(handler);
         self
     }
 
-    pub fn on_new_events(&mut self, handler: Handler<G, S, E>) -> &mut Self {
+    pub fn on_new_events(&mut self, handler: Handler<C, E>) -> &mut Self {
         self.event_handlers.as_mut().unwrap().on_new_events = handler;
         self
     }
 
-    pub fn on_user_event(&mut self, handler: Handler<G, S, E>) -> &mut Self {
+    pub fn on_user_event(&mut self, handler: Handler<C, E>) -> &mut Self {
         self.event_handlers.as_mut().unwrap().on_user_event = handler;
         self
     }
 
-    pub fn on_suspended(&mut self, handler: Handler<G, S, E>) -> &mut Self {
+    pub fn on_suspended(&mut self, handler: Handler<C, E>) -> &mut Self {
         self.event_handlers.as_mut().unwrap().on_suspended = handler;
         self
     }
 
-    pub fn on_resumed(&mut self, handler: Handler<G, S, E>) -> &mut Self {
+    pub fn on_resumed(&mut self, handler: Handler<C, E>) -> &mut Self {
         self.event_handlers.as_mut().unwrap().on_resumed = handler;
         self
     }
 
-    pub fn on_main_events_cleared(&mut self, handler: Handler<G, S, E>) -> &mut Self {
+    pub fn on_main_events_cleared(&mut self, handler: Handler<C, E>) -> &mut Self {
         self.event_handlers.as_mut().unwrap().on_main_events_cleared = handler;
         self
     }
 
-    pub fn on_redraw_requested(&mut self, handler: Handler<G, S, E>) -> &mut Self {
+    pub fn on_redraw_requested(&mut self, handler: Handler<C, E>) -> &mut Self {
         self.event_handlers.as_mut().unwrap().on_redraw_requested = handler;
         self
     }
 
-    pub fn on_redraw_events_cleared(&mut self, handler: Handler<G, S, E>) -> &mut Self {
+    pub fn on_redraw_events_cleared(&mut self, handler: Handler<C, E>) -> &mut Self {
         self.event_handlers
             .as_mut()
             .unwrap()
@@ -374,22 +390,22 @@ where
         self
     }
 
-    pub fn on_loop_destroyed(&mut self, handler: Handler<G, S, E>) -> &mut Self {
+    pub fn on_loop_destroyed(&mut self, handler: Handler<C, E>) -> &mut Self {
         self.event_handlers.as_mut().unwrap().on_loop_destroyed = handler;
         self
     }
 
-    pub fn on_win_resized(&mut self, handler: Handler<G, S, E>) -> &mut Self {
+    pub fn on_win_resized(&mut self, handler: Handler<C, E>) -> &mut Self {
         self.window_event_handlers.as_mut().unwrap().on_resized = handler;
         self
     }
 
-    pub fn on_win_moved(&mut self, handler: Handler<G, S, E>) -> &mut Self {
+    pub fn on_win_moved(&mut self, handler: Handler<C, E>) -> &mut Self {
         self.window_event_handlers.as_mut().unwrap().on_moved = handler;
         self
     }
 
-    pub fn on_win_close_requested(&mut self, handler: Handler<G, S, E>) -> &mut Self {
+    pub fn on_win_close_requested(&mut self, handler: Handler<C, E>) -> &mut Self {
         self.window_event_handlers
             .as_mut()
             .unwrap()
@@ -397,25 +413,22 @@ where
         self
     }
 
-    pub fn on_win_destroyed(&mut self, handler: Handler<G, S, E>) -> &mut Self {
+    pub fn on_win_destroyed(&mut self, handler: Handler<C, E>) -> &mut Self {
         self.window_event_handlers.as_mut().unwrap().on_destroyed = handler;
         self
     }
 
-    pub fn on_win_dropped_file(&mut self, handler: Handler<G, S, E>) -> &mut Self {
+    pub fn on_win_dropped_file(&mut self, handler: Handler<C, E>) -> &mut Self {
         self.window_event_handlers.as_mut().unwrap().on_dropped_file = handler;
         self
     }
 
-    pub fn on_win_hovered_file(&mut self, handler: Handler<G, S, E>) -> &mut Self {
+    pub fn on_win_hovered_file(&mut self, handler: Handler<C, E>) -> &mut Self {
         self.window_event_handlers.as_mut().unwrap().on_hovered_file = handler;
         self
     }
 
-    pub fn on_win_hovered_file_cancelled(
-        &mut self,
-        handler: Handler<G, S, E>,
-    ) -> &mut Self {
+    pub fn on_win_hovered_file_cancelled(&mut self, handler: Handler<C, E>) -> &mut Self {
         self.window_event_handlers
             .as_mut()
             .unwrap()
@@ -423,7 +436,7 @@ where
         self
     }
 
-    pub fn on_win_received_character(&mut self, handler: Handler<G, S, E>) -> &mut Self {
+    pub fn on_win_received_character(&mut self, handler: Handler<C, E>) -> &mut Self {
         self.window_event_handlers
             .as_mut()
             .unwrap()
@@ -431,12 +444,12 @@ where
         self
     }
 
-    pub fn on_win_focused(&mut self, handler: Handler<G, S, E>) -> &mut Self {
+    pub fn on_win_focused(&mut self, handler: Handler<C, E>) -> &mut Self {
         self.window_event_handlers.as_mut().unwrap().on_focused = handler;
         self
     }
 
-    pub fn on_win_keyboard_input(&mut self, handler: Handler<G, S, E>) -> &mut Self {
+    pub fn on_win_keyboard_input(&mut self, handler: Handler<C, E>) -> &mut Self {
         self.window_event_handlers
             .as_mut()
             .unwrap()
@@ -444,7 +457,7 @@ where
         self
     }
 
-    pub fn on_win_modifiers_changed(&mut self, handler: Handler<G, S, E>) -> &mut Self {
+    pub fn on_win_modifiers_changed(&mut self, handler: Handler<C, E>) -> &mut Self {
         self.window_event_handlers
             .as_mut()
             .unwrap()
@@ -452,12 +465,12 @@ where
         self
     }
 
-    pub fn on_win_cursor_moved(&mut self, handler: Handler<G, S, E>) -> &mut Self {
+    pub fn on_win_cursor_moved(&mut self, handler: Handler<C, E>) -> &mut Self {
         self.window_event_handlers.as_mut().unwrap().on_cursor_moved = handler;
         self
     }
 
-    pub fn on_win_cursor_entered(&mut self, handler: Handler<G, S, E>) -> &mut Self {
+    pub fn on_win_cursor_entered(&mut self, handler: Handler<C, E>) -> &mut Self {
         self.window_event_handlers
             .as_mut()
             .unwrap()
@@ -465,22 +478,22 @@ where
         self
     }
 
-    pub fn on_win_cursor_left(&mut self, handler: Handler<G, S, E>) -> &mut Self {
+    pub fn on_win_cursor_left(&mut self, handler: Handler<C, E>) -> &mut Self {
         self.window_event_handlers.as_mut().unwrap().on_cursor_left = handler;
         self
     }
 
-    pub fn on_win_mouse_wheel(&mut self, handler: Handler<G, S, E>) -> &mut Self {
+    pub fn on_win_mouse_wheel(&mut self, handler: Handler<C, E>) -> &mut Self {
         self.window_event_handlers.as_mut().unwrap().on_mouse_wheel = handler;
         self
     }
 
-    pub fn on_win_mouse_input(&mut self, handler: Handler<G, S, E>) -> &mut Self {
+    pub fn on_win_mouse_input(&mut self, handler: Handler<C, E>) -> &mut Self {
         self.window_event_handlers.as_mut().unwrap().on_mouse_input = handler;
         self
     }
 
-    pub fn on_win_touchpad_pressure(&mut self, handler: Handler<G, S, E>) -> &mut Self {
+    pub fn on_win_touchpad_pressure(&mut self, handler: Handler<C, E>) -> &mut Self {
         self.window_event_handlers
             .as_mut()
             .unwrap()
@@ -488,20 +501,17 @@ where
         self
     }
 
-    pub fn on_win_axis_motion(&mut self, handler: Handler<G, S, E>) -> &mut Self {
+    pub fn on_win_axis_motion(&mut self, handler: Handler<C, E>) -> &mut Self {
         self.window_event_handlers.as_mut().unwrap().on_axis_motion = handler;
         self
     }
 
-    pub fn on_win_touch(&mut self, handler: Handler<G, S, E>) -> &mut Self {
+    pub fn on_win_touch(&mut self, handler: Handler<C, E>) -> &mut Self {
         self.window_event_handlers.as_mut().unwrap().on_touch = handler;
         self
     }
 
-    pub fn on_win_scale_factor_changed(
-        &mut self,
-        handler: Handler<G, S, E>,
-    ) -> &mut Self {
+    pub fn on_win_scale_factor_changed(&mut self, handler: Handler<C, E>) -> &mut Self {
         self.window_event_handlers
             .as_mut()
             .unwrap()
@@ -509,7 +519,7 @@ where
         self
     }
 
-    pub fn on_win_theme_changed(&mut self, handler: Handler<G, S, E>) -> &mut Self {
+    pub fn on_win_theme_changed(&mut self, handler: Handler<C, E>) -> &mut Self {
         self.window_event_handlers
             .as_mut()
             .unwrap()
@@ -517,42 +527,42 @@ where
         self
     }
 
-    pub fn on_device_added(&mut self, handler: Handler<G, S, E>) -> &mut Self {
+    pub fn on_device_added(&mut self, handler: Handler<C, E>) -> &mut Self {
         self.device_event_handlers.as_mut().unwrap().on_added = handler;
         self
     }
 
-    pub fn on_device_removed(&mut self, handler: Handler<G, S, E>) -> &mut Self {
+    pub fn on_device_removed(&mut self, handler: Handler<C, E>) -> &mut Self {
         self.device_event_handlers.as_mut().unwrap().on_removed = handler;
         self
     }
 
-    pub fn on_device_mouse_motion(&mut self, handler: Handler<G, S, E>) -> &mut Self {
+    pub fn on_device_mouse_motion(&mut self, handler: Handler<C, E>) -> &mut Self {
         self.device_event_handlers.as_mut().unwrap().on_mouse_motion = handler;
         self
     }
 
-    pub fn on_device_mouse_wheel(&mut self, handler: Handler<G, S, E>) -> &mut Self {
+    pub fn on_device_mouse_wheel(&mut self, handler: Handler<C, E>) -> &mut Self {
         self.device_event_handlers.as_mut().unwrap().on_mouse_wheel = handler;
         self
     }
 
-    pub fn on_device_motion(&mut self, handler: Handler<G, S, E>) -> &mut Self {
+    pub fn on_device_motion(&mut self, handler: Handler<C, E>) -> &mut Self {
         self.device_event_handlers.as_mut().unwrap().on_motion = handler;
         self
     }
 
-    pub fn on_device_button(&mut self, handler: Handler<G, S, E>) -> &mut Self {
+    pub fn on_device_button(&mut self, handler: Handler<C, E>) -> &mut Self {
         self.device_event_handlers.as_mut().unwrap().on_button = handler;
         self
     }
 
-    pub fn on_device_key(&mut self, handler: Handler<G, S, E>) -> &mut Self {
+    pub fn on_device_key(&mut self, handler: Handler<C, E>) -> &mut Self {
         self.device_event_handlers.as_mut().unwrap().on_key = handler;
         self
     }
 
-    pub fn on_device_text(&mut self, handler: Handler<G, S, E>) -> &mut Self {
+    pub fn on_device_text(&mut self, handler: Handler<C, E>) -> &mut Self {
         self.device_event_handlers.as_mut().unwrap().on_text = handler;
         self
     }

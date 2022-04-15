@@ -5,7 +5,7 @@ use winit::{
     window::Window,
 };
 
-use gpgpu::{niw, util, Config, Error, Gpu};
+use gpgpu::{niw, util, Config, Error, Render, Screen};
 
 mod render;
 
@@ -20,8 +20,6 @@ pub struct Opt {
     #[structopt(short = "scale")]
     scale: Option<f32>,
 }
-
-type Renderer = niw::Renderer<Gpu, State>;
 
 struct State {
     bg: wgpu::Color,
@@ -54,7 +52,7 @@ fn main() {
 
     let mut swin = {
         let wattrs = config.to_window_attributes().unwrap();
-        niw::SingleWindow::<Gpu, State, ()>::from_config(wattrs).unwrap()
+        niw::SingleWindow::<Render<State>, ()>::from_config(wattrs).unwrap()
     };
 
     swin.on_win_close_requested(Box::new(on_win_close_requested))
@@ -65,7 +63,7 @@ fn main() {
         .on_redraw_requested(Box::new(on_redraw_requested));
 
     let r = {
-        let gpu = pollster::block_on(Gpu::new(
+        let screen = pollster::block_on(Screen::new(
             name.clone(),
             swin.as_window(),
             Config::default(),
@@ -78,7 +76,7 @@ fn main() {
                 .unwrap(),
             scale: opts.fg.unwrap_or("1.0".to_string()).parse().unwrap(),
         };
-        Renderer { gpu, state }
+        Render::new(screen, state)
     };
 
     println!("Press Esc to exit");
@@ -88,7 +86,7 @@ fn main() {
 // RedrawRequested will only trigger once, unless we manually request it.
 fn on_main_events_cleared(
     w: &Window,
-    _r: &mut Renderer,
+    _r: &mut Render<State>,
     _event: &mut Event<()>,
 ) -> Option<ControlFlow> {
     w.request_redraw();
@@ -97,13 +95,16 @@ fn on_main_events_cleared(
 
 fn on_redraw_requested(
     _: &Window,
-    r: &mut Renderer,
+    r: &mut Render<State>,
     _event: &mut Event<()>,
 ) -> Option<ControlFlow> {
-    let vertex_buffer = render::Vertex::to_buffer(&r.gpu.device, VERTICES);
-    let pipeline = render::render_pipeline(&r.gpu.device, r.gpu.surface_config.format);
+    let state = r.as_state();
 
-    let surface_texture = r.gpu.get_current_texture().ok()?;
+    let vertex_buffer = render::Vertex::to_buffer(&r.screen.device, VERTICES);
+    let pipeline =
+        render::render_pipeline(&r.screen.device, r.screen.to_texture_format());
+
+    let surface_texture = r.screen.get_current_texture().ok()?;
     let view = {
         let desc = wgpu::TextureViewDescriptor::default();
         surface_texture.texture.create_view(&desc)
@@ -113,12 +114,12 @@ fn on_redraw_requested(
         let desc = wgpu::CommandEncoderDescriptor {
             label: Some("clear_screen"),
         };
-        r.gpu.device.create_command_encoder(&desc)
+        r.screen.device.create_command_encoder(&desc)
     };
     {
         let mut render_pass = {
             let ops = wgpu::Operations {
-                load: wgpu::LoadOp::Clear(r.state.bg.clone()),
+                load: wgpu::LoadOp::Clear(state.bg.clone()),
                 store: true,
             };
             let desc = wgpu::RenderPassDescriptor {
@@ -142,11 +143,11 @@ fn on_redraw_requested(
 
     let cmd_buffers = vec![encoder.finish()];
 
-    match r.gpu.render(cmd_buffers, surface_texture) {
+    match r.screen.render(cmd_buffers, surface_texture) {
         Ok(_) => None,
         // Reconfigure the surface if lost
         Err(Error::SurfaceLost(_, _)) => {
-            r.gpu.resize(r.gpu.size);
+            r.screen.resize(r.screen.to_physical_size());
             None
         }
         // The system is out of memory, we should probably quit
@@ -161,12 +162,12 @@ fn on_redraw_requested(
 
 fn on_win_resized(
     _: &Window,
-    r: &mut Renderer,
+    r: &mut Render<State>,
     event: &mut Event<()>,
 ) -> Option<ControlFlow> {
     match event {
         Event::WindowEvent { event, .. } => match event {
-            WindowEvent::Resized(size) => r.gpu.resize(*size),
+            WindowEvent::Resized(size) => r.screen.resize(*size),
             _ => unreachable!(),
         },
         _ => unreachable!(),
@@ -177,7 +178,7 @@ fn on_win_resized(
 
 fn on_win_scale_factor_changed(
     _: &Window,
-    r: &mut Renderer,
+    r: &mut Render<State>,
     event: &mut Event<()>,
 ) -> Option<ControlFlow> {
     match event {
@@ -188,7 +189,7 @@ fn on_win_scale_factor_changed(
                 // resized to whatever value is pointed to by the new_inner_size
                 // reference. By default, this will contain the size suggested by the
                 // OS, but it can be changed to any value.
-                r.gpu.resize(**new_inner_size)
+                r.screen.resize(**new_inner_size)
             }
             _ => unreachable!(),
         },
@@ -200,7 +201,7 @@ fn on_win_scale_factor_changed(
 
 fn on_win_close_requested(
     _: &Window,
-    _r: &mut Renderer,
+    _r: &mut Render<State>,
     _: &mut Event<()>,
 ) -> Option<ControlFlow> {
     Some(ControlFlow::Exit)
@@ -208,7 +209,7 @@ fn on_win_close_requested(
 
 fn on_win_keyboard_input(
     _: &Window,
-    _r: &mut Renderer,
+    _r: &mut Render<State>,
     event: &mut Event<()>,
 ) -> Option<ControlFlow> {
     match event {

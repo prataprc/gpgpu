@@ -92,20 +92,21 @@ impl error::Error for Error {}
 /// Type alias for Result return type, used by this package.
 pub type Result<T> = result::Result<T, Error>;
 
+mod backends;
 mod config;
-pub mod niw;
+mod render;
+mod screen;
+mod spinlock;
 mod transforms;
+
+pub mod niw;
+pub mod pretty;
 pub mod util;
 pub mod vk;
-pub mod wg;
 pub mod wireframe;
 
-/// Trait to be implemented by window type.
-pub trait Windowing {
-    /// Return the size of window's client area as (width, height).
-    fn inner_size(&self) -> (u32, u32);
-}
-
+pub use backends::{backend, backend_to_string};
 pub use config::{Config, ConfigAdapter, ConfigWinit};
-pub use transforms::{Ortho, Perspective, Transforms};
-pub use wg::Gpu;
+pub use render::Render;
+pub use screen::Screen;
+pub use transforms::{Camera, Ortho, Perspective, Transforms};

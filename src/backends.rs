@@ -23,16 +23,3 @@ pub fn backend_to_string(backend: Backend) -> String {
 
     s.to_string()
 }
-
-pub fn string_to_backend(s: &str) -> Backend {
-    match s {
-        "empty" => Backend::Empty,
-        "vulkan" => Backend::Vulkan,
-        "metal" => Backend::Metal,
-        "directx12" => Backend::Dx12,
-        "directx11" => Backend::Dx11,
-        "opengl" => Backend::Gl,
-        "web" => Backend::BrowserWebGpu,
-        _ => unreachable!(),
-    }
-}

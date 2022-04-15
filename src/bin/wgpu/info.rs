@@ -9,15 +9,15 @@ use winit::{
 use gpgpu::{
     err_at,
     util::{self, PrettyRow},
-    wg, Config, Error, Result,
+    Config, Error, Result,
 };
 
 use crate::Opt;
 
 pub fn info_global_report(opts: &Opt) -> Result<()> {
-    let inst = wgpu::Instance::new(wg::backend().into());
+    let inst = wgpu::Instance::new(gpgpu::backend().into());
     let gr = inst.generate_report();
-    let mut srs: Vec<wg::pretty::StorageReport> = vec![("surfaces", gr.surfaces).into()];
+    let mut srs: Vec<gpgpu::pretty::StorageReport> = vec![("surfaces", gr.surfaces).into()];
 
     let mut extend_hub_report = |hr: &wgpu_core::hub::HubReport| {
         srs.extend_from_slice(&vec![
@@ -49,7 +49,7 @@ pub fn info_global_report(opts: &Opt) -> Result<()> {
 }
 
 pub fn info_queue(_opts: &Opt) -> Result<()> {
-    let inst = wgpu::Instance::new(wg::backend().into());
+    let inst = wgpu::Instance::new(gpgpu::backend().into());
     let adapters: Vec<wgpu::Adapter> =
         inst.enumerate_adapters(wgpu::Backends::all()).collect();
 
@@ -140,7 +140,7 @@ pub fn info_adapters(opts: &Opt) -> Result<()> {
 }
 
 pub fn info_features(opts: &Opt) -> Result<()> {
-    let mut features = wg::pretty::features();
+    let mut features = gpgpu::pretty::features();
 
     let instance = wgpu::Instance::new(wgpu::Backends::all());
     let adapters: Vec<wgpu::Adapter> =
@@ -148,13 +148,13 @@ pub fn info_features(opts: &Opt) -> Result<()> {
 
     adapters
         .iter()
-        .for_each(|a| wg::pretty::add_adapter_to_features(&mut features, a.features()));
+        .for_each(|a| gpgpu::pretty::add_adapter_to_features(&mut features, a.features()));
 
     let mut table = prettytable::Table::new();
     let table = match features.len() {
         0 => table,
         _ => {
-            let mut titles = wg::pretty::Feature::to_head();
+            let mut titles = gpgpu::pretty::Feature::to_head();
             for a in adapters.iter() {
                 let mut name = a.get_info().name.clone();
                 name.truncate(10);
@@ -165,7 +165,7 @@ pub fn info_features(opts: &Opt) -> Result<()> {
             features.iter().for_each(|r| {
                 table.add_row(r.to_row());
             });
-            table.set_format(wg::pretty::Feature::to_format());
+            table.set_format(gpgpu::pretty::Feature::to_format());
             table
         }
     };
@@ -176,7 +176,7 @@ pub fn info_features(opts: &Opt) -> Result<()> {
 }
 
 pub fn info_limits(opts: &Opt) -> Result<()> {
-    let mut limits = wg::pretty::limits();
+    let mut limits = gpgpu::pretty::limits();
 
     let instance = wgpu::Instance::new(wgpu::Backends::all());
     let adapters: Vec<wgpu::Adapter> =
@@ -184,13 +184,13 @@ pub fn info_limits(opts: &Opt) -> Result<()> {
 
     adapters
         .iter()
-        .for_each(|a| wg::pretty::add_adapter_to_limits(&mut limits, a.limits()));
+        .for_each(|a| gpgpu::pretty::add_adapter_to_limits(&mut limits, a.limits()));
 
     let mut table = prettytable::Table::new();
     let table = match limits.len() {
         0 => table,
         _ => {
-            let mut titles = wg::pretty::Limit::to_head();
+            let mut titles = gpgpu::pretty::Limit::to_head();
             for a in adapters.iter() {
                 let mut name = a.get_info().name.clone();
                 name.truncate(10);
@@ -201,7 +201,7 @@ pub fn info_limits(opts: &Opt) -> Result<()> {
             limits.iter().for_each(|r| {
                 table.add_row(r.to_row());
             });
-            table.set_format(wg::pretty::Limit::to_format());
+            table.set_format(gpgpu::pretty::Limit::to_format());
             table
         }
     };
@@ -212,7 +212,7 @@ pub fn info_limits(opts: &Opt) -> Result<()> {
 }
 
 pub fn info_texture_formats(opts: &Opt) -> Result<()> {
-    let info = wg::pretty::texture_formats_info();
+    let info = gpgpu::pretty::texture_formats_info();
     util::make_table(&info).print_tty(opts.no_color);
 
     Ok(())

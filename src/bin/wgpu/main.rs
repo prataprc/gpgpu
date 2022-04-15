@@ -5,7 +5,7 @@ use structopt::StructOpt;
 
 use std::{ffi, process::exit};
 
-use gpgpu::{wg, Config, Error, Result};
+use gpgpu::{Config, Error, Result};
 
 use info::{
     info_adapters, info_features, info_global_report, info_limits, info_queue,
@@ -67,7 +67,7 @@ fn main() {
     let res = match &opts.subcmd {
         SubCommand::Report => handle_report(opts.clone(), &config),
         SubCommand::Backend => {
-            println!("{:?} backend is used", wg::backend());
+            println!("{:?} backend is used", gpgpu::backend());
             Ok(())
         }
         SubCommand::Window { modes, n } => info_window(*modes, *n, &opts, &config),
@@ -136,14 +136,14 @@ fn handle_limits(opts: Opt) -> Result<()> {
 fn handle_formats(opts: Opt) -> Result<()> {
     println!("{}", "TextureUsages:".red());
     println!("{}", "--------------".red());
-    for item in wg::pretty::texture_usages().iter() {
+    for item in gpgpu::pretty::texture_usages().iter() {
         println!(" {}: {}", item.1, item.2)
     }
     println!();
 
     println!("{}", "TextureFormatFeatureFlags:".red());
     println!("{}", "--------------------------".red());
-    for item in wg::pretty::texture_format_flags().iter() {
+    for item in gpgpu::pretty::texture_format_flags().iter() {
         println!(" {}: {}", item.1, item.2)
     }
     println!();

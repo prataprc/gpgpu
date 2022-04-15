@@ -132,14 +132,21 @@ impl Config {
         }
     }
 
-    /// Return window-attributes to instantiate a window instance, like [niw::SingleWindow].
+    /// Return window-attributes to instantiate a window instance,
+    /// like [niw::SingleWindow].
     pub fn to_window_attributes(&self) -> Result<winit::window::WindowAttributes> {
         self.winit.clone().try_into()
     }
 
-    /// Return the trace path for API call tracing, if that feature is enabled in wgpu-core.
+    /// Return the trace path for API call tracing, if that feature is enabled in
+    /// wgpu-core.
     pub fn to_trace_path(&self) -> Option<&path::Path> {
         self.trace_path.as_ref().map(|x| x.as_path())
+    }
+
+    pub fn scale_inner_size(mut self, scale_factor: f64) -> Config {
+        self.winit = self.winit.scale_inner_size(scale_factor);
+        self
     }
 }
 
@@ -297,34 +304,42 @@ impl ConfigWinit {
             err_at!(FailConvert, toml::from_str(&val.to_string()))?;
         Ok(toml_config.into())
     }
+
+    pub fn scale_inner_size(mut self, scale_factor: f64) -> ConfigWinit {
+        self.inner_size = match self.inner_size.as_deref() {
+            Some([w, h]) => Some([*w * scale_factor, *h * scale_factor].to_vec()),
+            _ => None,
+        };
+        self
+    }
 }
 
 // local functions
 impl ConfigWinit {
     fn to_inner_size(&self) -> Result<Option<dpi::Size>> {
         match &self.inner_size {
-            Some(s) => Some(to_logical_size(s.as_slice())).transpose(),
+            Some(s) => Some(to_physical_size(s.as_slice())).transpose(),
             None => Ok(None),
         }
     }
 
     fn to_min_inner_size(&self) -> Result<Option<dpi::Size>> {
         match &self.min_inner_size {
-            Some(s) => Some(to_logical_size(s.as_slice())).transpose(),
+            Some(s) => Some(to_physical_size(s.as_slice())).transpose(),
             None => Ok(None),
         }
     }
 
     fn to_max_inner_size(&self) -> Result<Option<dpi::Size>> {
         match &self.max_inner_size {
-            Some(s) => Some(to_logical_size(s.as_slice())).transpose(),
+            Some(s) => Some(to_physical_size(s.as_slice())).transpose(),
             None => Ok(None),
         }
     }
 
     fn to_position(&self) -> Result<Option<dpi::Position>> {
         match &self.position {
-            Some(s) => Some(to_logical_position(s.as_slice())).transpose(),
+            Some(s) => Some(to_physical_position(s.as_slice())).transpose(),
             None => Ok(None),
         }
     }
@@ -332,6 +347,7 @@ impl ConfigWinit {
 
 /// Convert slice of [f64] into dpi::Size. Note that length of slice should be 2 and the
 /// returned size is [dpi::Size::Logical].
+#[allow(dead_code)]
 pub fn to_logical_size(size: &[f64]) -> Result<dpi::Size> {
     if size.len() == 2 {
         Ok(dpi::Size::Logical((size[0], size[1]).into()))
@@ -340,11 +356,32 @@ pub fn to_logical_size(size: &[f64]) -> Result<dpi::Size> {
     }
 }
 
-/// Convert slice of [f64] into dpi::Position. Note that length of slice should be 2 and the
-/// returned position is [dpi::Position::Logical].
+/// Convert slice of [f64] into dpi::Size. Note that length of slice should be 2 and the
+/// returned size is [dpi::Size::Physical].
+pub fn to_physical_size(size: &[f64]) -> Result<dpi::Size> {
+    if size.len() == 2 {
+        Ok(dpi::Size::Physical((size[0], size[1]).into()))
+    } else {
+        err_at!(Invalid, msg: "size invalid {:?}", size)
+    }
+}
+
+/// Convert slice of [f64] into dpi::Position. Note that length of slice should be 2 and
+/// the returned position is [dpi::Position::Logical].
+#[allow(dead_code)]
 pub fn to_logical_position(pos: &[f64]) -> Result<dpi::Position> {
     if pos.len() == 2 {
         Ok(dpi::Position::Logical((pos[0], pos[1]).into()))
+    } else {
+        err_at!(Invalid, msg: "position invalid {:?}", pos)
+    }
+}
+
+/// Convert slice of [f64] into dpi::Position. Note that length of slice should be 2 and
+/// the returned position is [dpi::Position::Physical].
+pub fn to_physical_position(pos: &[f64]) -> Result<dpi::Position> {
+    if pos.len() == 2 {
+        Ok(dpi::Position::Physical((pos[0], pos[1]).into()))
     } else {
         err_at!(Invalid, msg: "position invalid {:?}", pos)
     }

@@ -1,17 +1,19 @@
 use cgmath::{Matrix4, Point3, Vector4};
 
-use std::{fmt, path, result};
+use std::{fmt, path, result, sync::Arc};
 
 use crate::{Error, Result, Transforms};
 
+#[derive(Clone)]
 pub struct Wireframe {
     format: Option<wgpu::TextureFormat>,
     bg: wgpu::Color,
-    bind_group_layout_0: Option<wgpu::BindGroupLayout>,
-    pipeline: Option<wgpu::RenderPipeline>,
+    bind_group_layout_0: Option<Arc<wgpu::BindGroupLayout>>,
+    pipeline: Option<Arc<wgpu::RenderPipeline>>,
     primitive: Primitive,
 }
 
+#[derive(Clone)]
 enum Primitive {
     Lines { vertices: Vec<Vertex> },
 }
@@ -77,7 +79,7 @@ impl Wireframe {
             };
             device.create_pipeline_layout(&desc)
         };
-        self.bind_group_layout_0 = Some(bind_group_layout_0);
+        self.bind_group_layout_0 = Some(Arc::new(bind_group_layout_0));
 
         let module = {
             let text = include_str!("shader.wgsl");
@@ -132,7 +134,7 @@ impl Wireframe {
             multiview: None,
         };
 
-        self.pipeline = Some(device.create_render_pipeline(&desc));
+        self.pipeline = Some(Arc::new(device.create_render_pipeline(&desc)));
 
         self
     }

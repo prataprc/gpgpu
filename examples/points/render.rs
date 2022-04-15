@@ -1,6 +1,4 @@
-use gpgpu::wg;
-
-pub fn render_pipeline(gpu: &wg::Gpu) -> wgpu::RenderPipeline {
+pub fn render_pipeline(gpu: &gpgpu::Screen) -> wgpu::RenderPipeline {
     let module = {
         let text = include_str!("shader.wgsl");
         let desc = wgpu::ShaderModuleDescriptor {
@@ -19,7 +17,7 @@ pub fn render_pipeline(gpu: &wg::Gpu) -> wgpu::RenderPipeline {
     };
     let color_target_states = {
         vec![wgpu::ColorTargetState {
-            format: gpu.surface_config.format,
+            format: gpu.to_texture_format(),
             blend: Some(wgpu::BlendState::REPLACE),
             write_mask: wgpu::ColorWrites::ALL,
         }]

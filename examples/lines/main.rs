@@ -30,9 +30,10 @@ pub struct Opt {
 
 #[derive(Clone)]
 struct State {
+    opts: Opt,
     bg: wgpu::Color,
     fg: wgpu::Color,
-    rotate_by: [Option<Deg<f32>>; 3],
+    rotate_by: Vec<f32>,
     eye: Point3<f32>,
     center: Point3<f32>,
     up: Vector3<f32>,
@@ -44,7 +45,14 @@ struct State {
 fn main() {
     env_logger::init();
 
-    let opts = Opt::from_args();
+    let mut opts = Opt::from_args();
+    opts.rotate = match opts.rotate.as_slice() {
+        [] => vec![0.0, 0.0, 0.0],
+        [x] => vec![*x, 0.0, 0.0],
+        [x, y] => vec![*x, *y, 0.0],
+        [x, y, z] => vec![*x, *y, *z],
+        [x, y, z, ..] => vec![*x, *y, *z],
+    };
 
     let name = "example-triangle".to_string();
     let config = Config::default();
@@ -68,39 +76,29 @@ fn main() {
             Config::default(),
         ))
         .unwrap();
-        let size = screen.to_physical_size();
         let format = screen.to_texture_format();
 
         let p = Perspective {
             fov: Deg(90.0),
             aspect: screen.to_aspect_ratio(),
-            near: (size.width as f32) / 2.0,
-            far: 10000.0,
+            near: 0.1,
+            far: 100.0,
         };
 
         let mut wireframe = {
-            let mut transforms = Transforms::empty();
-            transforms.scale_by(swin.as_window().scale_factor() as f32);
-            let data = fs::read(opts.vertices).unwrap();
-            Wireframe::from_bytes(&data)
-                .unwrap()
-                .transform(transforms.model())
+            let data = fs::read(opts.vertices.clone()).unwrap();
+            Wireframe::from_bytes(&data).unwrap()
         };
         wireframe.set_color_format(format).prepare(&screen.device);
 
         let state = State {
+            opts: opts.clone(),
             bg: util::html_to_color(&opts.bg.clone().unwrap_or("#123456".to_string()))
                 .unwrap(),
             fg: util::html_to_color(&opts.fg.clone().unwrap_or("#000000".to_string()))
                 .unwrap(),
-            rotate_by: match opts.rotate.as_slice() {
-                [] => [Some(Deg(0.0)), Some(Deg(0.0)), Some(Deg(0.0))],
-                [x] => [Some(Deg(*x)), Some(Deg(0.0)), Some(Deg(0.0))],
-                [x, y] => [Some(Deg(*x)), Some(Deg(*y)), Some(Deg(0.0))],
-                [x, y, z] => [Some(Deg(*x)), Some(Deg(*y)), Some(Deg(*z))],
-                [x, y, z, ..] => [Some(Deg(*x)), Some(Deg(*y)), Some(Deg(*z))],
-            },
-            eye: Point3::new(0.0, 0.0, size.width as f32 * 2.0),
+            rotate_by: opts.rotate.clone(),
+            eye: Point3::new(0.0, 0.0, 3.0),
             center: Point3::new(0.0, 0.0, 0.0),
             up: Vector3::unit_y(),
             p,
@@ -129,8 +127,6 @@ fn on_redraw_requested(
     r: &mut Render<State>,
     _event: &mut Event<()>,
 ) -> Option<ControlFlow> {
-    let state = r.as_state();
-
     let surface_texture = r.screen.get_current_texture().ok()?;
     let view = {
         let desc = wgpu::TextureViewDescriptor::default();
@@ -144,22 +140,37 @@ fn on_redraw_requested(
         r.screen.device.create_command_encoder(&desc)
     };
 
-    let mut transforms = state.transforms;
-    transforms
-        .rotate_by(state.rotate_by[0], state.rotate_by[1], state.rotate_by[2])
-        .look_at_rh(state.eye, state.center, state.up)
-        .perspective_by(state.p);
+    let opts = {
+        let state = r.as_state();
+        let mut transforms = state.transforms;
+        transforms
+            .rotate_x_by(Deg(state.rotate_by[0]))
+            .rotate_y_by(Deg(state.rotate_by[1]))
+            .rotate_z_by(Deg(state.rotate_by[2]))
+            .look_at_rh(state.eye, state.center, state.up)
+            .perspective_by(state.p);
 
-    state
-        .wireframe
-        .render(&transforms, &r.screen.device, &mut encoder, &view);
+        state
+            .wireframe
+            .render(&transforms, &r.screen.device, &mut encoder, &view);
+
+        state.opts.clone()
+    };
 
     {
         let mut new_state = r.to_state();
-        new_state.wireframe.transform_mut(transforms.model());
-        new_state.p.aspect = r.screen.to_aspect_ratio();
+        new_state.rotate_by[0] += opts.rotate[0];
+        new_state.rotate_by[1] += opts.rotate[1];
+        new_state.rotate_by[2] += opts.rotate[2];
         r.set_state(new_state)
     }
+
+    //{
+    //    let mut new_state = r.to_state();
+    //    new_state.wireframe.transform_mut(transforms.model());
+    //    new_state.p.aspect = r.screen.to_aspect_ratio();
+    //    r.set_state(new_state)
+    //}
 
     let cmd_buffers = vec![encoder.finish()];
 

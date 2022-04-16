@@ -88,11 +88,11 @@ enum Projection {
 impl Transforms {
     pub fn empty() -> Transforms {
         Transforms {
-            translate: Matrix4::one(),
-            rotate_x: Matrix4::one(),
-            rotate_y: Matrix4::one(),
-            rotate_z: Matrix4::one(),
-            scale: Matrix4::one(),
+            translate: Matrix4::from_translation(Vector3::new(0.0, 0.0, 0.0)),
+            rotate_x: Matrix4::from_angle_x(Rad(0.0)),
+            rotate_y: Matrix4::from_angle_y(Rad(0.0)),
+            rotate_z: Matrix4::from_angle_z(Rad(0.0)),
+            scale: Matrix4::from_nonuniform_scale(1.0, 1.0, 1.0),
             view: Matrix4::one(),
             projection: Projection::P(Matrix4::one()),
         }
@@ -183,33 +183,25 @@ impl Transforms {
     where
         A: Into<Rad<f32>>,
     {
-        self.projection = {
-            let mat = cgmath::perspective(p.fov, p.aspect, p.near, p.far);
-            Projection::P(mat)
-        };
+        let projection = cgmath::perspective(p.fov, p.aspect, p.near, p.far);
+        self.projection = Projection::P(OPENGL_TO_WGPU_MATRIX * projection);
         self
     }
 
     pub fn orthogonal_by(&mut self, o: Ortho) -> &mut Self {
-        self.projection = {
-            let mat = cgmath::ortho(o.left, o.right, o.bottom, o.top, o.near, o.far);
-            Projection::O(mat)
-        };
+        let projection = cgmath::ortho(o.left, o.right, o.bottom, o.top, o.near, o.far);
+        self.projection = Projection::O(OPENGL_TO_WGPU_MATRIX * projection);
         self
     }
 }
 
 impl Transforms {
-    pub fn projection(&self) -> Matrix4<f32> {
-        let proj = match self.projection {
-            Projection::P(proj) => OPENGL_TO_WGPU_MATRIX * proj,
-            Projection::O(proj) => OPENGL_TO_WGPU_MATRIX * proj,
+    pub fn mvp(&self) -> Matrix4<f32> {
+        let projection = match &self.projection {
+            Projection::P(p) => p,
+            Projection::O(p) => p,
         };
-        proj * self.view()
-    }
-
-    pub fn view(&self) -> Matrix4<f32> {
-        self.view * self.model()
+        projection * self.view * self.model()
     }
 
     pub fn model(&self) -> Matrix4<f32> {
@@ -252,7 +244,7 @@ impl Transforms {
         let uniform = {
             let model = self.model();
             let model_ref: &[f32; 16] = model.as_ref();
-            let mvp = self.projection();
+            let mvp = self.mvp();
             let mvp_ref: &[f32; 16] = mvp.as_ref();
             let ub = UniformBuffer {
                 model: model_ref.clone(),

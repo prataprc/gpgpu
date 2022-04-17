@@ -56,6 +56,7 @@ pub enum Error {
     Invalid(String, String),
     FailConvert(String, String),
     IOError(String, String),
+    IPCError(String, String),
     Vk(String, String),
     Wgpu(String, String),
     SurfaceLost(String, String),
@@ -72,6 +73,7 @@ impl fmt::Display for Error {
             Invalid(p, msg) => write!(f, "{} Invalid: {}", p, msg),
             FailConvert(p, msg) => write!(f, "{} FailConvert: {}", p, msg),
             IOError(p, msg) => write!(f, "{} IOError: {}", p, msg),
+            IPCError(p, msg) => write!(f, "{} IPCError: {}", p, msg),
             Vk(p, msg) => write!(f, "{} Vk: {}", p, msg),
             Wgpu(p, msg) => write!(f, "{} Wgpu: {}", p, msg),
             SurfaceLost(p, msg) => write!(f, "{} SurfaceLost: {}", p, msg),
@@ -99,6 +101,8 @@ mod screen;
 mod spinlock;
 mod transforms;
 
+pub mod clear_view;
+pub mod cpfr;
 pub mod niw;
 pub mod pretty;
 pub mod util;

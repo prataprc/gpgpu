@@ -1,19 +1,17 @@
+use bytemuck::{Pod, Zeroable};
 use cgmath::{Matrix4, Point3, Vector4};
 
-use std::{fmt, path, result, sync::Arc};
+use std::{fmt, path, result};
 
 use crate::{Error, Result, Transforms};
 
-#[derive(Clone)]
 pub struct Wireframe {
-    format: Option<wgpu::TextureFormat>,
     bg: wgpu::Color,
-    bind_group_layout_0: Option<Arc<wgpu::BindGroupLayout>>,
-    pipeline: Option<Arc<wgpu::RenderPipeline>>,
+    bind_group_layout: wgpu::BindGroupLayout,
+    pipeline: wgpu::RenderPipeline,
     primitive: Primitive,
 }
 
-#[derive(Clone)]
 enum Primitive {
     Lines { vertices: Vec<Vertex> },
 }
@@ -33,17 +31,43 @@ impl fmt::Display for Wireframe {
 }
 
 impl Wireframe {
-    pub fn from_file<P>(loc: P) -> Result<Wireframe>
+    fn to_vertex_buffer(&self, device: &wgpu::Device) -> wgpu::Buffer {
+        use wgpu::util::DeviceExt;
+
+        match &self.primitive {
+            Primitive::Lines { vertices } => {
+                let contents: &[u8] = bytemuck::cast_slice(vertices);
+                let desc = wgpu::util::BufferInitDescriptor {
+                    label: Some("vertex-buffer"),
+                    contents,
+                    usage: wgpu::BufferUsages::VERTEX,
+                };
+                device.create_buffer_init(&desc)
+            }
+        }
+    }
+}
+
+impl Wireframe {
+    pub fn from_file<P>(
+        loc: P,
+        format: wgpu::TextureFormat,
+        device: &wgpu::Device,
+    ) -> Result<Wireframe>
     where
         P: AsRef<path::Path>,
     {
         use std::fs;
 
         let data = err_at!(IOError, fs::read(loc))?;
-        Self::from_bytes(&data)
+        Self::from_bytes(&data, format, device)
     }
 
-    pub fn from_bytes(data: &[u8]) -> Result<Wireframe> {
+    pub fn from_bytes(
+        data: &[u8],
+        format: wgpu::TextureFormat,
+        device: &wgpu::Device,
+    ) -> Result<Wireframe> {
         use std::str::from_utf8;
 
         let txt = err_at!(IOError, from_utf8(data))?;
@@ -53,38 +77,22 @@ impl Wireframe {
         }
 
         let primitive = Primitive::Lines { vertices };
-        let val = Wireframe {
-            format: None,
-            bg: wgpu::Color::default(),
-            bind_group_layout_0: None,
-            pipeline: None,
-            primitive,
-        };
 
-        Ok(val)
-    }
+        let bind_group_layout = Transforms::to_bind_group_layout(device);
 
-    pub fn set_color_format(&mut self, format: wgpu::TextureFormat) -> &mut Self {
-        self.format = Some(format);
-        self
-    }
-
-    pub fn prepare(&mut self, device: &wgpu::Device) -> &mut Self {
-        let bind_group_layout_0 = Transforms::to_bind_group_layout(device);
         let pipeline_layout = {
             let desc = wgpu::PipelineLayoutDescriptor {
                 label: Some("wireframe-pipeline-layout"),
-                bind_group_layouts: &[&bind_group_layout_0],
+                bind_group_layouts: &[&bind_group_layout],
                 push_constant_ranges: &[],
             };
             device.create_pipeline_layout(&desc)
         };
-        self.bind_group_layout_0 = Some(Arc::new(bind_group_layout_0));
 
         let module = {
             let text = include_str!("shader.wgsl");
             let desc = wgpu::ShaderModuleDescriptor {
-                label: Some("Wireframe-Shader"),
+                label: Some("wireframe-shader"),
                 source: wgpu::ShaderSource::Wgsl(text.into()),
             };
             device.create_shader_module(&desc)
@@ -96,7 +104,7 @@ impl Wireframe {
             buffers: &[Vertex::to_vertex_buffer_layout()],
         };
 
-        let primitive = wgpu::PrimitiveState {
+        let primitive_state = wgpu::PrimitiveState {
             topology: wgpu::PrimitiveTopology::LineList,
             strip_index_format: None,
             front_face: wgpu::FrontFace::Ccw,
@@ -113,7 +121,7 @@ impl Wireframe {
         };
 
         let color_target_states = vec![wgpu::ColorTargetState {
-            format: self.format.clone().unwrap(),
+            format,
             blend: Some(wgpu::BlendState::REPLACE),
             write_mask: wgpu::ColorWrites::ALL,
         }];
@@ -123,56 +131,72 @@ impl Wireframe {
             targets: color_target_states.as_slice(),
         };
 
-        let desc = wgpu::RenderPipelineDescriptor {
-            label: Some("Wireframe-Pipeline"),
-            layout: Some(&pipeline_layout),
-            vertex,
-            primitive,
-            depth_stencil: None,
-            multisample,
-            fragment: Some(fragment),
-            multiview: None,
+        let pipeline = {
+            let desc = wgpu::RenderPipelineDescriptor {
+                label: Some("Wireframe-Pipeline"),
+                layout: Some(&pipeline_layout),
+                vertex,
+                primitive: primitive_state,
+                depth_stencil: None,
+                multisample,
+                fragment: Some(fragment),
+                multiview: None,
+            };
+            device.create_render_pipeline(&desc)
         };
 
-        self.pipeline = Some(Arc::new(device.create_render_pipeline(&desc)));
+        let val = Wireframe {
+            bg: wgpu::Color::BLACK,
+            bind_group_layout,
+            pipeline,
+            primitive,
+        };
 
-        self
+        Ok(val)
     }
 
     pub fn render(
         &self,
-        transforms: &Transforms,
+        transf: &Transforms,
         device: &wgpu::Device,
-        encoder: &mut wgpu::CommandEncoder,
-        view: &wgpu::TextureView,
+        queue: &wgpu::Queue,
+        color_view: &wgpu::TextureView,
     ) {
         let num_vertices = self.num_vertices() as u32;
         let vertex_buffer = self.to_vertex_buffer(device);
-        let bind_group =
-            transforms.to_bind_group(device, self.bind_group_layout_0.as_ref().unwrap());
-        let mut render_pass = {
-            let desc = wgpu::RenderPassDescriptor {
-                label: Some("Wireframe-render-pass"),
-                color_attachments: &[wgpu::RenderPassColorAttachment {
-                    view: &view,
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(self.bg),
-                        store: true,
-                    },
-                }],
-                depth_stencil_attachment: None,
-            };
-            encoder.begin_render_pass(&desc)
-        };
-        render_pass.set_pipeline(self.pipeline.as_ref().unwrap());
-        render_pass.set_vertex_buffer(0, vertex_buffer.slice(..));
-        render_pass.set_bind_group(0, &bind_group, &[]);
-        render_pass.draw(0..num_vertices, 0..1);
-    }
+        let bind_group = transf.to_bind_group(device, &self.bind_group_layout);
 
-    pub fn write_back(&mut self) {
-        todo!()
+        let mut encoder = {
+            let desc = wgpu::CommandEncoderDescriptor {
+                label: Some("wireframe-encoder"),
+            };
+            device.create_command_encoder(&desc)
+        };
+
+        {
+            let mut render_pass = {
+                let desc = wgpu::RenderPassDescriptor {
+                    label: Some("Wireframe-render-pass"),
+                    color_attachments: &[wgpu::RenderPassColorAttachment {
+                        view: &color_view,
+                        resolve_target: None,
+                        ops: wgpu::Operations {
+                            load: wgpu::LoadOp::Clear(self.bg),
+                            store: true,
+                        },
+                    }],
+                    depth_stencil_attachment: None,
+                };
+                encoder.begin_render_pass(&desc)
+            };
+            render_pass.set_pipeline(&self.pipeline);
+            render_pass.set_vertex_buffer(0, vertex_buffer.slice(..));
+            render_pass.set_bind_group(0, &bind_group, &[]);
+            render_pass.draw(0..num_vertices, 0..1);
+        }
+
+        let cmd_buffers = vec![encoder.finish()];
+        queue.submit(cmd_buffers.into_iter());
     }
 }
 
@@ -189,27 +213,6 @@ impl Wireframe {
         }
     }
 
-    pub fn transform(&self, mat: Matrix4<f32>) -> Self {
-        let primitive = match &self.primitive {
-            Primitive::Lines { vertices } => Primitive::Lines {
-                vertices: vertices
-                    .iter()
-                    .map(|v| Vertex {
-                        position: (mat * Vector4::from(v.position)).into(),
-                        color: v.color,
-                    })
-                    .collect(),
-            },
-        };
-        Wireframe {
-            format: self.format,
-            bg: wgpu::Color::default(),
-            bind_group_layout_0: None,
-            pipeline: None,
-            primitive,
-        }
-    }
-
     pub fn transform_mut(&mut self, mat: Matrix4<f32>) -> &mut Self {
         match &mut self.primitive {
             Primitive::Lines { vertices } => vertices
@@ -220,33 +223,12 @@ impl Wireframe {
     }
 }
 
-impl Wireframe {
-    fn to_vertex_buffer(&self, device: &wgpu::Device) -> wgpu::Buffer {
-        use wgpu::util::DeviceExt;
-
-        match &self.primitive {
-            Primitive::Lines { vertices } => {
-                let contents: &[u8] = bytemuck::cast_slice(vertices);
-                let desc = wgpu::util::BufferInitDescriptor {
-                    label: Some("Vertex Buffer"),
-                    contents,
-                    usage: wgpu::BufferUsages::VERTEX,
-                };
-                device.create_buffer_init(&desc)
-            }
-        }
-    }
-}
-
 #[repr(C)]
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Pod, Zeroable)]
 pub struct Vertex {
     position: [f32; 4],
     color: [f32; 4],
 }
-
-unsafe impl bytemuck::Pod for Vertex {}
-unsafe impl bytemuck::Zeroable for Vertex {}
 
 impl Vertex {
     const ATTRIBUTES: [wgpu::VertexAttribute; 2] = wgpu::vertex_attr_array![

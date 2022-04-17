@@ -1,4 +1,4 @@
-use log::{debug, trace, warn};
+use log::{debug, info, trace, warn};
 use winit::{
     dpi,
     event::{DeviceEvent, Event, StartCause, WindowEvent},
@@ -173,6 +173,7 @@ where
             }
             val => val,
         };
+        info!("inner_size {:?}", attrs.inner_size);
 
         let window = {
             let mut wb = WindowBuilder::new();
@@ -212,6 +213,8 @@ where
         let mut event_handlers = self.event_handlers.take().unwrap();
         let mut window_event_handlers = self.window_event_handlers.take().unwrap();
         let mut device_event_handlers = self.device_event_handlers.take().unwrap();
+
+        debug!("starting the event_loop ...");
 
         event_loop.run(
             move |mut evnt: Event<E>,
@@ -348,41 +351,49 @@ where
     E: 'static,
 {
     pub fn on_event(&mut self, handler: Handler<C, E>) -> &mut Self {
+        debug!("subcribed to on_event ...");
         self.on_event = Some(handler);
         self
     }
 
     pub fn on_new_events(&mut self, handler: Handler<C, E>) -> &mut Self {
+        debug!("subcribed to on_new_events ...");
         self.event_handlers.as_mut().unwrap().on_new_events = handler;
         self
     }
 
     pub fn on_user_event(&mut self, handler: Handler<C, E>) -> &mut Self {
+        debug!("subcribed to on_user_event ...");
         self.event_handlers.as_mut().unwrap().on_user_event = handler;
         self
     }
 
     pub fn on_suspended(&mut self, handler: Handler<C, E>) -> &mut Self {
+        debug!("subcribed to on_suspended ...");
         self.event_handlers.as_mut().unwrap().on_suspended = handler;
         self
     }
 
     pub fn on_resumed(&mut self, handler: Handler<C, E>) -> &mut Self {
+        debug!("subcribed to on_resumed ...");
         self.event_handlers.as_mut().unwrap().on_resumed = handler;
         self
     }
 
     pub fn on_main_events_cleared(&mut self, handler: Handler<C, E>) -> &mut Self {
+        debug!("subcribed to on_main_events_cleared ...");
         self.event_handlers.as_mut().unwrap().on_main_events_cleared = handler;
         self
     }
 
     pub fn on_redraw_requested(&mut self, handler: Handler<C, E>) -> &mut Self {
+        debug!("subcribed to on_redraw_requested ...");
         self.event_handlers.as_mut().unwrap().on_redraw_requested = handler;
         self
     }
 
     pub fn on_redraw_events_cleared(&mut self, handler: Handler<C, E>) -> &mut Self {
+        debug!("subcribed to on_redraw_events_cleared ...");
         self.event_handlers
             .as_mut()
             .unwrap()
@@ -391,21 +402,25 @@ where
     }
 
     pub fn on_loop_destroyed(&mut self, handler: Handler<C, E>) -> &mut Self {
+        debug!("subcribed to on_loop_destroyed ...");
         self.event_handlers.as_mut().unwrap().on_loop_destroyed = handler;
         self
     }
 
     pub fn on_win_resized(&mut self, handler: Handler<C, E>) -> &mut Self {
+        debug!("subcribed to on_win_resized ...");
         self.window_event_handlers.as_mut().unwrap().on_resized = handler;
         self
     }
 
     pub fn on_win_moved(&mut self, handler: Handler<C, E>) -> &mut Self {
+        debug!("subcribed to on_win_moved ...");
         self.window_event_handlers.as_mut().unwrap().on_moved = handler;
         self
     }
 
     pub fn on_win_close_requested(&mut self, handler: Handler<C, E>) -> &mut Self {
+        debug!("subcribed to on_win_close_requested ...");
         self.window_event_handlers
             .as_mut()
             .unwrap()
@@ -414,21 +429,25 @@ where
     }
 
     pub fn on_win_destroyed(&mut self, handler: Handler<C, E>) -> &mut Self {
+        debug!("subcribed to on_win_destroyed ...");
         self.window_event_handlers.as_mut().unwrap().on_destroyed = handler;
         self
     }
 
     pub fn on_win_dropped_file(&mut self, handler: Handler<C, E>) -> &mut Self {
+        debug!("subcribed to on_win_dropped_file ...");
         self.window_event_handlers.as_mut().unwrap().on_dropped_file = handler;
         self
     }
 
     pub fn on_win_hovered_file(&mut self, handler: Handler<C, E>) -> &mut Self {
+        debug!("subcribed to on_win_hovered_file ...");
         self.window_event_handlers.as_mut().unwrap().on_hovered_file = handler;
         self
     }
 
     pub fn on_win_hovered_file_cancelled(&mut self, handler: Handler<C, E>) -> &mut Self {
+        debug!("subcribed to on_win_hovered_file_cancelled ...");
         self.window_event_handlers
             .as_mut()
             .unwrap()
@@ -437,6 +456,7 @@ where
     }
 
     pub fn on_win_received_character(&mut self, handler: Handler<C, E>) -> &mut Self {
+        debug!("subcribed to on_win_received_character ...");
         self.window_event_handlers
             .as_mut()
             .unwrap()
@@ -445,11 +465,13 @@ where
     }
 
     pub fn on_win_focused(&mut self, handler: Handler<C, E>) -> &mut Self {
+        debug!("subcribed to on_win_focused ...");
         self.window_event_handlers.as_mut().unwrap().on_focused = handler;
         self
     }
 
     pub fn on_win_keyboard_input(&mut self, handler: Handler<C, E>) -> &mut Self {
+        debug!("subcribed to on_win_keyboard_input ...");
         self.window_event_handlers
             .as_mut()
             .unwrap()
@@ -458,6 +480,7 @@ where
     }
 
     pub fn on_win_modifiers_changed(&mut self, handler: Handler<C, E>) -> &mut Self {
+        debug!("subcribed to on_win_modifiers_changed ...");
         self.window_event_handlers
             .as_mut()
             .unwrap()
@@ -466,11 +489,13 @@ where
     }
 
     pub fn on_win_cursor_moved(&mut self, handler: Handler<C, E>) -> &mut Self {
+        debug!("subcribed to on_win_cursor_moved ...");
         self.window_event_handlers.as_mut().unwrap().on_cursor_moved = handler;
         self
     }
 
     pub fn on_win_cursor_entered(&mut self, handler: Handler<C, E>) -> &mut Self {
+        debug!("subcribed to on_win_cursor_entered ...");
         self.window_event_handlers
             .as_mut()
             .unwrap()
@@ -479,21 +504,25 @@ where
     }
 
     pub fn on_win_cursor_left(&mut self, handler: Handler<C, E>) -> &mut Self {
+        debug!("subcribed to on_win_cursor_left ...");
         self.window_event_handlers.as_mut().unwrap().on_cursor_left = handler;
         self
     }
 
     pub fn on_win_mouse_wheel(&mut self, handler: Handler<C, E>) -> &mut Self {
+        debug!("subcribed to on_win_mouse_wheel ...");
         self.window_event_handlers.as_mut().unwrap().on_mouse_wheel = handler;
         self
     }
 
     pub fn on_win_mouse_input(&mut self, handler: Handler<C, E>) -> &mut Self {
+        debug!("subcribed to on_win_mouse_input ...");
         self.window_event_handlers.as_mut().unwrap().on_mouse_input = handler;
         self
     }
 
     pub fn on_win_touchpad_pressure(&mut self, handler: Handler<C, E>) -> &mut Self {
+        debug!("subcribed to on_win_touchpad_pressure ...");
         self.window_event_handlers
             .as_mut()
             .unwrap()
@@ -502,16 +531,19 @@ where
     }
 
     pub fn on_win_axis_motion(&mut self, handler: Handler<C, E>) -> &mut Self {
+        debug!("subcribed to on_win_axis_motion ...");
         self.window_event_handlers.as_mut().unwrap().on_axis_motion = handler;
         self
     }
 
     pub fn on_win_touch(&mut self, handler: Handler<C, E>) -> &mut Self {
+        debug!("subcribed to on_win_touch ...");
         self.window_event_handlers.as_mut().unwrap().on_touch = handler;
         self
     }
 
     pub fn on_win_scale_factor_changed(&mut self, handler: Handler<C, E>) -> &mut Self {
+        debug!("subcribed to on_win_scale_factor_changed ...");
         self.window_event_handlers
             .as_mut()
             .unwrap()
@@ -520,6 +552,7 @@ where
     }
 
     pub fn on_win_theme_changed(&mut self, handler: Handler<C, E>) -> &mut Self {
+        debug!("subcribed to on_win_theme_changed ...");
         self.window_event_handlers
             .as_mut()
             .unwrap()
@@ -528,41 +561,49 @@ where
     }
 
     pub fn on_device_added(&mut self, handler: Handler<C, E>) -> &mut Self {
+        debug!("subcribed to on_device_added ...");
         self.device_event_handlers.as_mut().unwrap().on_added = handler;
         self
     }
 
     pub fn on_device_removed(&mut self, handler: Handler<C, E>) -> &mut Self {
+        debug!("subcribed to on_device_removed ...");
         self.device_event_handlers.as_mut().unwrap().on_removed = handler;
         self
     }
 
     pub fn on_device_mouse_motion(&mut self, handler: Handler<C, E>) -> &mut Self {
+        debug!("subcribed to on_device_motion ...");
         self.device_event_handlers.as_mut().unwrap().on_mouse_motion = handler;
         self
     }
 
     pub fn on_device_mouse_wheel(&mut self, handler: Handler<C, E>) -> &mut Self {
+        debug!("subcribed to on_device_mouse_wheel ...");
         self.device_event_handlers.as_mut().unwrap().on_mouse_wheel = handler;
         self
     }
 
     pub fn on_device_motion(&mut self, handler: Handler<C, E>) -> &mut Self {
+        debug!("subcribed to on_device_motion ...");
         self.device_event_handlers.as_mut().unwrap().on_motion = handler;
         self
     }
 
     pub fn on_device_button(&mut self, handler: Handler<C, E>) -> &mut Self {
+        debug!("subcribed to on_device_button ...");
         self.device_event_handlers.as_mut().unwrap().on_button = handler;
         self
     }
 
     pub fn on_device_key(&mut self, handler: Handler<C, E>) -> &mut Self {
+        debug!("subcribed to on_device_key ...");
         self.device_event_handlers.as_mut().unwrap().on_key = handler;
         self
     }
 
     pub fn on_device_text(&mut self, handler: Handler<C, E>) -> &mut Self {
+        debug!("subcribed to on_device_text ...");
         self.device_event_handlers.as_mut().unwrap().on_text = handler;
         self
     }
@@ -576,8 +617,8 @@ where
         Event::NewEvents(StartCause::Poll)
         | Event::RedrawEventsCleared
         | Event::MainEventsCleared => {
-            trace!(target: "niw::event_loop", "event {:?}", event)
+            trace!("event {:?}", event)
         }
-        _ => debug!(target: "niw::event_loop", "event {:?}", event),
+        _ => debug!("event {:?}", event),
     }
 }

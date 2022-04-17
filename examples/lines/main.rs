@@ -1,4 +1,5 @@
 use cgmath::{Deg, Point3, Vector3};
+use log::info;
 use structopt::StructOpt;
 use winit::{
     event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent},
@@ -6,11 +7,10 @@ use winit::{
     window::Window,
 };
 
-use std::{fs, path};
+use std::{fs, path, sync::Arc, time};
 
 use gpgpu::{
-    niw, util, wireframe::Wireframe, Config, Error, Perspective, Render, Screen,
-    Transforms,
+    niw, util, wireframe::Wireframe, Config, Perspective, Render, Screen, Transforms,
 };
 
 #[derive(Clone, StructOpt)]
@@ -28,9 +28,9 @@ pub struct Opt {
     vertices: path::PathBuf,
 }
 
-#[derive(Clone)]
 struct State {
     opts: Opt,
+    render: Render,
     bg: wgpu::Color,
     fg: wgpu::Color,
     rotate_by: Vec<f32>,
@@ -40,6 +40,46 @@ struct State {
     p: Perspective<Deg<f32>>,
     transforms: Transforms,
     wireframe: Wireframe,
+    next_frame: time::Instant,
+    color_texture: Arc<wgpu::Texture>,
+}
+
+impl State {
+    fn redraw(&mut self) {
+        if self.next_frame > time::Instant::now() {
+            return;
+        }
+
+        let view = {
+            let desc = wgpu::TextureViewDescriptor::default();
+            self.color_texture.create_view(&desc)
+        };
+
+        let mut transforms = self.transforms;
+        transforms
+            .rotate_x_by(Deg(self.rotate_by[0]))
+            .rotate_y_by(Deg(self.rotate_by[1]))
+            .rotate_z_by(Deg(self.rotate_by[2]))
+            .look_at_rh(self.eye, self.center, self.up)
+            .perspective_by(self.p);
+
+        self.wireframe.render(
+            &transforms,
+            &self.render.as_screen().device,
+            &self.render.as_screen().queue,
+            &view,
+        );
+
+        self.render
+            .post_frame(Arc::clone(&self.color_texture))
+            .unwrap();
+
+        self.rotate_by[0] += self.opts.rotate[0];
+        self.rotate_by[1] += self.opts.rotate[1];
+        self.rotate_by[2] += self.opts.rotate[2];
+
+        self.next_frame = time::Instant::now() + time::Duration::from_millis(10);
+    }
 }
 
 fn main() {
@@ -59,17 +99,10 @@ fn main() {
 
     let mut swin = {
         let wattrs = config.to_window_attributes().unwrap();
-        niw::SingleWindow::<Render<State>, ()>::from_config(wattrs).unwrap()
+        niw::SingleWindow::<State, ()>::from_config(wattrs).unwrap()
     };
 
-    swin.on_win_close_requested(Box::new(on_win_close_requested))
-        .on_win_keyboard_input(Box::new(on_win_keyboard_input))
-        .on_win_resized(Box::new(on_win_resized))
-        .on_win_scale_factor_changed(Box::new(on_win_scale_factor_changed))
-        .on_main_events_cleared(Box::new(on_main_events_cleared))
-        .on_redraw_requested(Box::new(on_redraw_requested));
-
-    let r = {
+    let state = {
         let screen = pollster::block_on(Screen::new(
             name.clone(),
             swin.as_window(),
@@ -77,22 +110,25 @@ fn main() {
         ))
         .unwrap();
         let format = screen.to_texture_format();
-
         let p = Perspective {
             fov: Deg(90.0),
             aspect: screen.to_aspect_ratio(),
             near: 0.1,
             far: 100.0,
         };
-
-        let mut wireframe = {
+        let wireframe = {
             let data = fs::read(opts.vertices.clone()).unwrap();
-            Wireframe::from_bytes(&data).unwrap()
+            Wireframe::from_bytes(&data, format, &screen.device).unwrap()
         };
-        wireframe.set_color_format(format).prepare(&screen.device);
 
-        let state = State {
+        let color_texture = Arc::new(screen.like_surface_texture());
+
+        let mut render = Render::new(screen);
+        render.start();
+
+        State {
             opts: opts.clone(),
+            render,
             bg: util::html_to_color(&opts.bg.clone().unwrap_or("#123456".to_string()))
                 .unwrap(),
             fg: util::html_to_color(&opts.fg.clone().unwrap_or("#000000".to_string()))
@@ -104,18 +140,26 @@ fn main() {
             p,
             transforms: Transforms::empty(),
             wireframe,
-        };
-        Render::new(screen, state)
+            next_frame: time::Instant::now(),
+            color_texture,
+        }
     };
 
-    println!("Press Esc to exit");
-    swin.run(r);
+    swin.on_win_close_requested(Box::new(on_win_close_requested))
+        .on_win_keyboard_input(Box::new(on_win_keyboard_input))
+        .on_win_resized(Box::new(on_win_resized))
+        .on_win_scale_factor_changed(Box::new(on_win_scale_factor_changed))
+        .on_main_events_cleared(Box::new(on_main_events_cleared))
+        .on_redraw_requested(Box::new(on_redraw_requested));
+
+    info!("Press Esc to exit");
+    swin.run(state);
 }
 
 // RedrawRequested will only trigger once, unless we manually request it.
 fn on_main_events_cleared(
     w: &Window,
-    _r: &mut Render<State>,
+    _state: &mut State,
     _event: &mut Event<()>,
 ) -> Option<ControlFlow> {
     w.request_redraw();
@@ -124,81 +168,42 @@ fn on_main_events_cleared(
 
 fn on_redraw_requested(
     _: &Window,
-    r: &mut Render<State>,
+    state: &mut State,
     _event: &mut Event<()>,
 ) -> Option<ControlFlow> {
-    let surface_texture = r.screen.get_current_texture().ok()?;
-    let view = {
-        let desc = wgpu::TextureViewDescriptor::default();
-        surface_texture.texture.create_view(&desc)
-    };
+    //let surface_texture = state.render.as_screen().get_current_texture().unwrap();
+    //let surface_view = {
+    //    let desc = wgpu::TextureViewDescriptor::default();
+    //    surface_texture.texture.create_view(&desc)
+    //};
+    //let mut transforms = state.transforms;
+    //transforms
+    //    .rotate_x_by(Deg(state.rotate_by[0]))
+    //    .rotate_y_by(Deg(state.rotate_by[1]))
+    //    .rotate_z_by(Deg(state.rotate_by[2]))
+    //    .look_at_rh(state.eye, state.center, state.up)
+    //    .perspective_by(state.p);
+    //state.wireframe.render(
+    //    &transforms,
+    //    &state.render.as_screen().device,
+    //    &state.render.as_screen().queue,
+    //    &surface_view,
+    //);
+    //surface_texture.present();
 
-    let mut encoder = {
-        let desc = wgpu::CommandEncoderDescriptor {
-            label: Some("clear_screen"),
-        };
-        r.screen.device.create_command_encoder(&desc)
-    };
+    state.redraw();
 
-    let opts = {
-        let state = r.as_state();
-        let mut transforms = state.transforms;
-        transforms
-            .rotate_x_by(Deg(state.rotate_by[0]))
-            .rotate_y_by(Deg(state.rotate_by[1]))
-            .rotate_z_by(Deg(state.rotate_by[2]))
-            .look_at_rh(state.eye, state.center, state.up)
-            .perspective_by(state.p);
-
-        state
-            .wireframe
-            .render(&transforms, &r.screen.device, &mut encoder, &view);
-
-        state.opts.clone()
-    };
-
-    {
-        let mut new_state = r.to_state();
-        new_state.rotate_by[0] += opts.rotate[0];
-        new_state.rotate_by[1] += opts.rotate[1];
-        new_state.rotate_by[2] += opts.rotate[2];
-        r.set_state(new_state)
-    }
-
-    //{
-    //    let mut new_state = r.to_state();
-    //    new_state.wireframe.transform_mut(transforms.model());
-    //    new_state.p.aspect = r.screen.to_aspect_ratio();
-    //    r.set_state(new_state)
-    //}
-
-    let cmd_buffers = vec![encoder.finish()];
-
-    match r.screen.render(cmd_buffers, surface_texture) {
-        Ok(_) => None,
-        // Reconfigure the surface if lost
-        Err(Error::SurfaceLost(_, _)) => {
-            r.screen.resize(r.screen.to_physical_size());
-            None
-        }
-        // The system is out of memory, we should probably quit
-        Err(Error::SurfaceOutOfMemory(_, _)) => Some(ControlFlow::Exit),
-        // All other errors (Outdated, Timeout) should be resolved by the next frame
-        Err(e) => {
-            eprintln!("{:?}", e);
-            None
-        }
-    }
+    None
 }
 
 fn on_win_resized(
     _: &Window,
-    r: &mut Render<State>,
+    state: &mut State,
     event: &mut Event<()>,
 ) -> Option<ControlFlow> {
     match event {
         Event::WindowEvent { event, .. } => match event {
-            WindowEvent::Resized(size) => r.screen.resize(*size),
+            WindowEvent::Resized(size) => state.render.as_screen().resize(*size),
             _ => unreachable!(),
         },
         _ => unreachable!(),
@@ -209,7 +214,7 @@ fn on_win_resized(
 
 fn on_win_scale_factor_changed(
     _: &Window,
-    r: &mut Render<State>,
+    state: &mut State,
     event: &mut Event<()>,
 ) -> Option<ControlFlow> {
     match event {
@@ -220,7 +225,7 @@ fn on_win_scale_factor_changed(
                 // resized to whatever value is pointed to by the new_inner_size
                 // reference. By default, this will contain the size suggested by the
                 // OS, but it can be changed to any value.
-                r.screen.resize(**new_inner_size)
+                state.render.as_screen().resize(**new_inner_size)
             }
             _ => unreachable!(),
         },
@@ -232,15 +237,16 @@ fn on_win_scale_factor_changed(
 
 fn on_win_close_requested(
     _: &Window,
-    _r: &mut Render<State>,
+    state: &mut State,
     _: &mut Event<()>,
 ) -> Option<ControlFlow> {
+    state.render.stop().ok();
     Some(ControlFlow::Exit)
 }
 
 fn on_win_keyboard_input(
     _: &Window,
-    _r: &mut Render<State>,
+    state: &mut State,
     event: &mut Event<()>,
 ) -> Option<ControlFlow> {
     match event {
@@ -253,7 +259,10 @@ fn on_win_keyboard_input(
                         ..
                     },
                 ..
-            } => Some(ControlFlow::Exit),
+            } => {
+                state.render.stop().ok();
+                Some(ControlFlow::Exit)
+            }
             _ => None,
         },
         _ => None,

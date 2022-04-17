@@ -1,11 +1,12 @@
-use cgmath::{Deg, Matrix4, Point3, Vector2, Vector3};
+use cgmath::{Deg, Matrix4, Point3, Vector2, Vector3, Vector4};
 use structopt::StructOpt;
 
-use std::{any::type_name, fmt, path};
+use std::{any::type_name, fmt, path, result};
 
 use gpgpu::{
+    err_at,
     util::{self, PrettyPrint},
-    Result,
+    Error, Result,
 };
 
 mod info;
@@ -80,7 +81,7 @@ fn main() {
 }
 
 fn handle_scale(opts: &Opt) -> Result<()> {
-    use gpgpu::{wireframe::Wireframe, Transforms};
+    use gpgpu::Transforms;
 
     let (loc, ratio, xyz) = match &opts.subcmd {
         SubCommand::Scale { loc, ratio, xyz } => (loc, ratio, xyz),
@@ -102,7 +103,7 @@ fn handle_scale(opts: &Opt) -> Result<()> {
 
     match loc {
         Some(loc) => {
-            let in_verts = Wireframe::from_file(loc)?;
+            let mut in_verts = load_from_file(loc)?;
 
             println!("Input");
             println!("{}", in_verts);
@@ -110,7 +111,7 @@ fn handle_scale(opts: &Opt) -> Result<()> {
             println!();
 
             println!("Output");
-            println!("{}", in_verts.transform(transform.model()))
+            println!("{}", in_verts.transform_mut(transform.model()))
         }
         None => {
             transform.model().print();
@@ -121,7 +122,7 @@ fn handle_scale(opts: &Opt) -> Result<()> {
 }
 
 fn handle_translate(opts: &Opt) -> Result<()> {
-    use gpgpu::{wireframe::Wireframe, Transforms};
+    use gpgpu::Transforms;
 
     let (loc, xyz) = match &opts.subcmd {
         SubCommand::Translate { loc, xyz } => (loc, xyz),
@@ -141,7 +142,7 @@ fn handle_translate(opts: &Opt) -> Result<()> {
 
     match loc {
         Some(loc) => {
-            let in_verts = Wireframe::from_file(loc)?;
+            let mut in_verts = load_from_file(loc)?;
 
             println!("Input");
             println!("{}", in_verts);
@@ -149,7 +150,7 @@ fn handle_translate(opts: &Opt) -> Result<()> {
             println!();
 
             println!("Output");
-            println!("{}", in_verts.transform(transform.model()));
+            println!("{}", in_verts.transform_mut(transform.model()));
         }
         None => transform.model().print(),
     }
@@ -158,7 +159,7 @@ fn handle_translate(opts: &Opt) -> Result<()> {
 }
 
 fn handle_rotate(opts: &Opt) -> Result<()> {
-    use gpgpu::{wireframe::Wireframe, Transforms};
+    use gpgpu::Transforms;
 
     let (loc, x, y, z) = match &opts.subcmd {
         SubCommand::Rotate { loc, x, y, z } => (loc, Deg(*x), Deg(*y), Deg(*z)),
@@ -170,7 +171,7 @@ fn handle_rotate(opts: &Opt) -> Result<()> {
 
     match loc {
         Some(loc) => {
-            let in_verts = Wireframe::from_file(loc)?;
+            let mut in_verts = load_from_file(loc)?;
 
             println!("Input");
             println!("{}", in_verts);
@@ -178,7 +179,7 @@ fn handle_rotate(opts: &Opt) -> Result<()> {
             println!();
 
             println!("Output");
-            println!("{}", in_verts.transform(transform.model()));
+            println!("{}", in_verts.transform_mut(transform.model()));
         }
         None => {
             let matx = Matrix4::from_angle_x(x);
@@ -204,7 +205,7 @@ fn handle_rotate(opts: &Opt) -> Result<()> {
 }
 
 fn handle_perspective(opts: &Opt) -> Result<()> {
-    use gpgpu::{wireframe::Wireframe, Perspective, Transforms};
+    use gpgpu::{Perspective, Transforms};
 
     let (loc, fov, aspect, near, far) = match &opts.subcmd {
         SubCommand::Perspective { loc, args: a } => (loc, Deg(a[0]), a[1], a[2], a[3]),
@@ -221,7 +222,7 @@ fn handle_perspective(opts: &Opt) -> Result<()> {
 
     match loc {
         Some(loc) => {
-            let in_verts = Wireframe::from_file(loc)?;
+            let mut in_verts = load_from_file(loc)?;
 
             println!("Input");
             println!("{}", in_verts);
@@ -229,11 +230,11 @@ fn handle_perspective(opts: &Opt) -> Result<()> {
             println!();
 
             println!("Output");
-            println!("{}", in_verts.transform(transform.projection()));
+            println!("{}", in_verts.transform_mut(transform.mvp()));
         }
         None => {
             println!("Projection matrix");
-            transform.projection().print();
+            transform.mvp().print();
         }
     }
 
@@ -295,4 +296,83 @@ where
 {
     let e = T::default_epsilon();
     println!("for `{}` default-epsilon: {}", type_name::<T>(), e);
+}
+
+fn load_from_file<P>(loc: P) -> Result<Vertices>
+where
+    P: AsRef<path::Path>,
+{
+    use std::{fs, str::from_utf8};
+
+    let data = err_at!(IOError, fs::read(loc))?;
+
+    let txt = err_at!(IOError, from_utf8(&data))?;
+    let mut vertices: Vec<Vertex> = vec![];
+    for line in txt.lines() {
+        Vertex::from_text_line(line)?.map(|v| vertices.push(v));
+    }
+
+    Ok(Vertices(vertices))
+}
+
+struct Vertices(Vec<Vertex>);
+
+impl fmt::Display for Vertices {
+    fn fmt(&self, f: &mut fmt::Formatter) -> result::Result<(), fmt::Error> {
+        let vertices = &self.0;
+        for (i, v) in vertices.iter().enumerate() {
+            write!(f, "({:4})=> {:?}\n", i, v.position)?;
+        }
+        Ok(())
+    }
+}
+
+impl Vertices {
+    fn transform_mut(&mut self, mat: Matrix4<f32>) -> &mut Self {
+        self.0
+            .iter_mut()
+            .for_each(|v| v.position = (mat * Vector4::from(v.position)).into());
+        self
+    }
+}
+
+struct Vertex {
+    position: [f32; 4],
+    color: [f32; 4],
+}
+
+impl Vertex {
+    fn new(position: &[f32], color: &[f32]) -> Result<Vertex> {
+        let position: [f32; 4] = match position {
+            [x, y, z] => Point3::from((*x, *y, *z)).to_homogeneous().into(),
+            [x, y] => Point3::from((*x, *y, 0.0)).to_homogeneous().into(),
+            _ => err_at!(Invalid, msg: "invalid position {:?}", position)?,
+        };
+        let color: [f32; 4] = match color {
+            [r, g, b, a] => [*r, *g, *b, *a],
+            [r, g, b] => [*r, *g, *b, 1.0],
+            [] => [1.0, 1.0, 1.0, 1.0],
+            _ => err_at!(Invalid, msg: "invalid color {:?}", color)?,
+        };
+
+        Ok(Vertex { position, color })
+    }
+
+    fn from_text_line(txt: &str) -> Result<Option<Vertex>> {
+        match txt.split(";").collect::<Vec<&str>>().as_slice() {
+            ["", ""] | [""] | [] => Ok(None),
+            [pos, ""] => Some(Vertex::from_position(&util::parse_csv(pos)?)).transpose(),
+            [pos, color] => Some(Vertex::new(
+                &util::parse_csv(pos)?,
+                &util::parse_csv(color)?,
+            ))
+            .transpose(),
+            [pos] => Some(Vertex::from_position(&util::parse_csv(pos)?)).transpose(),
+            _ => err_at!(Invalid, msg: "invalid vertex {}", txt),
+        }
+    }
+
+    fn from_position(position: &[f32]) -> Result<Vertex> {
+        Self::new(position, &[1.0, 1.0, 1.0, 1.0])
+    }
 }

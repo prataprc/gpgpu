@@ -234,6 +234,21 @@ impl Transforms {
         device.create_bind_group_layout(&desc)
     }
 
+    pub fn to_bind_content(&self) -> Vec<u8> {
+        let model = self.model();
+        let mvp = self.mvp();
+
+        let model_ref: &[f32; 16] = model.as_ref();
+        let mvp_ref: &[f32; 16] = mvp.as_ref();
+        let ub = UniformBuffer {
+            model: model_ref.clone(),
+            mvp: mvp_ref.clone(),
+        };
+
+        let contents: [u8; 32 * 4] = bytemuck::cast(ub);
+        contents.to_vec()
+    }
+
     pub fn to_bind_group(
         &self,
         device: &wgpu::Device,
@@ -241,17 +256,8 @@ impl Transforms {
     ) -> wgpu::BindGroup {
         use wgpu::util::DeviceExt;
 
-        let uniform = {
-            let model = self.model();
-            let model_ref: &[f32; 16] = model.as_ref();
-            let mvp = self.mvp();
-            let mvp_ref: &[f32; 16] = mvp.as_ref();
-            let ub = UniformBuffer {
-                model: model_ref.clone(),
-                mvp: mvp_ref.clone(),
-            };
-            let contents: [u8; 32 * 4] = bytemuck::cast(ub); // TODO: avoid hardcoding
-
+        let model_mvp_buffer = {
+            let contents = self.to_bind_content();
             let desc = wgpu::util::BufferInitDescriptor {
                 label: Some("transform-buffer"),
                 contents: &contents,
@@ -265,7 +271,7 @@ impl Transforms {
             layout,
             entries: &[wgpu::BindGroupEntry {
                 binding: 0,
-                resource: uniform.as_entire_binding(),
+                resource: model_mvp_buffer.as_entire_binding(),
             }],
         };
         device.create_bind_group(&desc)

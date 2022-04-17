@@ -5,7 +5,9 @@ use winit::{
     window::Window,
 };
 
-use gpgpu::{niw, util, Config, Error, Render, Screen};
+use std::sync::Arc;
+
+use gpgpu::{clear_view::ClearView, niw, util, Config, Render, Screen};
 
 #[derive(Clone, StructOpt)]
 pub struct Opt {
@@ -15,6 +17,29 @@ pub struct Opt {
 
 struct State {
     color: wgpu::Color,
+    color_texture: Arc<wgpu::Texture>,
+    render: Render,
+}
+
+impl State {
+    fn redraw(&mut self) {
+        let view = {
+            let desc = wgpu::TextureViewDescriptor::default();
+            self.color_texture.create_view(&desc)
+        };
+
+        let clear_view = ClearView;
+        clear_view.render(
+            self.color,
+            &self.render.as_screen().device,
+            &self.render.as_screen().queue,
+            &view,
+        );
+
+        self.render
+            .post_frame(Arc::clone(&self.color_texture))
+            .unwrap();
+    }
 }
 
 fn main() {
@@ -27,7 +52,7 @@ fn main() {
 
     let mut swin = {
         let wattrs = config.to_window_attributes().unwrap();
-        niw::SingleWindow::<Render<State>, ()>::from_config(wattrs).unwrap()
+        niw::SingleWindow::<State, ()>::from_config(wattrs).unwrap()
     };
 
     swin.on_win_close_requested(Box::new(on_win_close_requested))
@@ -37,30 +62,37 @@ fn main() {
         .on_main_events_cleared(Box::new(on_main_events_cleared))
         .on_redraw_requested(Box::new(on_redraw_requested));
 
-    let r = {
+    let state = {
         let screen = pollster::block_on(Screen::new(
             name.clone(),
             swin.as_window(),
             Config::default(),
         ))
         .unwrap();
-        let state = State {
+
+        let color_texture = Arc::new(screen.like_surface_texture());
+
+        let mut render = Render::new(screen);
+        render.start();
+
+        State {
             color: util::html_to_color(
                 &opts.color.clone().unwrap_or("#FFFFFF".to_string()),
             )
             .unwrap(),
-        };
-        gpgpu::Render::new(screen, state)
+            render,
+            color_texture,
+        }
     };
 
     println!("Press Esc to exit");
-    swin.run(r);
+    swin.run(state);
 }
 
 // RedrawRequested will only trigger once, unless we manually request it.
 fn on_main_events_cleared(
     w: &Window,
-    _r: &mut Render<State>,
+    _state: &mut State,
     _event: &mut Event<()>,
 ) -> Option<ControlFlow> {
     w.request_redraw();
@@ -69,43 +101,21 @@ fn on_main_events_cleared(
 
 fn on_redraw_requested(
     _: &Window,
-    r: &mut Render<State>,
+    state: &mut State,
     _event: &mut Event<()>,
 ) -> Option<ControlFlow> {
-    let state = r.as_state();
-
-    let surface_texture = r.screen.get_current_texture().ok()?;
-    let view = {
-        let desc = wgpu::TextureViewDescriptor::default();
-        surface_texture.texture.create_view(&desc)
-    };
-    let cmd_buffers = vec![r.screen.clear_view(&view, state.color)];
-
-    match r.screen.render(cmd_buffers, surface_texture) {
-        Ok(_) => None,
-        // Reconfigure the surface if lost
-        Err(Error::SurfaceLost(_, _)) => {
-            r.screen.resize(r.screen.to_physical_size());
-            None
-        }
-        // The system is out of memory, we should probably quit
-        Err(Error::SurfaceOutOfMemory(_, _)) => Some(ControlFlow::Exit),
-        // All other errors (Outdated, Timeout) should be resolved by the next frame
-        Err(e) => {
-            eprintln!("{:?}", e);
-            None
-        }
-    }
+    state.redraw();
+    None
 }
 
 fn on_win_resized(
     _: &Window,
-    r: &mut Render<State>,
+    state: &mut State,
     event: &mut Event<()>,
 ) -> Option<ControlFlow> {
     match event {
         Event::WindowEvent { event, .. } => match event {
-            WindowEvent::Resized(size) => r.screen.resize(*size),
+            WindowEvent::Resized(size) => state.render.as_screen().resize(*size),
             _ => unreachable!(),
         },
         _ => unreachable!(),
@@ -116,7 +126,7 @@ fn on_win_resized(
 
 fn on_win_scale_factor_changed(
     _: &Window,
-    r: &mut Render<State>,
+    state: &mut State,
     event: &mut Event<()>,
 ) -> Option<ControlFlow> {
     match event {
@@ -127,7 +137,7 @@ fn on_win_scale_factor_changed(
                 // resized to whatever value is pointed to by the new_inner_size
                 // reference. By default, this will contain the size suggested by the
                 // OS, but it can be changed to any value.
-                r.screen.resize(**new_inner_size)
+                state.render.as_screen().resize(**new_inner_size)
             }
             _ => unreachable!(),
         },
@@ -139,7 +149,7 @@ fn on_win_scale_factor_changed(
 
 fn on_win_close_requested(
     _: &Window,
-    _r: &mut Render<State>,
+    _: &mut State,
     _: &mut Event<()>,
 ) -> Option<ControlFlow> {
     Some(ControlFlow::Exit)
@@ -147,7 +157,7 @@ fn on_win_close_requested(
 
 fn on_win_keyboard_input(
     _: &Window,
-    _r: &mut Render<State>,
+    _state: &mut State,
     event: &mut Event<()>,
 ) -> Option<ControlFlow> {
     match event {

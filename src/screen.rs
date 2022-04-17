@@ -93,57 +93,24 @@ impl Screen {
         }
     }
 
-    pub fn clear_view<C>(
-        &self,
-        view: &wgpu::TextureView,
-        color: C,
-    ) -> wgpu::CommandBuffer
-    where
-        C: Into<wgpu::Color>,
-    {
-        let color: wgpu::Color = color.into();
-        let mut encoder = {
-            let desc = wgpu::CommandEncoderDescriptor {
-                label: Some("clear_screen"),
-            };
-            self.device.create_command_encoder(&desc)
-        };
-        {
-            let ops = wgpu::Operations {
-                load: wgpu::LoadOp::Clear(color),
-                store: true,
-            };
-            let desc = wgpu::RenderPassDescriptor {
-                label: Some("Render Pass"),
-                color_attachments: &[wgpu::RenderPassColorAttachment {
-                    view: view,
-                    resolve_target: None,
-                    ops,
-                }],
-                depth_stencil_attachment: None,
-            };
-            encoder.begin_render_pass(&desc)
-        };
-
-        encoder.finish()
-    }
-
-    pub fn render(
-        &self,
-        cmd_buffers: Vec<wgpu::CommandBuffer>,
-        surface_texture: wgpu::SurfaceTexture,
-    ) -> Result<()> {
-        self.queue.submit(cmd_buffers.into_iter());
-        surface_texture.present();
-
-        Ok(())
-    }
-
     pub fn to_extent3d(&self) -> wgpu::Extent3d {
         let width = self.as_surface_config().width;
         let height = self.as_surface_config().height;
         let depth_or_array_layers = 1;
         wgpu::Extent3d { width, height, depth_or_array_layers }
+    }
+
+    pub fn like_surface_texture(&self) -> wgpu::Texture {
+        let desc = wgpu::TextureDescriptor {
+            label: Some("like-surface-texture"),
+            size: self.to_extent3d(),
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: self.to_texture_format(),
+            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT,
+        };
+        self.device.create_texture(&desc)
     }
 
     // width / height of the surface
@@ -166,5 +133,5 @@ impl Screen {
 }
 
 fn uncaptured_error_handler(err: wgpu::Error) {
-    error!(target: "Screen", "uncaptured error: {}", err)
+    error!("uncaptured error: {}", err)
 }

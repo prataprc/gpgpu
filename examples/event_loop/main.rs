@@ -5,7 +5,7 @@ use winit::{
     window::Window,
 };
 
-use std::{ffi, process::exit, sync::Arc};
+use std::{ffi, process::exit};
 
 use gpgpu::{niw, Config, Error, Render, Result, Screen};
 
@@ -21,6 +21,7 @@ pub struct Opt {
 struct State {
     events_log: niw::EventsLog,
     opts: Opt,
+    render: Render,
 }
 
 fn main() {
@@ -47,61 +48,47 @@ fn main() {
 
 fn handle_events(opts: Opt, config: Config) -> Result<()> {
     let name = "example-event-loop".to_string();
-    let mut swin = niw::SingleWindow::<Render<State>, ()>::from_config(
-        config.to_window_attributes()?,
-    )?;
+    let mut swin =
+        niw::SingleWindow::<State, ()>::from_config(config.to_window_attributes()?)?;
 
-    let on_win_close_requested = |_: &Window,
-                                  _: &mut Render<State>,
-                                  _: &mut Event<()>|
-     -> Option<ControlFlow> { None };
+    let on_win_close_requested =
+        |_: &Window, _: &mut State, _: &mut Event<()>| -> Option<ControlFlow> { None };
 
-    let on_win_keyboard_input = |_: &Window,
-                                 _: &mut Render<State>,
-                                 event: &mut Event<()>|
-     -> Option<ControlFlow> {
-        match event {
-            Event::WindowEvent { event, .. } => match event {
-                WindowEvent::KeyboardInput {
-                    input:
-                        KeyboardInput {
-                            state: ElementState::Pressed,
-                            virtual_keycode: Some(VirtualKeyCode::Escape),
-                            ..
-                        },
-                    ..
-                } => Some(ControlFlow::Exit),
+    let on_win_keyboard_input =
+        |_: &Window, _: &mut State, event: &mut Event<()>| -> Option<ControlFlow> {
+            match event {
+                Event::WindowEvent { event, .. } => match event {
+                    WindowEvent::KeyboardInput {
+                        input:
+                            KeyboardInput {
+                                state: ElementState::Pressed,
+                                virtual_keycode: Some(VirtualKeyCode::Escape),
+                                ..
+                            },
+                        ..
+                    } => Some(ControlFlow::Exit),
+                    _ => None,
+                },
                 _ => None,
-            },
-            _ => None,
-        }
-    };
+            }
+        };
 
     let on_event = |_: &Window,
-                    r: &mut Render<State>,
+                    state: &mut State,
                     event: &mut Event<()>|
      -> Option<ControlFlow> {
-        let state = r.as_state();
-        match unsafe { (Arc::as_ptr(&state) as *mut State).as_mut() } {
-            Some(state) => {
-                state.events_log.append(event);
-                match state.opts.event_name.as_ref() {
-                    Some(event_name)
-                        if &niw::to_event_name(event).to_string() == event_name =>
-                    {
-                        print!("\r{:?}", event);
-                    }
-                    _ => (),
-                }
-                None
+        state.events_log.append(event);
+        match state.opts.event_name.as_ref() {
+            Some(event_name) if &niw::to_event_name(event).to_string() == event_name => {
+                print!("\r{:?}", event);
             }
-            None => unreachable!(),
+            _ => (),
         }
+        None
     };
 
     let on_loop_destroyed =
-        |_: &Window, r: &mut Render<State>, _: &mut Event<()>| -> Option<ControlFlow> {
-            let state = r.as_state();
+        |_: &Window, state: &mut State, _: &mut Event<()>| -> Option<ControlFlow> {
             state.events_log.pretty_print();
             None
         };
@@ -111,20 +98,21 @@ fn handle_events(opts: Opt, config: Config) -> Result<()> {
         .on_loop_destroyed(Box::new(on_loop_destroyed))
         .on_event(Box::new(on_event));
 
-    let r = {
-        let screen = pollster::block_on(Screen::new(
-            name.clone(),
-            swin.as_window(),
-            Config::default(),
-        ))
-        .unwrap();
-        let state = State {
-            events_log: niw::EventsLog::default(),
-            opts: opts.clone(),
-        };
-        Render::new(screen, state)
+    let screen = pollster::block_on(Screen::new(
+        name.clone(),
+        swin.as_window(),
+        Config::default(),
+    ))
+    .unwrap();
+
+    let render = Render::new(screen);
+
+    let state = State {
+        events_log: niw::EventsLog::default(),
+        opts: opts.clone(),
+        render,
     };
 
     println!("Press Esc to exit");
-    swin.run(r);
+    swin.run(state);
 }

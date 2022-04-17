@@ -98,7 +98,7 @@ fn main() {
             fg: util::html_to_color(&opts.fg.clone().unwrap_or("#000000".to_string()))
                 .unwrap(),
             rotate_by: opts.rotate.clone(),
-            eye: Point3::new(0.0, 0.0, 3.0),
+            eye: Point3::new(0.0, 0.0, 5.0),
             center: Point3::new(0.0, 0.0, 0.0),
             up: Vector3::unit_y(),
             p,

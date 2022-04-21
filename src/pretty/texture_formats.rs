@@ -1,23 +1,13 @@
 use colored::Colorize;
 use prettytable::{cell, row};
 
-use crate::util::PrettyRow;
+use crate::util::{format_bool, PrettyRow};
 
 pub struct TextureFormatInfo {
     name: String,
     #[allow(dead_code)]
     value: wgpu::TextureFormat,
     info: wgpu_types::TextureFormatInfo,
-}
-
-macro_rules! format_bool {
-    ($val:expr) => {
-        if $val {
-            "✓".green()
-        } else {
-            "✗".red()
-        }
-    };
 }
 
 impl PrettyRow for TextureFormatInfo {

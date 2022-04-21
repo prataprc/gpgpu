@@ -3,7 +3,7 @@ mod info;
 use colored::Colorize;
 use structopt::StructOpt;
 
-use std::{ffi, process::exit};
+use std::{path, process::exit};
 
 use gpgpu::{Config, Error, Result};
 
@@ -18,7 +18,7 @@ pub struct Opt {
     no_color: bool,
 
     #[structopt(long = "config")]
-    config_loc: Option<ffi::OsString>,
+    config_loc: Option<path::PathBuf>,
 
     #[structopt(subcommand)]
     subcmd: SubCommand,

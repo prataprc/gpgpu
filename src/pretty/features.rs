@@ -3,7 +3,7 @@
 use colored::Colorize;
 use prettytable::{cell, row};
 
-use crate::util::PrettyRow;
+use crate::util::{format_bool, PrettyRow};
 
 pub struct Feature {
     name: String,
@@ -12,16 +12,6 @@ pub struct Feature {
     native: bool,
     backends: Vec<wgpu::Backend>,
     adapters: Vec<bool>,
-}
-
-macro_rules! format_bool {
-    ($val:expr) => {
-        if $val {
-            "✓".green()
-        } else {
-            "✗".red()
-        }
-    };
 }
 
 impl PrettyRow for Feature {

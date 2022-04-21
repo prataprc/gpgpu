@@ -2,17 +2,7 @@ use colored::Colorize;
 use prettytable::{cell, row};
 use vulkano::instance::LayerProperties;
 
-use crate::util::PrettyRow;
-
-macro_rules! format_bool {
-    ($val:expr) => {
-        if $val {
-            "✓".green()
-        } else {
-            "✗".red()
-        }
-    };
-}
+use crate::util::{format_bool, PrettyRow};
 
 impl PrettyRow for LayerProperties {
     fn to_format() -> prettytable::format::TableFormat {

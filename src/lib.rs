@@ -103,6 +103,7 @@ mod transforms;
 
 pub mod clear_view;
 pub mod cpfr;
+pub mod fonts;
 pub mod niw;
 pub mod pretty;
 pub mod util;

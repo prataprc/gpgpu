@@ -1,8 +1,20 @@
+use log::error;
 use serde::de::DeserializeOwned;
 
 use std::{fmt, fs, path, str::FromStr};
 
 use crate::{Error, Result};
+
+macro_rules! format_bool {
+    ($val:expr) => {
+        if $val {
+            "✓".green()
+        } else {
+            "✗".red()
+        }
+    };
+}
+pub(crate) use format_bool;
 
 pub trait PrettyRow {
     fn to_format() -> prettytable::format::TableFormat;
@@ -110,4 +122,75 @@ where
     }
 
     Ok(outs)
+}
+
+pub fn gpgpu_dir() -> Option<path::PathBuf> {
+    let home = dirs::home_dir()?;
+    Some([home, ".gpgpu".into()].iter().collect())
+}
+
+pub fn gpgpu_cache_dir() -> Option<path::PathBuf> {
+    let dir = gpgpu_dir()?;
+    Some([dir, "cache".into()].iter().collect())
+}
+
+pub fn gpgpu_cached_file(file: &str) -> Option<path::PathBuf> {
+    let dir = gpgpu_cache_dir()?;
+    Some([dir, file.into()].iter().collect())
+}
+
+pub enum WalkRes {
+    Ok,
+    SkipDir,
+}
+
+/// Breadth first directory walking.
+///
+/// `callb` arguments:
+///
+/// * _state_, as mutable reference, user supplied and exist for the duration of walk.
+/// * _parent_, path to parent under which this entry is found.
+/// * _dir_entry_, for each entry in a sub-directory.
+/// * _depth_, depth level at which _dir-entry_ is located, start with ZERO.
+/// * _breath_, index of _dir-entry_ as stored in its parent directory, start with ZERO.
+pub fn walk<P, S, F>(root: P, mut state: S, mut callb: F) -> Result<S>
+where
+    P: AsRef<path::Path>,
+    F: FnMut(&mut S, &path::Path, &fs::DirEntry, usize, usize) -> Result<WalkRes>,
+{
+    let depth = 0;
+    do_walk(root, &mut state, &mut callb, depth)?;
+    Ok(state)
+}
+
+fn do_walk<P, S, F>(parent: P, state: &mut S, callb: &mut F, depth: usize) -> Result<()>
+where
+    P: AsRef<path::Path>,
+    F: FnMut(&mut S, &path::Path, &fs::DirEntry, usize, usize) -> Result<WalkRes>,
+{
+    let mut subdirs = vec![];
+
+    let parent = {
+        let parent: &path::Path = parent.as_ref();
+        parent.to_path_buf()
+    };
+    let dirs = err_at!(IOError, fs::read_dir(&parent), "read_dir({:?})", parent)?;
+    for (breath, entry) in dirs.enumerate() {
+        let entry = err_at!(IOError, entry)?;
+        match callb(state, &parent, &entry, depth, breath)? {
+            WalkRes::Ok if err_at!(IOError, entry.file_type())?.is_dir() => {
+                subdirs.push(entry)
+            }
+            WalkRes::Ok | WalkRes::SkipDir => (),
+        }
+    }
+
+    for subdir in subdirs.into_iter() {
+        match do_walk(subdir.path(), state, callb, depth + 1) {
+            Err(err) => error!("failed walking dir {:?}: {}", subdir, err),
+            Ok(_) => (),
+        }
+    }
+
+    Ok(())
 }

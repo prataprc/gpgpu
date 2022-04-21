@@ -15,6 +15,7 @@ pub struct FontFile {
 
     data: Vec<u8>,
     hash: u64,
+    font: Option<fontdue::Font>,
 }
 
 impl Eq for FontFile {}
@@ -66,6 +67,7 @@ impl FontFile {
 
             data,
             hash,
+            font: None,
         };
 
         Ok(val)
@@ -83,36 +85,34 @@ impl FontFile {
         self.hash
     }
 
-    pub fn to_raster_pnm<P>(&self, _subdir: P) -> Result<()>
-    where
-        P: AsRef<path::Path>,
-    {
-        let _raster = {
+    pub fn parse(&mut self) -> Result<&mut Self> {
+        if let None = self.font.as_ref() {
             let setts = fontdue::FontSettings {
                 collection_index: self.collection_index,
                 scale: self.scale,
             };
-            err_at!(
+            self.font = Some(err_at!(
                 Invalid,
                 fontdue::Font::from_bytes(self.data.as_slice(), setts)
-            )?
+            )?);
+        }
+
+        Ok(self)
+    }
+
+    pub fn rasterize_char(&self, ch: char) -> Result<()> {
+        use image::{ImageBuffer, ImageFormat, Luma};
+
+        let font = match self.font.as_ref() {
+            Some(font) => font,
+            None => err_at!(Invalid, msg: "parse before calling raster")?,
         };
-
-        //let subdir: path::PathBuf = {
-        //    let p: &path::Path = subdir.as_ref();
-        //    p.into()
-        //};
-
-        //err_at!(IOError, fs::create_dir_all(&subdir))?;
-        //for (_ch, index) in self.font.chars().iter() {
-        //    let (_metrics, data) =
-        //        self.font.rasterize_indexed(index.get(), self.setts.scale);
-        //    let loc: path::PathBuf = [subdir.clone(), format!("{}.bmp", index).into()]
-        //        .iter()
-        //        .collect();
-        //    println!("rasterizing {:?}", loc);
-        //    err_at!(IOError, fs::write(&loc, &data))?;
-        //}
+        let (metrics, data) = font.rasterize(ch, self.scale);
+        let img: ImageBuffer<Luma<u8>, Vec<u8>> = {
+            let (w, h) = (metrics.width as u32, metrics.height as u32);
+            ImageBuffer::from_vec(w, h, data).unwrap()
+        };
+        err_at!(Invalid, img.save_with_format("./xyz.bmp", ImageFormat::Bmp))?;
 
         Ok(())
     }
@@ -230,12 +230,35 @@ impl PrettyRow for FaceProperties {
     }
 
     fn to_head() -> prettytable::Row {
-        row![ Fy => "Name", "N", "RIBOMV" ]
+        row![
+            Fy =>
+            "Name", "N", "RIBOMV", "BB", "Em", "Ascender", "Descender",
+            "Height", "LineGap"
+        ]
     }
 
     fn to_row(&self) -> prettytable::Row {
         let name = self.name.as_ref().map(|s| s.as_str()).unwrap_or("-");
-        row![name, self.glyph_count, format_flags(self)]
+        let bb = {
+            let ttf_parser::Rect {
+                x_min,
+                y_min,
+                x_max,
+                y_max,
+            } = self.global_bounding_box;
+            format!("{:4} {:4} {:4} {:4}", x_min, y_min, x_max, y_max)
+        };
+        row![
+            name,
+            self.glyph_count,
+            format_flags(self),
+            bb,
+            self.units_per_em,
+            self.ascender,
+            self.descender,
+            self.height,
+            self.line_gap,
+        ]
     }
 }
 

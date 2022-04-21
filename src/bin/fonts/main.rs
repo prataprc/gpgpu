@@ -46,11 +46,10 @@ pub enum SubCommand {
         #[structopt(short = "f")]
         loc: path::PathBuf,
 
-        #[structopt(short = "o")]
-        out: path::PathBuf,
-
         #[structopt(long = "scale")]
         scale: f32,
+
+        ch: char,
     },
     Report {
         #[structopt(short = "f")]
@@ -214,14 +213,16 @@ fn handle_list(opts: Opt) -> Result<()> {
     Ok(())
 }
 
-fn handle_raster(_opts: Opt) -> Result<()> {
-    //let (loc, out, scale) = match opts.subcmd.clone() {
-    //    SubCommand::Raster { loc, out, scale } => (loc, out, scale),
-    //    _ => unreachable!(),
-    //};
+fn handle_raster(opts: Opt) -> Result<()> {
+    let (loc, scale, ch) = match opts.subcmd.clone() {
+        SubCommand::Raster { loc, scale, ch } => (loc, scale, ch),
+        _ => unreachable!(),
+    };
 
-    //let fontfile = fonts::FontFile::new(loc, 0, scale)?;
-    //fontfile.rasterize(&out)?;
+    let mut fontfile = fonts::FontFile::new(loc, 0, scale)?;
+    fontfile.parse()?;
+
+    fontfile.rasterize_char(ch)?;
 
     Ok(())
 }

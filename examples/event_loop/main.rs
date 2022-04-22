@@ -7,7 +7,7 @@ use winit::{
 
 use std::{ffi, process::exit};
 
-use gpgpu::{niw, Config, Error, Render, Result, Screen};
+use gpgpu::{niw, Config, Error, Result, Screen};
 
 #[derive(StructOpt, Clone)]
 pub struct Opt {
@@ -21,7 +21,6 @@ pub struct Opt {
 struct State {
     events_log: niw::EventsLog,
     opts: Opt,
-    render: Render,
 }
 
 fn main() {
@@ -98,19 +97,16 @@ fn handle_events(opts: Opt, config: Config) -> Result<()> {
         .on_loop_destroyed(Box::new(on_loop_destroyed))
         .on_event(Box::new(on_event));
 
-    let screen = pollster::block_on(Screen::new(
+    pollster::block_on(Screen::new(
         name.clone(),
         swin.as_window(),
         Config::default(),
     ))
     .unwrap();
 
-    let render = Render::new(screen);
-
     let state = State {
         events_log: niw::EventsLog::default(),
         opts: opts.clone(),
-        render,
     };
 
     println!("Press Esc to exit");

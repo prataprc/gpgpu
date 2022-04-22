@@ -1,29 +1,36 @@
-pub struct ClearView;
+use crate::Result;
 
-impl ClearView {
-    pub fn render<C>(
+pub struct Clear {
+    bg: wgpu::Color,
+}
+
+impl Clear {
+    pub fn new<C>(bg: C) -> Clear
+    where
+        C: Into<wgpu::Color>,
+    {
+        Clear { bg: bg.into() }
+    }
+
+    pub fn render(
         &self,
-        color: C,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         color_view: &wgpu::TextureView,
-    ) where
-        C: Into<wgpu::Color>,
-    {
-        let color: wgpu::Color = color.into();
+    ) -> Result<()> {
         let mut encoder = {
             let desc = wgpu::CommandEncoderDescriptor {
-                label: Some("clear-view"),
+                label: Some("widgets/clear:encoder"),
             };
             device.create_command_encoder(&desc)
         };
         {
             let ops = wgpu::Operations {
-                load: wgpu::LoadOp::Clear(color),
+                load: wgpu::LoadOp::Clear(self.bg),
                 store: true,
             };
             let desc = wgpu::RenderPassDescriptor {
-                label: Some("clear-view-render-pass"),
+                label: Some("widgets/clear:render-pass"),
                 color_attachments: &[wgpu::RenderPassColorAttachment {
                     view: color_view,
                     resolve_target: None,
@@ -36,5 +43,7 @@ impl ClearView {
 
         let cmd_buffers = vec![encoder.finish()];
         queue.submit(cmd_buffers.into_iter());
+
+        Ok(())
     }
 }

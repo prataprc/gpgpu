@@ -1,4 +1,4 @@
-fn binomial_coeffs(n: usize) -> Vec<f32> {
+pub fn binomial_coeffs(n: usize) -> Vec<f32> {
     let n = match n {
         0 => return vec![1.0],
         1 => return vec![1.0, 1.0],
@@ -18,7 +18,7 @@ fn binomial_coeffs(n: usize) -> Vec<f32> {
     levels.pop().unwrap()
 }
 
-fn bezier2(t: f32, points: [cgmath::Point2<f32>; 3]) -> cgmath::Point2<f32> {
+pub fn bezier2(t: f32, points: [cgmath::Point2<f32>; 3]) -> cgmath::Point2<f32> {
     use cgmath::Matrix;
 
     let coeff: cgmath::Matrix3<f32> =
@@ -48,7 +48,7 @@ fn bezier2(t: f32, points: [cgmath::Point2<f32>; 3]) -> cgmath::Point2<f32> {
     (x.x.x, y.x.x).into()
 }
 
-fn bezier3(t: f32, points: [cgmath::Point2<f32>; 4]) -> cgmath::Point2<f32> {
+pub fn bezier3(t: f32, points: [cgmath::Point2<f32>; 4]) -> cgmath::Point2<f32> {
     use cgmath::Matrix;
 
     let coeff: cgmath::Matrix4<f32> = [
@@ -96,7 +96,7 @@ fn bezier3(t: f32, points: [cgmath::Point2<f32>; 4]) -> cgmath::Point2<f32> {
     (x.x.x, y.x.x).into()
 }
 
-fn r_bezier2(
+pub fn r_bezier2(
     t: f32,
     points: [cgmath::Point2<f32>; 3],
     ratios: [f32; 3],
@@ -132,7 +132,7 @@ fn r_bezier2(
     cgmath::Point2::from((x, y))
 }
 
-fn r_bezier3(
+pub fn r_bezier3(
     t: f32,
     points: [cgmath::Point2<f32>; 4],
     ratios: [f32; 4],

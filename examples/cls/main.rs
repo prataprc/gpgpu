@@ -7,7 +7,7 @@ use winit::{
 
 use std::sync::Arc;
 
-use gpgpu::{clear_view::ClearView, niw, util, Config, Render, Screen};
+use gpgpu::{niw, util, vidgets::Clear, Config, Render, Screen};
 
 #[derive(Clone, StructOpt)]
 pub struct Opt {
@@ -28,13 +28,14 @@ impl State {
             self.color_texture.create_view(&desc)
         };
 
-        let clear_view = ClearView;
-        clear_view.render(
-            self.color,
-            &self.render.as_screen().device,
-            &self.render.as_screen().queue,
-            &view,
-        );
+        let clear = Clear::new(self.color);
+        clear
+            .render(
+                &self.render.as_screen().device,
+                &self.render.as_screen().queue,
+                &view,
+            )
+            .unwrap();
 
         self.render
             .post_frame(Arc::clone(&self.color_texture))

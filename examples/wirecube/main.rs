@@ -9,18 +9,10 @@ use winit::{
 
 use std::{fs, path, sync::Arc, time};
 
-use gpgpu::{
-    niw, util, wireframe::Wireframe, Config, Perspective, Render, Screen, Transforms,
-};
+use gpgpu::{niw, vidgets::Wireframe, Config, Perspective, Render, Screen, Transforms};
 
 #[derive(Clone, StructOpt)]
 pub struct Opt {
-    #[structopt(long = "bg")]
-    bg: Option<String>,
-
-    #[structopt(long = "fg")]
-    fg: Option<String>,
-
     #[structopt(long = "rotate", default_value = "0", use_delimiter = true)]
     rotate: Vec<f32>,
 
@@ -31,8 +23,6 @@ pub struct Opt {
 struct State {
     opts: Opt,
     render: Render,
-    bg: wgpu::Color,
-    fg: wgpu::Color,
     rotate_by: Vec<f32>,
     eye: Point3<f32>,
     center: Point3<f32>,
@@ -129,10 +119,6 @@ fn main() {
         State {
             opts: opts.clone(),
             render,
-            bg: util::html_to_color(&opts.bg.clone().unwrap_or("#123456".to_string()))
-                .unwrap(),
-            fg: util::html_to_color(&opts.fg.clone().unwrap_or("#000000".to_string()))
-                .unwrap(),
             rotate_by: opts.rotate.clone(),
             eye: Point3::new(0.0, 0.0, 5.0),
             center: Point3::new(0.0, 0.0, 0.0),

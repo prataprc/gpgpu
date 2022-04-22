@@ -101,14 +101,13 @@ mod screen;
 mod spinlock;
 mod transforms;
 
-pub mod clear_view;
-pub mod cpfr;
+pub mod vidgets;
+
 pub mod fonts;
 pub mod niw;
 pub mod pretty;
 pub mod util;
 pub mod vk;
-pub mod wireframe;
 
 pub use backends::{backend, backend_to_string};
 pub use config::{Config, ConfigAdapter, ConfigWinit};

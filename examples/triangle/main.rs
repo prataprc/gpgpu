@@ -15,18 +15,10 @@ mod render;
 pub struct Opt {
     #[structopt(short = "bg")]
     bg: Option<String>,
-
-    #[structopt(short = "fg")]
-    fg: Option<String>,
-
-    #[structopt(short = "scale")]
-    scale: Option<f32>,
 }
 
 struct State {
     bg: wgpu::Color,
-    fg: wgpu::Color,
-    scale: f32,
     render: Render,
     color_texture: Arc<wgpu::Texture>,
 }
@@ -82,9 +74,6 @@ fn main() {
         State {
             bg: util::html_to_color(&opts.bg.clone().unwrap_or("#123456".to_string()))
                 .unwrap(),
-            fg: util::html_to_color(&opts.fg.clone().unwrap_or("#000000".to_string()))
-                .unwrap(),
-            scale: opts.fg.unwrap_or("1.0".to_string()).parse().unwrap(),
             render,
             color_texture,
         }

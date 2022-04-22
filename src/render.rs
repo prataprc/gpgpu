@@ -5,7 +5,7 @@ use std::{
     thread,
 };
 
-use crate::{cpfr::Cpfr, Error, Result, Screen};
+use crate::{vidgets::Load, Error, Result, Screen};
 
 /// Rendering thread
 pub struct Render {
@@ -75,7 +75,6 @@ enum Request {
 }
 
 fn render_loop(screen: Arc<Screen>, rx: mpsc::Receiver<Request>) -> Result<()> {
-    let cpfr = Cpfr::new(&screen.device, screen.as_surface_config().format)?;
     let mut resp_txs: Vec<mpsc::Sender<bool>> = vec![];
 
     let mut surface_texture: Option<wgpu::SurfaceTexture> = None;
@@ -111,7 +110,15 @@ fn render_loop(screen: Arc<Screen>, rx: mpsc::Receiver<Request>) -> Result<()> {
         };
 
         frame.resp_txs.drain(..).for_each(|t| resp_txs.push(t));
-        cpfr.render(&frame.frame, &screen.device, &screen.queue, &surface_view);
+
+        let load = {
+            let frame_view = frame
+                .frame
+                .create_view(&wgpu::TextureViewDescriptor::default());
+            let format = screen.as_surface_config().format;
+            Load::new(&screen.device, frame_view, format)?
+        };
+        load.render(&screen.device, &screen.queue, &surface_view)?;
 
         //debug!("###########################");
         //let wait_queue = async { screen.queue.on_submitted_work_done().await };

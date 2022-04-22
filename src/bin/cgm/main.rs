@@ -338,6 +338,7 @@ impl Vertices {
 
 struct Vertex {
     position: [f32; 4],
+    #[allow(dead_code)]
     color: [f32; 4],
 }
 

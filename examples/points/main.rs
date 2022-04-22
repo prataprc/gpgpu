@@ -14,9 +14,6 @@ mod render;
 
 #[derive(Clone, StructOpt)]
 pub struct Opt {
-    #[structopt(short = "bg")]
-    bg: Option<String>,
-
     #[structopt(short = "fg")]
     fg: Option<String>,
 
@@ -25,7 +22,6 @@ pub struct Opt {
 }
 
 struct State {
-    bg: wgpu::Color,
     fg: wgpu::Color,
     n_points: u32,
     color_texture: Arc<wgpu::Texture>,
@@ -66,8 +62,6 @@ fn main() {
         render.start();
 
         State {
-            bg: util::html_to_color(&opts.bg.clone().unwrap_or("#000000".to_string()))
-                .unwrap(),
             fg: util::html_to_color(&opts.fg.clone().unwrap_or("#123456".to_string()))
                 .unwrap(),
             n_points: opts.n_points,

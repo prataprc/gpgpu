@@ -31,24 +31,6 @@ impl fmt::Display for Wireframe {
 }
 
 impl Wireframe {
-    fn to_vertex_buffer(&self, device: &wgpu::Device) -> wgpu::Buffer {
-        use wgpu::util::DeviceExt;
-
-        match &self.primitive {
-            Primitive::Lines { vertices } => {
-                let contents: &[u8] = bytemuck::cast_slice(vertices);
-                let desc = wgpu::util::BufferInitDescriptor {
-                    label: Some("vertex-buffer"),
-                    contents,
-                    usage: wgpu::BufferUsages::VERTEX,
-                };
-                device.create_buffer_init(&desc)
-            }
-        }
-    }
-}
-
-impl Wireframe {
     pub fn from_file<P>(
         loc: P,
         format: wgpu::TextureFormat,
@@ -82,7 +64,7 @@ impl Wireframe {
 
         let pipeline_layout = {
             let desc = wgpu::PipelineLayoutDescriptor {
-                label: Some("wireframe-pipeline-layout"),
+                label: Some("vidgets/wireframe:pipeline-layout"),
                 bind_group_layouts: &[&bind_group_layout],
                 push_constant_ranges: &[],
             };
@@ -90,9 +72,9 @@ impl Wireframe {
         };
 
         let module = {
-            let text = include_str!("shader.wgsl");
+            let text = include_str!("wireframe.wgsl");
             let desc = wgpu::ShaderModuleDescriptor {
-                label: Some("wireframe-shader"),
+                label: Some("vidgets/wireframe:shader"),
                 source: wgpu::ShaderSource::Wgsl(text.into()),
             };
             device.create_shader_module(&desc)
@@ -133,7 +115,7 @@ impl Wireframe {
 
         let pipeline = {
             let desc = wgpu::RenderPipelineDescriptor {
-                label: Some("Wireframe-Pipeline"),
+                label: Some("vidgets/wireframe:pipeline"),
                 layout: Some(&pipeline_layout),
                 vertex,
                 primitive: primitive_state,
@@ -168,7 +150,7 @@ impl Wireframe {
 
         let mut encoder = {
             let desc = wgpu::CommandEncoderDescriptor {
-                label: Some("wireframe-encoder"),
+                label: Some("vidgets/wireframe:encoder"),
             };
             device.create_command_encoder(&desc)
         };
@@ -176,7 +158,7 @@ impl Wireframe {
         {
             let mut render_pass = {
                 let desc = wgpu::RenderPassDescriptor {
-                    label: Some("Wireframe-render-pass"),
+                    label: Some("vidgets/wireframe:render-pass"),
                     color_attachments: &[wgpu::RenderPassColorAttachment {
                         view: &color_view,
                         resolve_target: None,
@@ -197,6 +179,24 @@ impl Wireframe {
 
         let cmd_buffers = vec![encoder.finish()];
         queue.submit(cmd_buffers.into_iter());
+    }
+}
+
+impl Wireframe {
+    fn to_vertex_buffer(&self, device: &wgpu::Device) -> wgpu::Buffer {
+        use wgpu::util::DeviceExt;
+
+        match &self.primitive {
+            Primitive::Lines { vertices } => {
+                let contents: &[u8] = bytemuck::cast_slice(vertices);
+                let desc = wgpu::util::BufferInitDescriptor {
+                    label: Some("vidgets/wireframe:vertex-buffer"),
+                    contents,
+                    usage: wgpu::BufferUsages::VERTEX,
+                };
+                device.create_buffer_init(&desc)
+            }
+        }
     }
 }
 

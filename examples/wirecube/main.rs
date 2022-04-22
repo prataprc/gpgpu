@@ -120,7 +120,7 @@ fn main() {
             opts: opts.clone(),
             render,
             rotate_by: opts.rotate.clone(),
-            eye: Point3::new(0.0, 0.0, 5.0),
+            eye: Point3::new(0.0, 0.0, 3.0),
             center: Point3::new(0.0, 0.0, 0.0),
             up: Vector3::unit_y(),
             p,

@@ -189,7 +189,10 @@ fn on_win_resized(
 ) -> Option<ControlFlow> {
     match event {
         Event::WindowEvent { event, .. } => match event {
-            WindowEvent::Resized(size) => state.render.as_screen().resize(*size),
+            WindowEvent::Resized(size) => {
+                state.p.aspect = state.render.as_screen().to_aspect_ratio();
+                state.render.as_screen().resize(*size);
+            }
             _ => unreachable!(),
         },
         _ => unreachable!(),

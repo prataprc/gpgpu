@@ -77,7 +77,8 @@ impl Screen {
                 height: new_size.height,
                 ..Arc::clone(&self.surface_config.read()).as_ref().clone()
         };
-        *self.surface_config.write() = Arc::new(surface_config)
+        self.surface.configure(&self.device, &surface_config);
+        *self.surface_config.write() = Arc::new(surface_config);
     }
 
     pub fn get_current_texture(&self) -> Result<wgpu::SurfaceTexture> {

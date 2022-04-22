@@ -7,9 +7,11 @@ use crate::{Error, Result, Transforms};
 
 pub struct Wireframe {
     bg: wgpu::Color,
-    bind_group_layout: wgpu::BindGroupLayout,
     pipeline: wgpu::RenderPipeline,
     primitive: Primitive,
+    // wgpu cache objects
+    bind_group: wgpu::BindGroup,
+    uniform_buffer: wgpu::Buffer,
 }
 
 enum Primitive {
@@ -127,11 +129,35 @@ impl Wireframe {
             device.create_render_pipeline(&desc)
         };
 
+        let uniform_buffer = {
+            use wgpu::{util::DeviceExt, BufferUsages};
+
+            let content = Transforms::empty().to_bind_content();
+            let desc = wgpu::util::BufferInitDescriptor {
+                label: Some("transform-buffer"),
+                contents: &content,
+                usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
+            };
+            device.create_buffer_init(&desc)
+        };
+        let bind_group = {
+            let desc = wgpu::BindGroupDescriptor {
+                label: Some("transform-bind-group"),
+                layout: &bind_group_layout,
+                entries: &[wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: uniform_buffer.as_entire_binding(),
+                }],
+            };
+            device.create_bind_group(&desc)
+        };
+
         let val = Wireframe {
             bg: wgpu::Color::BLACK,
-            bind_group_layout,
             pipeline,
             primitive,
+            uniform_buffer,
+            bind_group,
         };
 
         Ok(val)
@@ -146,7 +172,11 @@ impl Wireframe {
     ) {
         let num_vertices = self.num_vertices() as u32;
         let vertex_buffer = self.to_vertex_buffer(device);
-        let bind_group = transf.to_bind_group(device, &self.bind_group_layout);
+        // overwrite the transform mvp buffer.
+        {
+            let content = transf.to_bind_content();
+            queue.write_buffer(&self.uniform_buffer, 0, &content);
+        }
 
         let mut encoder = {
             let desc = wgpu::CommandEncoderDescriptor {
@@ -173,7 +203,7 @@ impl Wireframe {
             };
             render_pass.set_pipeline(&self.pipeline);
             render_pass.set_vertex_buffer(0, vertex_buffer.slice(..));
-            render_pass.set_bind_group(0, &bind_group, &[]);
+            render_pass.set_bind_group(0, &self.bind_group, &[]);
             render_pass.draw(0..num_vertices, 0..1);
         }
 

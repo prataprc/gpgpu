@@ -217,23 +217,6 @@ struct UniformBuffer {
 }
 
 impl Transforms {
-    pub fn to_bind_group_layout(device: &wgpu::Device) -> wgpu::BindGroupLayout {
-        let desc = wgpu::BindGroupLayoutDescriptor {
-            label: Some("transform bind-group"),
-            entries: &[wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStages::VERTEX,
-                ty: wgpu::BindingType::Buffer {
-                    ty: wgpu::BufferBindingType::Uniform,
-                    has_dynamic_offset: false,
-                    min_binding_size: None,
-                },
-                count: None,
-            }],
-        };
-        device.create_bind_group_layout(&desc)
-    }
-
     pub fn to_bind_content(&self) -> Vec<u8> {
         let model = self.model();
         let mvp = self.mvp();
@@ -249,31 +232,20 @@ impl Transforms {
         contents.to_vec()
     }
 
-    pub fn to_bind_group(
-        &self,
-        device: &wgpu::Device,
-        layout: &wgpu::BindGroupLayout,
-    ) -> wgpu::BindGroup {
-        use wgpu::util::DeviceExt;
-
-        let model_mvp_buffer = {
-            let contents = self.to_bind_content();
-            let desc = wgpu::util::BufferInitDescriptor {
-                label: Some("transform-buffer"),
-                contents: &contents,
-                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-            };
-            device.create_buffer_init(&desc)
-        };
-
-        let desc = wgpu::BindGroupDescriptor {
-            label: Some("transform-bind-group"),
-            layout,
-            entries: &[wgpu::BindGroupEntry {
+    pub fn to_bind_group_layout(device: &wgpu::Device) -> wgpu::BindGroupLayout {
+        let desc = wgpu::BindGroupLayoutDescriptor {
+            label: Some("transform bind-group"),
+            entries: &[wgpu::BindGroupLayoutEntry {
                 binding: 0,
-                resource: model_mvp_buffer.as_entire_binding(),
+                visibility: wgpu::ShaderStages::VERTEX,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
             }],
         };
-        device.create_bind_group(&desc)
+        device.create_bind_group_layout(&desc)
     }
 }

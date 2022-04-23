@@ -62,7 +62,14 @@ impl Wireframe {
 
         let primitive = Primitive::Lines { vertices };
 
-        let bind_group_layout = Transforms::to_bind_group_layout(device);
+        let bind_group_layout = {
+            let entry = Transforms::to_bind_group_layout_entry();
+            let desc = wgpu::BindGroupLayoutDescriptor {
+                label: Some("vidgets/wireframe:bind-group-layout"),
+                entries: &[entry],
+            };
+            device.create_bind_group_layout(&desc)
+        };
 
         let pipeline_layout = {
             let desc = wgpu::PipelineLayoutDescriptor {
@@ -132,7 +139,7 @@ impl Wireframe {
 
         let bind_group = {
             let desc = wgpu::BindGroupDescriptor {
-                label: Some("vidgets:wireframe:bind-group"),
+                label: Some("vidgets/wireframe:bind-group"),
                 layout: &bind_group_layout,
                 entries: &[wgpu::BindGroupEntry {
                     binding: 0,

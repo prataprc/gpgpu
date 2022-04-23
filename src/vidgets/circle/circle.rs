@@ -10,8 +10,7 @@ pub struct Circle {
     center: [f32; 2],
     computed_radius: f32,
     pipeline: wgpu::RenderPipeline,
-    bind_group_0: wgpu::BindGroup,
-    bind_group_1: wgpu::BindGroup,
+    bind_group: wgpu::BindGroup,
     transform_buffer: wgpu::Buffer,
     uniform_buffer: wgpu::Buffer,
 }
@@ -60,13 +59,12 @@ impl Circle {
     ) -> Circle {
         use std::borrow::Cow;
 
-        let bind_group_layout_0 = Transforms::to_bind_group_layout(device);
-        let bind_group_layout_1 = Self::to_bind_group_layout(device);
+        let bind_group_layout = Self::to_bind_group_layout(device);
 
         let pipeline_layout = {
             let desc = wgpu::PipelineLayoutDescriptor {
                 label: Some("vidgets/circle:pipeline-layout"),
-                bind_group_layouts: &[&bind_group_layout_0, &bind_group_layout_1],
+                bind_group_layouts: &[&bind_group_layout],
                 push_constant_ranges: &[],
             };
             device.create_pipeline_layout(&desc)
@@ -128,27 +126,22 @@ impl Circle {
         };
 
         let transform_buffer = Self::to_transform_buffer(device);
-        let bind_group_0 = {
-            let desc = wgpu::BindGroupDescriptor {
-                label: Some("vidgets/circle:bind-group-0"),
-                layout: &bind_group_layout_0,
-                entries: &[wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: transform_buffer.as_entire_binding(),
-                }],
-            };
-            device.create_bind_group(&desc)
-        };
-
         let uniform_buffer = Self::to_uniform_buffer(device);
-        let bind_group_1 = {
+
+        let bind_group = {
             let desc = wgpu::BindGroupDescriptor {
-                label: Some("vidgets/circle:bind-group-1"),
-                layout: &bind_group_layout_1,
-                entries: &[wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: uniform_buffer.as_entire_binding(),
-                }],
+                label: Some("vidgets/circle:bind-group"),
+                layout: &bind_group_layout,
+                entries: &[
+                    wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: transform_buffer.as_entire_binding(),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 1,
+                        resource: uniform_buffer.as_entire_binding(),
+                    },
+                ],
             };
             device.create_bind_group(&desc)
         };
@@ -161,8 +154,7 @@ impl Circle {
             center: Default::default(),
             computed_radius: radius,
             pipeline,
-            bind_group_0,
-            bind_group_1,
+            bind_group,
             transform_buffer,
             uniform_buffer,
         }
@@ -237,8 +229,7 @@ impl Circle {
             };
             render_pass.set_pipeline(&self.pipeline);
             render_pass.set_vertex_buffer(0, vertex_buffer.slice(..));
-            render_pass.set_bind_group(0, &self.bind_group_0, &[]);
-            render_pass.set_bind_group(1, &self.bind_group_1, &[]);
+            render_pass.set_bind_group(0, &self.bind_group, &[]);
             render_pass.draw(0..6, 0..1);
         }
 
@@ -263,18 +254,22 @@ impl Circle {
     fn to_bind_group_layout(device: &wgpu::Device) -> wgpu::BindGroupLayout {
         use wgpu::ShaderStages;
 
+        let entry_0 = Transforms::to_bind_group_layout_entry();
         let desc = wgpu::BindGroupLayoutDescriptor {
             label: Some("vidgets/circle:bind-group-layout"),
-            entries: &[wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: ShaderStages::VERTEX | ShaderStages::FRAGMENT,
-                ty: wgpu::BindingType::Buffer {
-                    ty: wgpu::BufferBindingType::Uniform,
-                    has_dynamic_offset: false,
-                    min_binding_size: None,
+            entries: &[
+                entry_0,
+                wgpu::BindGroupLayoutEntry {
+                    binding: 1,
+                    visibility: ShaderStages::VERTEX | ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
                 },
-                count: None,
-            }],
+            ],
         };
         device.create_bind_group_layout(&desc)
     }

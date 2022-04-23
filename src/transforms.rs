@@ -236,20 +236,16 @@ impl Transforms {
         contents.to_vec()
     }
 
-    pub fn to_bind_group_layout(device: &wgpu::Device) -> wgpu::BindGroupLayout {
-        let desc = wgpu::BindGroupLayoutDescriptor {
-            label: Some("transform:bind-group-layout"),
-            entries: &[wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStages::VERTEX,
-                ty: wgpu::BindingType::Buffer {
-                    ty: wgpu::BufferBindingType::Uniform,
-                    has_dynamic_offset: false,
-                    min_binding_size: None,
-                },
-                count: None,
-            }],
-        };
-        device.create_bind_group_layout(&desc)
+    pub fn to_bind_group_layout_entry() -> wgpu::BindGroupLayoutEntry {
+        wgpu::BindGroupLayoutEntry {
+            binding: 0,
+            visibility: wgpu::ShaderStages::VERTEX,
+            ty: wgpu::BindingType::Buffer {
+                ty: wgpu::BufferBindingType::Uniform,
+                has_dynamic_offset: false,
+                min_binding_size: None,
+            },
+            count: None,
+        }
     }
 }

@@ -22,7 +22,7 @@ struct VertexOutput {
 };
 
 [[binding(0), group(0)]] var<uniform> transforms: Transforms;
-[[binding(0), group(1)]] var<uniform> params: Parameters;
+[[binding(1), group(0)]] var<uniform> params: Parameters;
 
 [[stage(vertex)]]
 fn vs_main(in: VertexInput) -> VertexOutput {

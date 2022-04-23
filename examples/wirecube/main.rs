@@ -11,6 +11,8 @@ use std::{fs, path, sync::Arc, time};
 
 use gpgpu::{niw, vidgets::Wireframe, Config, Perspective, Render, Screen, Transforms};
 
+const SSAA: f32 = 2.0;
+
 #[derive(Clone, StructOpt)]
 pub struct Opt {
     #[structopt(long = "rotate", default_value = "0", use_delimiter = true)]
@@ -111,7 +113,7 @@ fn main() {
             Wireframe::from_bytes(&data, format, &screen.device).unwrap()
         };
 
-        let color_texture = Arc::new(screen.like_surface_texture());
+        let color_texture = Arc::new(screen.like_surface_texture(SSAA));
 
         let mut render = Render::new(screen);
         render.start();
@@ -191,7 +193,7 @@ fn on_win_resized(
         Event::WindowEvent { event, .. } => match event {
             WindowEvent::Resized(size) => {
                 state.p.aspect = state.render.as_screen().to_aspect_ratio();
-                state.render.as_screen().resize(*size);
+                state.render.as_screen().resize(*size, None);
             }
             _ => unreachable!(),
         },
@@ -208,13 +210,19 @@ fn on_win_scale_factor_changed(
 ) -> Option<ControlFlow> {
     match event {
         Event::WindowEvent { event, .. } => match event {
-            WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
+            WindowEvent::ScaleFactorChanged {
+                new_inner_size,
+                scale_factor,
+            } => {
                 // TODO Is this the right way to handle it, doc says the following:
                 // After this event callback has been processed, the window will be
                 // resized to whatever value is pointed to by the new_inner_size
                 // reference. By default, this will contain the size suggested by the
                 // OS, but it can be changed to any value.
-                state.render.as_screen().resize(**new_inner_size)
+                state
+                    .render
+                    .as_screen()
+                    .resize(**new_inner_size, Some(*scale_factor))
             }
             _ => unreachable!(),
         },

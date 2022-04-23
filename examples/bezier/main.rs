@@ -11,6 +11,8 @@ use gpgpu::{niw, util, Config, Render, Screen};
 
 mod render;
 
+const SSAA: f32 = 2.0;
+
 #[derive(Clone, StructOpt)]
 pub struct Opt {
     #[structopt(short = "bg")]
@@ -69,7 +71,7 @@ fn main() {
         ))
         .unwrap();
 
-        let color_texture = Arc::new(screen.like_surface_texture());
+        let color_texture = Arc::new(screen.like_surface_texture(SSAA));
 
         let mut render = Render::new(screen);
         render.start();

@@ -1,6 +1,5 @@
 use log::{debug, info, trace, warn};
 use winit::{
-    dpi,
     event::{DeviceEvent, Event, StartCause, WindowEvent},
     event_loop::{ControlFlow, EventLoop, EventLoopWindowTarget},
     window::{Window, WindowAttributes, WindowBuilder},
@@ -151,29 +150,14 @@ impl<C, E> SingleWindow<C, E>
 where
     E: 'static,
 {
-    pub fn from_config(mut attrs: WindowAttributes) -> Result<Self>
+    pub fn from_config(attrs: WindowAttributes) -> Result<Self>
     where
         E: Default,
     {
         let event_loop = EventLoop::<E>::with_user_event();
-        let scale_factor = match event_loop.primary_monitor() {
-            Some(mont) => mont.scale_factor() as f32,
-            None => match event_loop.available_monitors().next() {
-                Some(mont) => mont.scale_factor() as f32,
-                None => 1.0_f32,
-            },
-        };
-        attrs.inner_size = match attrs.inner_size {
-            Some(dpi::Size::Physical(dpi::PhysicalSize { width, height })) => {
-                let size = dpi::PhysicalSize {
-                    width: ((width as f32) * scale_factor).floor() as u32,
-                    height: ((height as f32) * scale_factor).floor() as u32,
-                };
-                Some(dpi::Size::Physical(size))
-            }
-            val => val,
-        };
+
         info!("inner_size {:?}", attrs.inner_size);
+        println!("inner_size {:?}", attrs.inner_size);
 
         let window = {
             let mut wb = WindowBuilder::new();
@@ -199,6 +183,13 @@ where
 
     pub fn as_window(&self) -> &Window {
         self.window.as_ref().unwrap()
+    }
+
+    pub fn to_scale_factor(&self) -> f32 {
+        self.window
+            .as_ref()
+            .map(|w| w.scale_factor() as f32)
+            .unwrap_or(0.0)
     }
 
     pub fn run(mut self, mut r: C) -> !

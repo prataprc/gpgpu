@@ -1,3 +1,5 @@
+use cgmath::{Deg, Point3, Vector3};
+use log::info;
 use structopt::StructOpt;
 use winit::{
     event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent},
@@ -5,57 +7,134 @@ use winit::{
     window::Window,
 };
 
-use std::sync::Arc;
+use std::{sync::Arc, time};
 
-use gpgpu::{niw, util, vidgets::Clear, Config, Render, Screen};
+use gpgpu::{niw, vidgets::Circle, Config, Perspective, Render, Screen, Transforms};
 
 const SSAA: f32 = 2.0;
 
 #[derive(Clone, StructOpt)]
 pub struct Opt {
-    #[structopt(short = "c")]
-    color: Option<String>,
+    #[structopt(long = "rotate", default_value = "0", use_delimiter = true)]
+    rotate: Vec<f32>,
+
+    #[structopt(long = "radius", default_value = "200")]
+    radius: f32,
+
+    #[structopt(long = "fill")]
+    fill: bool,
 }
 
 struct State {
-    color: wgpu::Color,
-    color_texture: Arc<wgpu::Texture>,
+    opts: Opt,
     render: Render,
+    rotate_by: Vec<f32>,
+    eye: Point3<f32>,
+    center: Point3<f32>,
+    up: Vector3<f32>,
+    p: Perspective<Deg<f32>>,
+    transforms: Transforms,
+    circle: Circle,
+    next_frame: time::Instant,
+    color_texture: Arc<wgpu::Texture>,
 }
 
 impl State {
     fn redraw(&mut self) {
+        if self.next_frame > time::Instant::now() {
+            return;
+        }
+
+        self.circle
+            .pre_render(SSAA, self.render.as_screen().as_ref());
+
         let view = {
             let desc = wgpu::TextureViewDescriptor::default();
             self.color_texture.create_view(&desc)
         };
 
-        let clear = Clear::new(self.color);
-        clear
-            .render(
-                &self.render.as_screen().device,
-                &self.render.as_screen().queue,
-                &view,
-            )
-            .unwrap();
+        let mut transforms = self.transforms;
+        transforms
+            .rotate_x_by(Deg(self.rotate_by[0]))
+            .rotate_y_by(Deg(self.rotate_by[1]))
+            .rotate_z_by(Deg(self.rotate_by[2]))
+            .look_at_rh(self.eye, self.center, self.up)
+            .perspective_by(self.p);
+
+        self.circle.render(
+            &transforms,
+            &self.render.as_screen().device,
+            &self.render.as_screen().queue,
+            &view,
+        );
 
         self.render
             .post_frame(Arc::clone(&self.color_texture))
             .unwrap();
+
+        self.rotate_by[0] += self.opts.rotate[0];
+        self.rotate_by[1] += self.opts.rotate[1];
+        self.rotate_by[2] += self.opts.rotate[2];
+
+        self.next_frame = time::Instant::now() + time::Duration::from_millis(10);
     }
 }
 
 fn main() {
     env_logger::init();
 
-    let opts = Opt::from_args();
+    let mut opts = Opt::from_args();
+    opts.rotate = match opts.rotate.as_slice() {
+        [] => vec![0.0, 0.0, 0.0],
+        [x] => vec![*x, 0.0, 0.0],
+        [x, y] => vec![*x, *y, 0.0],
+        [x, y, z] => vec![*x, *y, *z],
+        [x, y, z, ..] => vec![*x, *y, *z],
+    };
 
-    let name = "example-cls".to_string();
+    let name = "example-triangle".to_string();
     let config = Config::default();
 
     let mut swin = {
         let wattrs = config.to_window_attributes().unwrap();
         niw::SingleWindow::<State, ()>::from_config(wattrs).unwrap()
+    };
+
+    let state = {
+        let screen = pollster::block_on(Screen::new(
+            name.clone(),
+            swin.as_window(),
+            Config::default(),
+        ))
+        .unwrap();
+        let format = screen.to_texture_format();
+        let p = Perspective {
+            fov: Deg(90.0),
+            aspect: screen.to_aspect_ratio(),
+            near: 0.1,
+            far: 100.0,
+        };
+        let mut circle = Circle::new(opts.radius, format, &screen.device);
+        circle.set_fill(opts.fill);
+
+        let color_texture = Arc::new(screen.like_surface_texture(SSAA));
+
+        let mut render = Render::new(screen);
+        render.start();
+
+        State {
+            opts: opts.clone(),
+            render,
+            rotate_by: opts.rotate.clone(),
+            eye: Point3::new(0.0, 0.0, 3.0),
+            center: Point3::new(0.0, 0.0, 0.0),
+            up: Vector3::unit_y(),
+            p,
+            transforms: Transforms::empty(),
+            circle,
+            next_frame: time::Instant::now(),
+            color_texture,
+        }
     };
 
     swin.on_win_close_requested(Box::new(on_win_close_requested))
@@ -65,30 +144,7 @@ fn main() {
         .on_main_events_cleared(Box::new(on_main_events_cleared))
         .on_redraw_requested(Box::new(on_redraw_requested));
 
-    let state = {
-        let screen = pollster::block_on(Screen::new(
-            name.clone(),
-            swin.as_window(),
-            Config::default(),
-        ))
-        .unwrap();
-
-        let color_texture = Arc::new(screen.like_surface_texture(SSAA));
-
-        let mut render = Render::new(screen);
-        render.start();
-
-        State {
-            color: util::html_to_color(
-                &opts.color.clone().unwrap_or("#FFFFFF".to_string()),
-            )
-            .unwrap(),
-            render,
-            color_texture,
-        }
-    };
-
-    println!("Press Esc to exit");
+    info!("Press Esc to exit");
     swin.run(state);
 }
 
@@ -118,7 +174,10 @@ fn on_win_resized(
 ) -> Option<ControlFlow> {
     match event {
         Event::WindowEvent { event, .. } => match event {
-            WindowEvent::Resized(size) => state.render.as_screen().resize(*size, None),
+            WindowEvent::Resized(size) => {
+                state.p.aspect = state.render.as_screen().to_aspect_ratio();
+                state.render.as_screen().resize(*size, None);
+            }
             _ => unreachable!(),
         },
         _ => unreachable!(),
@@ -158,15 +217,16 @@ fn on_win_scale_factor_changed(
 
 fn on_win_close_requested(
     _: &Window,
-    _: &mut State,
+    state: &mut State,
     _: &mut Event<()>,
 ) -> Option<ControlFlow> {
+    state.render.stop().ok();
     Some(ControlFlow::Exit)
 }
 
 fn on_win_keyboard_input(
     _: &Window,
-    _state: &mut State,
+    state: &mut State,
     event: &mut Event<()>,
 ) -> Option<ControlFlow> {
     match event {
@@ -179,7 +239,10 @@ fn on_win_keyboard_input(
                         ..
                     },
                 ..
-            } => Some(ControlFlow::Exit),
+            } => {
+                state.render.stop().ok();
+                Some(ControlFlow::Exit)
+            }
             _ => None,
         },
         _ => None,

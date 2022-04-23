@@ -1,12 +1,14 @@
 use bytemuck::{Pod, Zeroable};
 
-use crate::Transforms;
+use crate::{Screen, Transforms};
 
 pub struct Circle {
     bg: wgpu::Color,
     fg: wgpu::Color,
     fill: bool,
     radius: f32,
+    center: [f32; 2],
+    computed_radius: f32,
     pipeline: wgpu::RenderPipeline,
     bind_group_0: wgpu::BindGroup,
     bind_group_1: wgpu::BindGroup,
@@ -17,11 +19,11 @@ pub struct Circle {
 #[repr(C)]
 #[derive(Default, Copy, Clone, Debug, Pod, Zeroable)]
 struct UniformBuffer {
-    fill: u32,
-    radius: f32,
     bg: [f32; 4],
     fg: [f32; 4],
-    padding: [f32; 2],
+    fill: u32,
+    radius: f32,
+    center: [f32; 2],
 }
 
 impl UniformBuffer {
@@ -44,8 +46,8 @@ impl<'a> From<&'a Circle> for UniformBuffer {
                 val.fg.a as f32,
             ],
             fill: if val.fill { 1 } else { 0 },
-            radius: val.radius,
-            padding: [0_f32; 2],
+            radius: val.computed_radius,
+            center: val.center,
         }
     }
 }
@@ -56,6 +58,8 @@ impl Circle {
         format: wgpu::TextureFormat,
         device: &wgpu::Device,
     ) -> Circle {
+        use std::borrow::Cow;
+
         let bind_group_layout_0 = Transforms::to_bind_group_layout(device);
         let bind_group_layout_1 = Self::to_bind_group_layout(device);
 
@@ -69,7 +73,7 @@ impl Circle {
         };
 
         let module = {
-            let text = include_str!("circle.wgsl");
+            let text = Cow::Borrowed(include_str!("circle.wgsl"));
             let desc = wgpu::ShaderModuleDescriptor {
                 label: Some("vidgets/circle:shader"),
                 source: wgpu::ShaderSource::Wgsl(text.into()),
@@ -152,8 +156,10 @@ impl Circle {
         Circle {
             bg: wgpu::Color::BLACK,
             fg: wgpu::Color::WHITE,
-            fill: false,
+            fill: true,
             radius,
+            center: Default::default(),
+            computed_radius: radius,
             pipeline,
             bind_group_0,
             bind_group_1,
@@ -175,6 +181,13 @@ impl Circle {
     pub fn set_fill(&mut self, fill: bool) -> &mut Self {
         self.fill = fill;
         self
+    }
+
+    pub fn pre_render(&mut self, ssaa: f32, screen: &Screen) {
+        let center = screen.to_center(ssaa as u32);
+        self.center = [center.x as f32, center.y as f32];
+        self.computed_radius =
+            self.radius * ((ssaa as f64) * screen.to_scale_factor()) as f32;
     }
 
     pub fn render(
@@ -253,7 +266,7 @@ impl Circle {
         let desc = wgpu::BindGroupLayoutDescriptor {
             label: Some("vidgets/circle:bind-group-layout"),
             entries: &[wgpu::BindGroupLayoutEntry {
-                binding: 1,
+                binding: 0,
                 visibility: ShaderStages::VERTEX | ShaderStages::FRAGMENT,
                 ty: wgpu::BindingType::Buffer {
                     ty: wgpu::BufferBindingType::Uniform,
@@ -298,23 +311,23 @@ impl Circle {
 const VERTICES: [Vertex; 6] = [
     // lower half triangle
     Vertex {
-        position: [-1.0, -1.0, 1.0, 0.0],
+        position: [-1.0, -1.0, 0.0, 1.0],
     },
     Vertex {
-        position: [1.0, -1.0, 1.0, 0.0],
+        position: [1.0, -1.0, 0.0, 1.0],
     },
     Vertex {
-        position: [1.0, 1.0, 1.0, 0.0],
+        position: [1.0, 1.0, 0.0, 1.0],
     },
     // upper half triangle
     Vertex {
-        position: [-1.0, -1.0, 0.0, 0.0],
+        position: [-1.0, -1.0, 0.0, 1.0],
     },
     Vertex {
-        position: [1.0, 1.0, 0.0, 0.0],
+        position: [1.0, 1.0, 0.0, 1.0],
     },
     Vertex {
-        position: [-1.0, 1.0, 0.0, 0.0],
+        position: [-1.0, 1.0, 0.0, 1.0],
     },
 ];
 

@@ -318,21 +318,21 @@ impl ConfigWinit {
 impl ConfigWinit {
     fn to_inner_size(&self) -> Result<Option<dpi::Size>> {
         match &self.inner_size {
-            Some(s) => Some(to_physical_size(s.as_slice())).transpose(),
+            Some(s) => Some(to_logical_size(s.as_slice())).transpose(),
             None => Ok(None),
         }
     }
 
     fn to_min_inner_size(&self) -> Result<Option<dpi::Size>> {
         match &self.min_inner_size {
-            Some(s) => Some(to_physical_size(s.as_slice())).transpose(),
+            Some(s) => Some(to_logical_size(s.as_slice())).transpose(),
             None => Ok(None),
         }
     }
 
     fn to_max_inner_size(&self) -> Result<Option<dpi::Size>> {
         match &self.max_inner_size {
-            Some(s) => Some(to_physical_size(s.as_slice())).transpose(),
+            Some(s) => Some(to_logical_size(s.as_slice())).transpose(),
             None => Ok(None),
         }
     }
@@ -358,6 +358,7 @@ pub fn to_logical_size(size: &[f64]) -> Result<dpi::Size> {
 
 /// Convert slice of [f64] into dpi::Size. Note that length of slice should be 2 and the
 /// returned size is [dpi::Size::Physical].
+#[allow(dead_code)]
 pub fn to_physical_size(size: &[f64]) -> Result<dpi::Size> {
     if size.len() == 2 {
         Ok(dpi::Size::Physical((size[0], size[1]).into()))

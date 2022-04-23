@@ -115,7 +115,7 @@ fn render_loop(screen: Arc<Screen>, rx: mpsc::Receiver<Request>) -> Result<()> {
             let frame_view = frame
                 .frame
                 .create_view(&wgpu::TextureViewDescriptor::default());
-            let format = screen.as_surface_config().format;
+            let format = screen.to_surface_config().format;
             Load::new(&screen.device, frame_view, format)?
         };
         load.render(&screen.device, &screen.queue, &surface_view)?;

@@ -1,7 +1,7 @@
 use winit::{window::Window, dpi};
 use log::{error, debug, warn};
 
-use std::sync::Arc;
+use std::{sync::Arc};
 
 use crate::{Config, Error, Result, spinlock::Spinlock};
 
@@ -10,7 +10,12 @@ pub struct Screen {
     pub surface: wgpu::Surface,
     pub device: wgpu::Device,
     pub queue: wgpu::Queue,
-    pub surface_config: Spinlock<Arc<wgpu::SurfaceConfiguration>>,
+    pub state: Spinlock<Arc<State>>,
+}
+
+pub struct State {
+    surface_config: wgpu::SurfaceConfiguration,
+    scale_factor: f64,
 }
 
 impl Screen {
@@ -18,6 +23,8 @@ impl Screen {
     /// * `config` is configuration parameter for working with this crate.
     pub async fn new(name: String, win: &Window, config: Config) -> Result<Screen> {
         let size: dpi::PhysicalSize<u32> = win.inner_size().into();
+        debug!("Screen at {}x{}", size.width, size.height);
+        // println!("Screen at {}x{}", size.width, size.height);
 
         let instance = wgpu::Instance::new(wgpu::Backends::all());
         let surface = unsafe { instance.create_surface(&win) };
@@ -54,31 +61,41 @@ impl Screen {
             surface,
             device,
             queue,
-            surface_config: Spinlock::new(Arc::new(surface_config)),
+            state: Spinlock::new(Arc::new(State {
+                surface_config,
+                scale_factor: win.scale_factor(),
+            })),
         };
 
         Ok(val)
     }
 
-    pub fn as_surface_config(&self) -> Arc<wgpu::SurfaceConfiguration> {
-        Arc::clone(&self.surface_config.read())
-    }
-
-    pub fn resize(&self, new_size: dpi::PhysicalSize<u32>) {
+    pub fn resize(&self, new_size: dpi::PhysicalSize<u32>, scale_factor: Option<f64>) {
         if new_size.width <= 0 && new_size.height <= 0 {
             warn!("screen-resize {:?}", new_size);
             return
         }
 
-        debug!("screen-resize {:?}", new_size);
+        let (sc, scale_factor) = {
+            let s = self.state.read();
+            (s.surface_config.clone(), scale_factor.unwrap_or(s.scale_factor))
+        };
+
+        debug!("screen-resize {:?} scale_factor: {}", new_size, scale_factor);
 
         let surface_config = wgpu::SurfaceConfiguration {
-                width: new_size.width,
-                height: new_size.height,
-                ..Arc::clone(&self.surface_config.read()).as_ref().clone()
+            width: new_size.width,
+            height: new_size.height,
+            ..sc
         };
         self.surface.configure(&self.device, &surface_config);
-        *self.surface_config.write() = Arc::new(surface_config);
+
+        let state = State {
+            surface_config,
+            scale_factor,
+        };
+
+        *self.state.write() = Arc::new(state);
     }
 
     pub fn get_current_texture(&self) -> Result<wgpu::SurfaceTexture> {
@@ -94,38 +111,59 @@ impl Screen {
         }
     }
 
-    pub fn to_extent3d(&self) -> wgpu::Extent3d {
-        let width = self.as_surface_config().width;
-        let height = self.as_surface_config().height;
+    pub fn to_surface_config(&self) -> wgpu::SurfaceConfiguration {
+        self.state.read().surface_config.clone()
+    }
+
+    pub fn to_scale_factor(&self) -> f64 {
+        self.state.read().scale_factor
+    }
+
+    pub fn to_extent3d(&self, ssaa: u32) -> wgpu::Extent3d {
+        let sc = self.to_surface_config();
+        let width = sc.width * ssaa;
+        let height = sc.height * ssaa;
         let depth_or_array_layers = 1;
         wgpu::Extent3d { width, height, depth_or_array_layers }
     }
 
-    pub fn like_surface_texture(&self) -> wgpu::Texture {
+    pub fn to_center(&self, ssaa: u32) -> wgpu::Origin3d {
+        let sc = self.to_surface_config();
+        wgpu::Origin3d {
+            x: (sc.width / 2) * ssaa ,
+            y: (sc.height / 2) * ssaa ,
+            z: 0,
+        }
+    }
+
+    pub fn like_surface_texture(&self, ssaa: f32) -> wgpu::Texture {
+        use wgpu::TextureUsages;
         let desc = wgpu::TextureDescriptor {
             label: Some("like-surface-texture"),
-            size: self.to_extent3d(),
+            size: self.to_extent3d(ssaa as u32),
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
             format: self.to_texture_format(),
-            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT,
+            usage: {
+                TextureUsages::TEXTURE_BINDING | TextureUsages::RENDER_ATTACHMENT
+            },
         };
         self.device.create_texture(&desc)
     }
 
     // width / height of the surface
     pub fn to_aspect_ratio(&self) -> f32 {
-        let sc = self.as_surface_config();
+        let sc = self.to_surface_config();
         (sc.width as f32) / (sc.height as f32)
     }
 
     pub fn to_texture_format(&self) -> wgpu::TextureFormat {
-        self.as_surface_config().format
+        self.to_surface_config().format
     }
 
     pub fn to_physical_size(&self) -> dpi::PhysicalSize<u32> {
-        let sc = self.as_surface_config();
+        let sc = self.to_surface_config();
         dpi::PhysicalSize {
             width: sc.width,
             height: sc.height,

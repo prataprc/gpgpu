@@ -216,6 +216,10 @@ struct UniformBuffer {
     mvp: [f32; 16],
 }
 
+impl UniformBuffer {
+    const SIZE: usize = (16 * 4) + (16 * 4);
+}
+
 impl Transforms {
     pub fn to_bind_content(&self) -> Vec<u8> {
         let model = self.model();
@@ -228,13 +232,13 @@ impl Transforms {
             mvp: mvp_ref.clone(),
         };
 
-        let contents: [u8; 32 * 4] = bytemuck::cast(ub);
+        let contents: [u8; UniformBuffer::SIZE] = bytemuck::cast(ub);
         contents.to_vec()
     }
 
     pub fn to_bind_group_layout(device: &wgpu::Device) -> wgpu::BindGroupLayout {
         let desc = wgpu::BindGroupLayoutDescriptor {
-            label: Some("transform bind-group"),
+            label: Some("transform:bind-group-layout"),
             entries: &[wgpu::BindGroupLayoutEntry {
                 binding: 0,
                 visibility: wgpu::ShaderStages::VERTEX,

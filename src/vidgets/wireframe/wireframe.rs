@@ -7,11 +7,11 @@ use crate::{Error, Result, Transforms};
 
 pub struct Wireframe {
     bg: wgpu::Color,
-    pipeline: wgpu::RenderPipeline,
     primitive: Primitive,
     // wgpu cache objects
+    pipeline: wgpu::RenderPipeline,
     bind_group: wgpu::BindGroup,
-    uniform_buffer: wgpu::Buffer,
+    transform_buffer: wgpu::Buffer,
 }
 
 enum Primitive {
@@ -104,15 +104,14 @@ impl Wireframe {
             alpha_to_coverage_enabled: false,
         };
 
-        let color_target_states = vec![wgpu::ColorTargetState {
-            format,
-            blend: Some(wgpu::BlendState::REPLACE),
-            write_mask: wgpu::ColorWrites::ALL,
-        }];
         let fragment = wgpu::FragmentState {
             module: &module,
             entry_point: "fs_main",
-            targets: color_target_states.as_slice(),
+            targets: &[wgpu::ColorTargetState {
+                format,
+                blend: Some(wgpu::BlendState::REPLACE),
+                write_mask: wgpu::ColorWrites::ALL,
+            }],
         };
 
         let pipeline = {
@@ -129,24 +128,15 @@ impl Wireframe {
             device.create_render_pipeline(&desc)
         };
 
-        let uniform_buffer = {
-            use wgpu::{util::DeviceExt, BufferUsages};
+        let transform_buffer = Self::to_transform_buffer(device);
 
-            let content = Transforms::empty().to_bind_content();
-            let desc = wgpu::util::BufferInitDescriptor {
-                label: Some("transform-buffer"),
-                contents: &content,
-                usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
-            };
-            device.create_buffer_init(&desc)
-        };
         let bind_group = {
             let desc = wgpu::BindGroupDescriptor {
-                label: Some("transform-bind-group"),
+                label: Some("vidgets:wireframe:bind-group"),
                 layout: &bind_group_layout,
                 entries: &[wgpu::BindGroupEntry {
                     binding: 0,
-                    resource: uniform_buffer.as_entire_binding(),
+                    resource: transform_buffer.as_entire_binding(),
                 }],
             };
             device.create_bind_group(&desc)
@@ -156,7 +146,7 @@ impl Wireframe {
             bg: wgpu::Color::BLACK,
             pipeline,
             primitive,
-            uniform_buffer,
+            transform_buffer,
             bind_group,
         };
 
@@ -175,7 +165,7 @@ impl Wireframe {
         // overwrite the transform mvp buffer.
         {
             let content = transf.to_bind_content();
-            queue.write_buffer(&self.uniform_buffer, 0, &content);
+            queue.write_buffer(&self.transform_buffer, 0, &content);
         }
 
         let mut encoder = {
@@ -213,6 +203,17 @@ impl Wireframe {
 }
 
 impl Wireframe {
+    fn to_transform_buffer(device: &wgpu::Device) -> wgpu::Buffer {
+        use wgpu::{util::DeviceExt, BufferUsages};
+        let content = Transforms::empty().to_bind_content();
+        let desc = wgpu::util::BufferInitDescriptor {
+            label: Some("transform-buffer"),
+            contents: &content,
+            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
+        };
+        device.create_buffer_init(&desc)
+    }
+
     fn to_vertex_buffer(&self, device: &wgpu::Device) -> wgpu::Buffer {
         use wgpu::util::DeviceExt;
 

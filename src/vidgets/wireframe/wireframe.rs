@@ -163,10 +163,11 @@ impl Wireframe {
     pub fn render(
         &self,
         transf: &Transforms,
+        encoder: &mut wgpu::CommandEncoder,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         color_view: &wgpu::TextureView,
-    ) -> Result<wgpu::CommandBuffer> {
+    ) -> Result<()> {
         let num_vertices = self.num_vertices() as u32;
         let vertex_buffer = self.to_vertex_buffer(device);
         // overwrite the transform mvp buffer.
@@ -174,13 +175,6 @@ impl Wireframe {
             let content = transf.to_bind_content();
             queue.write_buffer(&self.transform_buffer, 0, &content);
         }
-
-        let mut encoder = {
-            let desc = wgpu::CommandEncoderDescriptor {
-                label: Some("vidgets/wireframe:encoder"),
-            };
-            device.create_command_encoder(&desc)
-        };
 
         {
             let mut render_pass = {
@@ -204,7 +198,7 @@ impl Wireframe {
             render_pass.draw(0..num_vertices, 0..1);
         }
 
-        Ok(encoder.finish())
+        Ok(())
     }
 }
 

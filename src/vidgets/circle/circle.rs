@@ -185,10 +185,11 @@ impl Circle {
     pub fn render(
         &self,
         transf: &Transforms,
+        encoder: &mut wgpu::CommandEncoder,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         color_view: &wgpu::TextureView,
-    ) -> Result<wgpu::CommandBuffer> {
+    ) -> Result<()> {
         use crate::vidgets;
 
         let vertex_buffer = Self::to_vertex_buffer(device);
@@ -203,13 +204,6 @@ impl Circle {
             let content: [u8; UniformBuffer::SIZE] = bytemuck::cast(ub);
             queue.write_buffer(&self.uniform_buffer, 0, &content.to_vec());
         }
-
-        let mut encoder = {
-            let desc = wgpu::CommandEncoderDescriptor {
-                label: Some("vidgets/circle:encoder"),
-            };
-            device.create_command_encoder(&desc)
-        };
 
         {
             let mut render_pass = {
@@ -233,7 +227,7 @@ impl Circle {
             render_pass.draw(0..6, 0..1);
         }
 
-        Ok(encoder.finish())
+        Ok(())
     }
 }
 

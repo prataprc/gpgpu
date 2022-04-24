@@ -71,20 +71,28 @@ impl State {
             .perspective_by(self.p);
 
         let screen = self.render.as_screen();
-
-        let mut cmd_buffers = vec![self
-            .circle
-            .render(&transforms, &screen.device, &screen.queue, &view)
-            .unwrap()];
+        let mut encoder = {
+            let desc = wgpu::CommandEncoderDescriptor {
+                label: Some("examples/circle:command-encoder"),
+            };
+            screen.device.create_command_encoder(&desc)
+        };
+        self.circle
+            .render(
+                &transforms,
+                &mut encoder,
+                &screen.device,
+                &screen.queue,
+                &view,
+            )
+            .unwrap();
 
         self.save_file.as_ref().map(|sf| {
-            cmd_buffers.push(
-                sf.load_from_texture(&screen.device, &self.color_texture)
-                    .unwrap(),
-            )
+            sf.load_from_texture(&mut encoder, &screen.device, &self.color_texture)
+                .unwrap();
         });
 
-        screen.queue.submit(cmd_buffers);
+        screen.queue.submit(vec![encoder.finish()]);
         self.save_file.as_mut().map(|sf| sf.capture(&screen.device));
 
         self.render
@@ -267,7 +275,7 @@ fn on_win_keyboard_input(
             } => {
                 println!("saving to file ./circle.png ...");
                 if let Some(sf) = state.save_file.as_mut() {
-                    sf.save_file("./circle.png").unwrap();
+                    sf.save_to_png("./circle.png").unwrap();
                 }
 
                 state.render.stop().ok();

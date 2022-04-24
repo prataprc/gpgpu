@@ -163,6 +163,7 @@ impl<T> Spinlock<T> {
         }
     }
 
+    #[allow(dead_code)]
     pub fn to_stats(&self) -> Result<Stats> {
         let rl = err_at!(FailConvert, usize::try_from(self.read_locks.load(SeqCst)))?;
         let wl = err_at!(FailConvert, usize::try_from(self.write_locks.load(SeqCst)))?;

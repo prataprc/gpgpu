@@ -29,13 +29,19 @@ impl State {
             let desc = wgpu::TextureViewDescriptor::default();
             self.color_texture.create_view(&desc)
         };
+        let screen = self.render.as_screen();
+        let mut encoder = {
+            let desc = wgpu::CommandEncoderDescriptor {
+                label: Some("examples/cls:command-encoder"),
+            };
+            screen.device.create_command_encoder(&desc)
+        };
 
         let clear = Clear::new(self.color);
-        {
-            let screen = self.render.as_screen();
-            let cmd_buffer = clear.render(&screen.device, &screen.queue, &view).unwrap();
-            screen.queue.submit(vec![cmd_buffer]);
-        }
+        clear
+            .render(&mut encoder, &screen.device, &screen.queue, &view)
+            .unwrap();
+        screen.queue.submit(vec![encoder.finish()]);
 
         self.render
             .post_frame(Arc::clone(&self.color_texture))

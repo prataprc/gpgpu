@@ -108,6 +108,12 @@ fn render_loop(screen: Arc<Screen>, rx: mpsc::Receiver<Request>) -> Result<()> {
 
         frame.resp_txs.drain(..).for_each(|t| resp_txs.push(t));
 
+        let mut encoder = {
+            let desc = wgpu::CommandEncoderDescriptor {
+                label: Some("render_loop:command-encoder"),
+            };
+            screen.device.create_command_encoder(&desc)
+        };
         let load = {
             let frame_view = frame
                 .frame
@@ -115,8 +121,8 @@ fn render_loop(screen: Arc<Screen>, rx: mpsc::Receiver<Request>) -> Result<()> {
             let format = screen.to_surface_config().format;
             Load::new(&screen.device, frame_view, format)?
         };
-        let cmd_buffer = load.render(&screen.device, &screen.queue, &surface_view)?;
-        screen.queue.submit(vec![cmd_buffer]);
+        load.render(&mut encoder, &screen.device, &screen.queue, &surface_view)?;
+        screen.queue.submit(vec![encoder.finish()]);
 
         //debug!("###########################");
         //let wait_queue = async { screen.queue.on_submitted_work_done().await };

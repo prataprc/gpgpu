@@ -54,9 +54,10 @@ impl SaveFile {
 
     pub fn load_from_texture(
         &self,
-        device: &wgpu::Device,
+        encoder: &mut wgpu::CommandEncoder,
+        _device: &wgpu::Device,
         texture: &wgpu::Texture,
-    ) -> Result<wgpu::CommandBuffer> {
+    ) -> Result<()> {
         use std::num::NonZeroU32;
 
         let src = texture.as_image_copy();
@@ -68,18 +69,9 @@ impl SaveFile {
                 rows_per_image: NonZeroU32::new(self.size.height),
             },
         };
-
-        let mut encoder = {
-            let desc = wgpu::CommandEncoderDescriptor {
-                label: Some("widgets/save:command-encoder"),
-            };
-            device.create_command_encoder(&desc)
-        };
         encoder.copy_texture_to_buffer(src, dst, self.size);
 
-        let cmd_buffer = encoder.finish();
-
-        Ok(cmd_buffer)
+        Ok(())
     }
 
     pub fn capture(&mut self, device: &wgpu::Device) -> Result<()> {

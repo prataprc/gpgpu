@@ -96,20 +96,14 @@ impl Load {
 
     pub fn render(
         &self,
+        encoder: &mut wgpu::CommandEncoder,
         device: &wgpu::Device,
         _queue: &wgpu::Queue,
         color_view: &wgpu::TextureView,
-    ) -> Result<wgpu::CommandBuffer> {
+    ) -> Result<()> {
         let frame_view = match self.frame_view.as_ref() {
             Some(frame_view) => frame_view,
             None => err_at!(Fatal, msg: "set source frame-view for loading")?,
-        };
-
-        let mut encoder = {
-            let desc = wgpu::CommandEncoderDescriptor {
-                label: Some("widgets/load:command-encoder"),
-            };
-            device.create_command_encoder(&desc)
         };
 
         let vertex_buffer = Self::to_vertex_buffer(device);
@@ -166,7 +160,7 @@ impl Load {
             render_pass.draw(0..Vertex::NUM_VERTICES, 0..1);
         }
 
-        Ok(encoder.finish())
+        Ok(())
     }
 }
 

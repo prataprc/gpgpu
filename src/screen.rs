@@ -10,10 +10,10 @@ pub struct Screen {
     pub surface: wgpu::Surface,
     pub device: wgpu::Device,
     pub queue: wgpu::Queue,
-    pub state: Spinlock<Arc<State>>,
+    state: Spinlock<Arc<State>>,
 }
 
-pub struct State {
+struct State {
     surface_config: wgpu::SurfaceConfiguration,
     scale_factor: f64,
 }

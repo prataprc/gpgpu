@@ -90,10 +90,7 @@ fn render_loop(screen: Arc<Screen>, rx: mpsc::Receiver<Request>) -> Result<()> {
             match frames.into_iter().rev().next() {
                 Some(frame) => break (frame, disconnected),
                 None if disconnected => break 'outer,
-                None => {
-                    thread::sleep(std::time::Duration::from_millis(1));
-                    continue 'inner;
-                }
+                None => continue 'inner,
             }
         };
 

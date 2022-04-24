@@ -7,7 +7,7 @@ mod wireframe;
 pub use circle::Circle;
 pub use clear::Clear;
 pub use load::Load;
-pub use save::Save;
+pub use save::SaveFile;
 pub use wireframe::Wireframe;
 
 pub const CLEAR_COLOR: wgpu::Color = wgpu::Color {

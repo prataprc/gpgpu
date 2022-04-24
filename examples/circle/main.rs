@@ -9,9 +9,14 @@ use winit::{
 
 use std::{sync::Arc, time};
 
-use gpgpu::{niw, vidgets::Circle, Config, Perspective, Render, Screen, Transforms};
+use gpgpu::{
+    niw,
+    vidgets::{Circle, SaveFile},
+    Config, Perspective, Render, Screen, Transforms,
+};
 
 const SSAA: f32 = 2.0;
+const FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Rgba8UnormSrgb;
 
 #[derive(Clone, StructOpt)]
 pub struct Opt {
@@ -23,6 +28,9 @@ pub struct Opt {
 
     #[structopt(long = "fill")]
     fill: bool,
+
+    #[structopt(long = "save")]
+    save: bool,
 }
 
 struct State {
@@ -37,6 +45,7 @@ struct State {
     circle: Circle,
     next_frame: time::Instant,
     color_texture: Arc<wgpu::Texture>,
+    save_file: Option<SaveFile>,
 }
 
 impl State {
@@ -61,13 +70,22 @@ impl State {
             .look_at_rh(self.eye, self.center, self.up)
             .perspective_by(self.p);
 
-        {
-            let screen = self.render.as_screen();
-            let cmd_buffer =
-                self.circle
-                    .render(&transforms, &screen.device, &screen.queue, &view);
-            screen.queue.submit(vec![cmd_buffer]);
-        }
+        let screen = self.render.as_screen();
+
+        let mut cmd_buffers = vec![self
+            .circle
+            .render(&transforms, &screen.device, &screen.queue, &view)
+            .unwrap()];
+
+        self.save_file.as_ref().map(|sf| {
+            cmd_buffers.push(
+                sf.load_from_texture(&screen.device, &self.color_texture)
+                    .unwrap(),
+            )
+        });
+
+        screen.queue.submit(cmd_buffers);
+        self.save_file.as_mut().map(|sf| sf.capture(&screen.device));
 
         self.render
             .post_frame(Arc::clone(&self.color_texture))
@@ -108,17 +126,22 @@ fn main() {
             Config::default(),
         ))
         .unwrap();
-        let format = screen.to_texture_format();
+        let extent = screen.to_extent3d(SSAA as u32);
+        let save_file = match opts.save {
+            true => Some(SaveFile::new_frame(&screen.device, extent, FORMAT)),
+            false => None,
+        };
+
         let p = Perspective {
             fov: Deg(90.0),
             aspect: screen.to_aspect_ratio(),
             near: 0.1,
             far: 100.0,
         };
-        let mut circle = Circle::new(opts.radius, format, &screen.device);
+        let mut circle = Circle::new(opts.radius, FORMAT, &screen.device);
         circle.set_fill(opts.fill);
 
-        let color_texture = Arc::new(screen.like_surface_texture(SSAA));
+        let color_texture = Arc::new(screen.like_surface_texture(SSAA, FORMAT));
 
         let mut render = Render::new(screen);
         render.start();
@@ -135,6 +158,7 @@ fn main() {
             circle,
             next_frame: time::Instant::now(),
             color_texture,
+            save_file,
         }
     };
 
@@ -241,6 +265,11 @@ fn on_win_keyboard_input(
                     },
                 ..
             } => {
+                println!("saving to file ./circle.png ...");
+                if let Some(sf) = state.save_file.as_mut() {
+                    sf.save_file("./circle.png").unwrap();
+                }
+
                 state.render.stop().ok();
                 Some(ControlFlow::Exit)
             }

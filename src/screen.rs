@@ -136,17 +136,18 @@ impl Screen {
         }
     }
 
-    pub fn like_surface_texture(&self, ssaa: f32) -> wgpu::Texture {
+    pub fn like_surface_texture(&self, ssaa: f32, format: wgpu::TextureFormat) -> wgpu::Texture {
         use wgpu::TextureUsages;
+
         let desc = wgpu::TextureDescriptor {
             label: Some("like-surface-texture"),
             size: self.to_extent3d(ssaa as u32),
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
-            format: self.to_texture_format(),
+            format,
             usage: {
-                TextureUsages::TEXTURE_BINDING | TextureUsages::RENDER_ATTACHMENT
+                TextureUsages::COPY_SRC | TextureUsages::TEXTURE_BINDING | TextureUsages::RENDER_ATTACHMENT
             },
         };
         self.device.create_texture(&desc)

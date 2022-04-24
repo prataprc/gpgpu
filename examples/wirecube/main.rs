@@ -9,9 +9,14 @@ use winit::{
 
 use std::{fs, path, sync::Arc, time};
 
-use gpgpu::{niw, vidgets::Wireframe, Config, Perspective, Render, Screen, Transforms};
+use gpgpu::{
+    niw,
+    vidgets::{SaveFile, Wireframe},
+    Config, Perspective, Render, Screen, Transforms,
+};
 
-const SSAA: f32 = 2.0;
+const SSAA: f32 = 1.0;
+const FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Rgba8UnormSrgb;
 
 #[derive(Clone, StructOpt)]
 pub struct Opt {
@@ -20,6 +25,9 @@ pub struct Opt {
 
     #[structopt(long = "vertices")]
     vertices: path::PathBuf,
+
+    #[structopt(long = "save")]
+    save: bool,
 }
 
 struct State {
@@ -34,6 +42,9 @@ struct State {
     wireframe: Wireframe,
     next_frame: time::Instant,
     color_texture: Arc<wgpu::Texture>,
+    save_file: Option<SaveFile>,
+    start_time: time::Instant,
+    n_frames: u64,
 }
 
 impl State {
@@ -55,14 +66,21 @@ impl State {
             .look_at_rh(self.eye, self.center, self.up)
             .perspective_by(self.p);
 
-        {
-            let screen = self.render.as_screen();
-            let cmd_buffer = self
-                .wireframe
-                .render(&transforms, &screen.device, &screen.queue, &view)
-                .unwrap();
-            screen.queue.submit(vec![cmd_buffer]);
-        }
+        let screen = self.render.as_screen();
+        let mut cmd_buffers = vec![self
+            .wireframe
+            .render(&transforms, &screen.device, &screen.queue, &view)
+            .unwrap()];
+
+        self.save_file.as_ref().map(|sf| {
+            cmd_buffers.push(
+                sf.load_from_texture(&screen.device, &self.color_texture)
+                    .unwrap(),
+            )
+        });
+
+        screen.queue.submit(cmd_buffers);
+        self.save_file.as_mut().map(|sf| sf.capture(&screen.device));
 
         self.render
             .post_frame(Arc::clone(&self.color_texture))
@@ -73,6 +91,8 @@ impl State {
         self.rotate_by[2] += self.opts.rotate[2];
 
         self.next_frame = time::Instant::now() + time::Duration::from_millis(10);
+
+        self.n_frames += 1;
     }
 }
 
@@ -103,7 +123,11 @@ fn main() {
             Config::default(),
         ))
         .unwrap();
-        let format = screen.to_texture_format();
+        let extent = screen.to_extent3d(SSAA as u32);
+        let save_file = match opts.save {
+            true => Some(SaveFile::new_frames(&screen.device, extent, FORMAT)),
+            false => None,
+        };
         let p = Perspective {
             fov: Deg(90.0),
             aspect: screen.to_aspect_ratio(),
@@ -112,10 +136,10 @@ fn main() {
         };
         let wireframe = {
             let data = fs::read(opts.vertices.clone()).unwrap();
-            Wireframe::from_bytes(&data, format, &screen.device).unwrap()
+            Wireframe::from_bytes(&data, FORMAT, &screen.device).unwrap()
         };
 
-        let color_texture = Arc::new(screen.like_surface_texture(SSAA));
+        let color_texture = Arc::new(screen.like_surface_texture(SSAA, FORMAT));
 
         let mut render = Render::new(screen);
         render.start();
@@ -132,6 +156,9 @@ fn main() {
             wireframe,
             next_frame: time::Instant::now(),
             color_texture,
+            save_file,
+            start_time: time::Instant::now(),
+            n_frames: 0,
         }
     };
 
@@ -259,6 +286,16 @@ fn on_win_keyboard_input(
                     },
                 ..
             } => {
+                println!(
+                    "frame rate {}/s total:{} frames",
+                    state.n_frames / state.start_time.elapsed().as_secs(),
+                    state.n_frames
+                );
+                println!("saving to file ./wirecube.gif ...");
+                if let Some(sf) = state.save_file.as_mut() {
+                    sf.save_to_gif("./wirecube.gif", 30).unwrap();
+                }
+
                 state.render.stop().ok();
                 Some(ControlFlow::Exit)
             }

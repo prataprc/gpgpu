@@ -71,7 +71,8 @@ fn main() {
         ))
         .unwrap();
 
-        let color_texture = Arc::new(screen.like_surface_texture(SSAA));
+        let color_texture =
+            Arc::new(screen.like_surface_texture(SSAA, screen.to_texture_format()));
 
         let mut render = Render::new(screen);
         render.start();

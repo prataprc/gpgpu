@@ -31,13 +31,11 @@ impl State {
         };
 
         let clear = Clear::new(self.color);
-        clear
-            .render(
-                &self.render.as_screen().device,
-                &self.render.as_screen().queue,
-                &view,
-            )
-            .unwrap();
+        {
+            let screen = self.render.as_screen();
+            let cmd_buffer = clear.render(&screen.device, &screen.queue, &view).unwrap();
+            screen.queue.submit(vec![cmd_buffer]);
+        }
 
         self.render
             .post_frame(Arc::clone(&self.color_texture))

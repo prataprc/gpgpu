@@ -118,7 +118,8 @@ fn render_loop(screen: Arc<Screen>, rx: mpsc::Receiver<Request>) -> Result<()> {
             let format = screen.to_surface_config().format;
             Load::new(&screen.device, frame_view, format)?
         };
-        load.render(&screen.device, &screen.queue, &surface_view)?;
+        let cmd_buffer = load.render(&screen.device, &screen.queue, &surface_view)?;
+        screen.queue.submit(vec![cmd_buffer]);
 
         //debug!("###########################");
         //let wait_queue = async { screen.queue.on_submitted_work_done().await };

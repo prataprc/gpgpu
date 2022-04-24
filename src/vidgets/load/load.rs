@@ -97,9 +97,9 @@ impl Load {
     pub fn render(
         &self,
         device: &wgpu::Device,
-        queue: &wgpu::Queue,
+        _queue: &wgpu::Queue,
         color_view: &wgpu::TextureView,
-    ) -> Result<()> {
+    ) -> Result<wgpu::CommandBuffer> {
         let frame_view = match self.frame_view.as_ref() {
             Some(frame_view) => frame_view,
             None => err_at!(Fatal, msg: "set source frame-view for loading")?,
@@ -166,10 +166,7 @@ impl Load {
             render_pass.draw(0..Vertex::NUM_VERTICES, 0..1);
         }
 
-        let cmd_buffers = vec![encoder.finish()];
-        queue.submit(cmd_buffers.into_iter());
-
-        Ok(())
+        Ok(encoder.finish())
     }
 }
 

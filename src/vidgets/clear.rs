@@ -15,9 +15,9 @@ impl Clear {
     pub fn render(
         &self,
         device: &wgpu::Device,
-        queue: &wgpu::Queue,
+        _queue: &wgpu::Queue,
         color_view: &wgpu::TextureView,
-    ) -> Result<()> {
+    ) -> Result<wgpu::CommandBuffer> {
         let mut encoder = {
             let desc = wgpu::CommandEncoderDescriptor {
                 label: Some("widgets/clear:encoder"),
@@ -41,9 +41,6 @@ impl Clear {
             encoder.begin_render_pass(&desc)
         };
 
-        let cmd_buffers = vec![encoder.finish()];
-        queue.submit(cmd_buffers.into_iter());
-
-        Ok(())
+        Ok(encoder.finish())
     }
 }

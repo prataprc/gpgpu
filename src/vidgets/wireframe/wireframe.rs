@@ -166,7 +166,7 @@ impl Wireframe {
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         color_view: &wgpu::TextureView,
-    ) {
+    ) -> Result<wgpu::CommandBuffer> {
         let num_vertices = self.num_vertices() as u32;
         let vertex_buffer = self.to_vertex_buffer(device);
         // overwrite the transform mvp buffer.
@@ -204,8 +204,7 @@ impl Wireframe {
             render_pass.draw(0..num_vertices, 0..1);
         }
 
-        let cmd_buffers = vec![encoder.finish()];
-        queue.submit(cmd_buffers.into_iter());
+        Ok(encoder.finish())
     }
 }
 

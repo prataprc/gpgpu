@@ -1,6 +1,6 @@
 use bytemuck::{Pod, Zeroable};
 
-use crate::{Screen, Transforms};
+use crate::{Result, Screen, Transforms};
 
 pub struct Circle {
     bg: wgpu::Color,
@@ -188,7 +188,7 @@ impl Circle {
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         color_view: &wgpu::TextureView,
-    ) {
+    ) -> Result<wgpu::CommandBuffer> {
         use crate::vidgets;
 
         let vertex_buffer = Self::to_vertex_buffer(device);
@@ -233,8 +233,7 @@ impl Circle {
             render_pass.draw(0..6, 0..1);
         }
 
-        let cmd_buffers = vec![encoder.finish()];
-        queue.submit(cmd_buffers.into_iter());
+        Ok(encoder.finish())
     }
 }
 

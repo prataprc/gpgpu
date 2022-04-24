@@ -61,12 +61,13 @@ impl State {
             .look_at_rh(self.eye, self.center, self.up)
             .perspective_by(self.p);
 
-        self.circle.render(
-            &transforms,
-            &self.render.as_screen().device,
-            &self.render.as_screen().queue,
-            &view,
-        );
+        {
+            let screen = self.render.as_screen();
+            let cmd_buffer =
+                self.circle
+                    .render(&transforms, &screen.device, &screen.queue, &view);
+            screen.queue.submit(vec![cmd_buffer]);
+        }
 
         self.render
             .post_frame(Arc::clone(&self.color_texture))

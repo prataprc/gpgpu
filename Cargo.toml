@@ -46,6 +46,7 @@ bytemuck = { version = "1.9.1", features = [ "derive" ] }
 cgmath = "0.18.0"
 rand = { version = "0.8.4", features = ["std_rng"] }
 dirs = "4.0.0"
+gif = "0.11.3"
 
 ttf-parser = "0.15.0"
 fontdue = "0.7.2"

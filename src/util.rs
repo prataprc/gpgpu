@@ -194,3 +194,8 @@ where
 
     Ok(())
 }
+
+pub fn bytes_per_row(d: wgpu::Extent3d, format: wgpu::TextureFormat) -> u32 {
+    println!("{:?}", format);
+    d.width * 4
+}

@@ -192,10 +192,7 @@ fn on_win_scale_factor_changed(
                 scale_factor,
             } => {
                 let screen = state.render.as_screen();
-                state
-                    .render
-                    .as_screen()
-                    .resize(**new_inner_size, Some(*scale_factor));
+                screen.resize(**new_inner_size, Some(*scale_factor));
                 state.color_texture = Arc::new(
                     screen.like_surface_texture(SSAA, screen.to_texture_format()),
                 );

@@ -16,7 +16,7 @@ build:
 run-examples:
 	cargo run --example cls
 	cargo run --example bezier
-	#cargo run --example event_loop
+	cargo run --example event_loop
 	cargo run --example points
 	cargo run --example triangle
 	cargo run --example wirecube -- --vertices examples/wirecube/cube.txt --rotate 1,1,1

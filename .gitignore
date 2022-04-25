@@ -15,3 +15,5 @@ perf.data.old
 .vimsession
 wirecube.gif
 circle.png
+out
+heaptrack*

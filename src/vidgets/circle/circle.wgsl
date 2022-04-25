@@ -45,9 +45,13 @@ fn fs_main(in: VertexOutput) -> [[location(0)]] vec4<f32> {
         }
     } else {
         if (ceil(s) == params.radius) {
-            return params.fg * (1.0 - (params.radius - s));
+            var fg = params.fg * (1.0 - (params.radius - s));
+            fg.w = 1.0;
+            return fg;
         } else if (floor(s) == params.radius) {
-            return params.fg * (1.0 - (s - params.radius));
+            var fg = params.fg * (1.0 - (s - params.radius));
+            fg.w = 1.0;
+            return fg;
         } else if (s < params.radius) {
             return params.bg;
         } else {

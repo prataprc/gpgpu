@@ -24,7 +24,6 @@ impl Screen {
     pub async fn new(name: String, win: &Window, config: Config) -> Result<Screen> {
         let size: dpi::PhysicalSize<u32> = win.inner_size().into();
         debug!("Screen at {}x{}", size.width, size.height);
-        // println!("Screen at {}x{}", size.width, size.height);
 
         let instance = wgpu::Instance::new(wgpu::Backends::all());
         let surface = unsafe { instance.create_surface(&win) };
@@ -147,7 +146,9 @@ impl Screen {
             dimension: wgpu::TextureDimension::D2,
             format,
             usage: {
-                TextureUsages::COPY_SRC | TextureUsages::TEXTURE_BINDING | TextureUsages::RENDER_ATTACHMENT
+                TextureUsages::COPY_SRC
+                | TextureUsages::TEXTURE_BINDING
+                | TextureUsages::RENDER_ATTACHMENT
             },
         };
         self.device.create_texture(&desc)

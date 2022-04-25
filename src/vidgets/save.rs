@@ -18,7 +18,7 @@ impl SaveFile {
         format: wgpu::TextureFormat,
     ) -> SaveFile {
         let mut val = Self::new_frame(device, size, format);
-        val.frames = Vec::with_capacity(4);
+        val.frames = Vec::with_capacity(8);
         val
     }
 

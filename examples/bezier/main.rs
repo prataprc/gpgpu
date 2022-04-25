@@ -194,15 +194,14 @@ fn on_win_scale_factor_changed(
                 new_inner_size,
                 scale_factor,
             } => {
-                // TODO Is this the right way to handle it, doc says the following:
-                // After this event callback has been processed, the window will be
-                // resized to whatever value is pointed to by the new_inner_size
-                // reference. By default, this will contain the size suggested by the
-                // OS, but it can be changed to any value.
+                let screen = state.render.as_screen();
                 state
                     .render
                     .as_screen()
-                    .resize(**new_inner_size, Some(*scale_factor))
+                    .resize(**new_inner_size, Some(*scale_factor));
+                state.color_texture = Arc::new(
+                    screen.like_surface_texture(SSAA, screen.to_texture_format()),
+                );
             }
             _ => unreachable!(),
         },

@@ -230,15 +230,19 @@ fn on_win_scale_factor_changed(
                 new_inner_size,
                 scale_factor,
             } => {
-                // TODO Is this the right way to handle it, doc says the following:
-                // After this event callback has been processed, the window will be
-                // resized to whatever value is pointed to by the new_inner_size
-                // reference. By default, this will contain the size suggested by the
-                // OS, but it can be changed to any value.
+                let screen = state.render.as_screen();
                 state
                     .render
                     .as_screen()
-                    .resize(**new_inner_size, Some(*scale_factor))
+                    .resize(**new_inner_size, Some(*scale_factor));
+
+                state.color_texture = Arc::new(screen.like_surface_texture(SSAA, FORMAT));
+                let extent = screen.to_extent3d(SSAA as u32);
+
+                state.save_file = match state.opts.save {
+                    true => Some(SaveFile::new_frame(&screen.device, extent, FORMAT)),
+                    false => None,
+                };
             }
             _ => unreachable!(),
         },
@@ -273,8 +277,8 @@ fn on_win_keyboard_input(
                     },
                 ..
             } => {
-                println!("saving to file ./circle.png ...");
                 if let Some(sf) = state.save_file.as_mut() {
+                    println!("saving to file ./circle.png ...");
                     sf.save_to_png("./circle.png").unwrap();
                 }
 

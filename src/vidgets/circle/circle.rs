@@ -148,7 +148,12 @@ impl Circle {
 
         Circle {
             bg: wgpu::Color::BLACK,
-            fg: wgpu::Color::WHITE,
+            fg: wgpu::Color {
+                r: 1.0,
+                g: 1.0,
+                b: 1.0,
+                a: 1.0,
+            },
             fill: true,
             radius,
             center: Default::default(),

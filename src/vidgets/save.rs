@@ -4,6 +4,7 @@ use crate::{Error, Result};
 
 pub struct SaveFile {
     size: wgpu::Extent3d,
+    format: wgpu::TextureFormat,
     buffer: wgpu::Buffer,
     unpadded_bytes_per_row: u32,
     padded_bytes_per_row: u32,
@@ -45,6 +46,7 @@ impl SaveFile {
 
         SaveFile {
             size,
+            format,
             buffer,
             unpadded_bytes_per_row,
             padded_bytes_per_row,
@@ -82,13 +84,17 @@ impl SaveFile {
         err_at!(Fatal, pollster::block_on(request))?;
 
         let data = {
-            let padded_data = slice.get_mapped_range();
+            let texel_size = Self::texel_size(self.format);
+            let size = texel_size * self.size.width * self.size.height;
+
+            let mut data = Vec::with_capacity(size as usize);
+            let padded_data = slice.get_mapped_range().to_vec();
             padded_data
                 .chunks(self.padded_bytes_per_row as _)
-                .map(|chunk| &chunk[..self.unpadded_bytes_per_row as _])
-                .flatten()
-                .map(|x| *x)
-                .collect::<Vec<_>>()
+                .for_each(|chunk| {
+                    data.extend_from_slice(&chunk[..self.unpadded_bytes_per_row as _])
+                });
+            data
         };
 
         self.buffer.unmap();

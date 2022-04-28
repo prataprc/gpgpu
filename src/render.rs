@@ -5,7 +5,10 @@ use std::{
     thread,
 };
 
-use crate::{widg::Load, Error, Result, Screen};
+use crate::{
+    widg::{self, Load, Widget},
+    Error, Result, Screen, Transforms,
+};
 
 /// Rendering thread
 pub struct Render {
@@ -121,7 +124,18 @@ fn render_loop(screen: Arc<Screen>, rx: mpsc::Receiver<Request>) -> Result<()> {
             let format = screen.to_surface_config().format;
             Load::new(&screen.device, frame_view, format)?
         };
-        load.render(&mut encoder, &screen.device, &screen.queue, &surface_view)?;
+
+        let context = widg::Context {
+            transforms: &Transforms::empty(),
+            device: &screen.device,
+            queue: &screen.queue,
+        };
+        let target = widg::ColorTarget {
+            size: screen.to_extent3d(1),
+            format: screen.to_texture_format(),
+            view: &surface_view,
+        };
+        load.render(&context, &mut encoder, &target)?;
         screen.queue.submit(vec![encoder.finish()]);
 
         //debug!("###########################");

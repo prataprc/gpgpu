@@ -1,4 +1,4 @@
-use crate::{Error, Result};
+use crate::{widg, Error, Result};
 
 pub struct Load {
     source: Option<wgpu::TextureView>,
@@ -90,20 +90,21 @@ impl Load {
     pub fn set_source(&mut self, src: wgpu::TextureView) -> Option<wgpu::TextureView> {
         self.source.replace(src)
     }
+}
 
-    pub fn render(
+impl widg::Widget for Load {
+    fn render(
         &self,
+        context: &widg::Context,
         encoder: &mut wgpu::CommandEncoder,
-        device: &wgpu::Device,
-        _queue: &wgpu::Queue,
-        color_view: &wgpu::TextureView,
+        target: &widg::ColorTarget,
     ) -> Result<()> {
         let source = match self.source.as_ref() {
             Some(source) => source,
             None => err_at!(Fatal, msg: "set source frame-view for loading")?,
         };
 
-        let vertex_buffer = Self::to_vertex_buffer(device);
+        let vertex_buffer = Self::to_vertex_buffer(context.device);
         let bind_group = {
             let frame_samp = {
                 let desc = wgpu::SamplerDescriptor {
@@ -115,7 +116,7 @@ impl Load {
                     mipmap_filter: wgpu::FilterMode::Linear,
                     ..Default::default()
                 };
-                device.create_sampler(&desc)
+                context.device.create_sampler(&desc)
             };
             let desc = wgpu::BindGroupDescriptor {
                 label: Some("widgets/load:bind-group"),
@@ -131,7 +132,7 @@ impl Load {
                     },
                 ],
             };
-            device.create_bind_group(&desc)
+            context.device.create_bind_group(&desc)
         };
 
         {
@@ -139,7 +140,7 @@ impl Load {
                 let desc = wgpu::RenderPassDescriptor {
                     label: Some("widgets/load:render-pass"),
                     color_attachments: &[wgpu::RenderPassColorAttachment {
-                        view: color_view,
+                        view: target.view,
                         resolve_target: None,
                         ops: wgpu::Operations {
                             load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),

@@ -100,6 +100,7 @@ mod render;
 mod save;
 mod screen;
 mod spinlock;
+mod style;
 mod transforms;
 
 pub mod fonts;
@@ -114,4 +115,5 @@ pub use render::Render;
 pub use save::SaveFile;
 pub use screen::Screen;
 pub use spinlock::Spinlock;
+pub use style::{Border, BorderStyle, Length, Style};
 pub use transforms::{Camera, Ortho, Perspective, Transforms};

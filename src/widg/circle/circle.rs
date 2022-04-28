@@ -1,6 +1,6 @@
 use bytemuck::{Pod, Zeroable};
 
-use crate::{Result, Screen, Transforms};
+use crate::{widg, Result, Transforms};
 
 pub struct Circle {
     bg: wgpu::Color,
@@ -8,7 +8,7 @@ pub struct Circle {
     fill: bool,
     radius: f32,
     center: [f32; 2],
-    computed_radius: f32,
+    // wgpu buffers
     pipeline: wgpu::RenderPipeline,
     bind_group: wgpu::BindGroup,
     transform_buffer: wgpu::Buffer,
@@ -27,6 +27,15 @@ struct UniformBuffer {
 
 impl UniformBuffer {
     const SIZE: usize = 16 + 16 + 4 + 4 + 8;
+
+    fn update_size(&mut self, size: wgpu::Extent3d) {
+        let wgpu::Extent3d { width, height, .. } = size;
+        let w = (width as f32) / 2.0;
+        let h = (height as f32) / 2.0;
+
+        self.radius = (self.radius * w).round();
+        self.center = [(self.center[0] * w) + w, h - (self.center[1] * h)];
+    }
 }
 
 impl<'a> From<&'a Circle> for UniformBuffer {
@@ -45,7 +54,7 @@ impl<'a> From<&'a Circle> for UniformBuffer {
                 val.fg.a as f32,
             ],
             fill: if val.fill { 1 } else { 0 },
-            radius: val.computed_radius,
+            radius: val.radius,
             center: val.center,
         }
     }
@@ -53,9 +62,10 @@ impl<'a> From<&'a Circle> for UniformBuffer {
 
 impl Circle {
     pub fn new(
-        radius: f32,
-        format: wgpu::TextureFormat,
         device: &wgpu::Device,
+        radius: f32,
+        center: [f32; 2],
+        target_format: wgpu::TextureFormat,
     ) -> Circle {
         use std::borrow::Cow;
 
@@ -105,7 +115,7 @@ impl Circle {
             module: &module,
             entry_point: "fs_main",
             targets: &[wgpu::ColorTargetState {
-                format,
+                format: target_format,
                 blend: Some(wgpu::BlendState::REPLACE),
                 write_mask: wgpu::ColorWrites::ALL,
             }],
@@ -156,8 +166,7 @@ impl Circle {
             },
             fill: true,
             radius,
-            center: Default::default(),
-            computed_radius: radius,
+            center,
             pipeline,
             bind_group,
             transform_buffer,
@@ -179,35 +188,31 @@ impl Circle {
         self.fill = fill;
         self
     }
+}
 
-    pub fn pre_render(&mut self, ssaa: f32, screen: &Screen) {
-        let center = screen.to_center(ssaa as u32);
-        self.center = [center.x as f32, center.y as f32];
-        self.computed_radius =
-            self.radius * ((ssaa as f64) * screen.to_scale_factor()) as f32;
-    }
-
-    pub fn render(
+impl widg::Widget for Circle {
+    fn render(
         &self,
-        transf: &Transforms,
+        context: &widg::Context,
         encoder: &mut wgpu::CommandEncoder,
-        device: &wgpu::Device,
-        queue: &wgpu::Queue,
-        color_view: &wgpu::TextureView,
+        target: &widg::ColorTarget,
     ) -> Result<()> {
-        use crate::widg;
-
-        let vertex_buffer = Self::to_vertex_buffer(device);
+        let vertex_buffer = Self::to_vertex_buffer(context.device);
         // overwrite the transform mvp buffer.
         {
-            let content = transf.to_bind_content();
-            queue.write_buffer(&self.transform_buffer, 0, &content);
+            let content = context.transforms.to_bind_content();
+            context
+                .queue
+                .write_buffer(&self.transform_buffer, 0, &content);
         }
         // overwrite the transform mvp buffer.
         {
-            let ub: UniformBuffer = self.into();
+            let mut ub: UniformBuffer = self.into();
+            ub.update_size(target.size);
             let content: [u8; UniformBuffer::SIZE] = bytemuck::cast(ub);
-            queue.write_buffer(&self.uniform_buffer, 0, &content.to_vec());
+            context
+                .queue
+                .write_buffer(&self.uniform_buffer, 0, &content.to_vec());
         }
 
         {
@@ -215,7 +220,7 @@ impl Circle {
                 let desc = wgpu::RenderPassDescriptor {
                     label: Some("widg/circle:render-pass"),
                     color_attachments: &[wgpu::RenderPassColorAttachment {
-                        view: &color_view,
+                        view: target.view,
                         resolve_target: None,
                         ops: wgpu::Operations {
                             load: wgpu::LoadOp::Clear(widg::CLEAR_COLOR),

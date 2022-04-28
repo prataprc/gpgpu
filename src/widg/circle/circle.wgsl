@@ -5,7 +5,7 @@ struct Transforms {
     mvp: mat4x4<f32>;
 };
 
-struct Parameters {
+struct Circle {
     bg: vec4<f32>;
     fg: vec4<f32>;
     fill: u32;
@@ -22,7 +22,7 @@ struct VertexOutput {
 };
 
 [[binding(0), group(0)]] var<uniform> transforms: Transforms;
-[[binding(1), group(0)]] var<uniform> params: Parameters;
+[[binding(1), group(0)]] var<uniform> circle: Circle;
 
 [[stage(vertex)]]
 fn vs_main(in: VertexInput) -> VertexOutput {
@@ -33,27 +33,27 @@ fn vs_main(in: VertexInput) -> VertexOutput {
 
 [[stage(fragment)]]
 fn fs_main(in: VertexOutput) -> [[location(0)]] vec4<f32> {
-    let x: f32 = in.clip_position.x - params.center.x;
-    let y: f32 = params.center.y - in.clip_position.y;
+    let x: f32 = in.clip_position.x - circle.center.x;
+    let y: f32 = circle.center.y - in.clip_position.y;
     let s: f32 = sqrt((x*x) + (y*y));
 
-    if (params.fill == u32(1)) {
-        if (round(s) <= params.radius) {
-            return params.fg;
+    if (circle.fill == u32(1)) {
+        if (round(s) <= circle.radius) {
+            return circle.fg;
         } else {
             return vec4<f32>(0.0, 0.0, 0.0, 0.0);
         }
     } else {
-        if (ceil(s) == params.radius) {
-            var fg = params.fg * (1.0 - (params.radius - s));
+        if (ceil(s) == circle.radius) {
+            var fg = circle.fg * (1.0 - (circle.radius - s));
             fg.w = 1.0;
             return fg;
-        } else if (floor(s) == params.radius) {
-            var fg = params.fg * (1.0 - (s - params.radius));
+        } else if (floor(s) == circle.radius) {
+            var fg = circle.fg * (1.0 - (s - circle.radius));
             fg.w = 1.0;
             return fg;
-        } else if (s < params.radius) {
-            return params.bg;
+        } else if (s < circle.radius) {
+            return circle.bg;
         } else {
             return vec4<f32>(0.0, 0.0, 0.0, 0.0);
         }

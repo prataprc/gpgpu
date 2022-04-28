@@ -7,7 +7,11 @@ use winit::{
 
 use std::sync::Arc;
 
-use gpgpu::{niw, util, widg::Clear, Config, Render, Screen};
+use gpgpu::{
+    niw, util,
+    widg::{self, Clear, Widget},
+    Config, Render, Screen, Transforms,
+};
 
 const SSAA: f32 = 2.0;
 
@@ -37,10 +41,18 @@ impl State {
             screen.device.create_command_encoder(&desc)
         };
 
+        let context = widg::Context {
+            transforms: &Transforms::empty(),
+            device: &screen.device,
+            queue: &screen.queue,
+        };
+        let target = widg::ColorTarget {
+            size: screen.to_extent3d(1),
+            format: screen.to_texture_format(),
+            view: &view,
+        };
         let clear = Clear::new(self.color);
-        clear
-            .render(&mut encoder, &screen.device, &screen.queue, &view)
-            .unwrap();
+        clear.render(&context, &mut encoder, &target).unwrap();
         screen.queue.submit(vec![encoder.finish()]);
 
         self.render

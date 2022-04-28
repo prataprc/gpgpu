@@ -10,7 +10,9 @@ use winit::{
 use std::{fs, path, sync::Arc, time};
 
 use gpgpu::{
-    niw, widg::Wireframe, Config, Perspective, Render, SaveFile, Screen, Transforms,
+    niw,
+    widg::{self, Widget, Wireframe},
+    Config, Perspective, Render, SaveFile, Screen, Transforms,
 };
 
 const SSAA: f32 = 1.0;
@@ -71,14 +73,19 @@ impl State {
             };
             screen.device.create_command_encoder(&desc)
         };
+
+        let context = widg::Context {
+            transforms: &transforms,
+            device: &screen.device,
+            queue: &screen.queue,
+        };
+        let target = widg::ColorTarget {
+            size: screen.to_extent3d(1),
+            format: screen.to_texture_format(),
+            view: &view,
+        };
         self.wireframe
-            .render(
-                &transforms,
-                &mut encoder,
-                &screen.device,
-                &screen.queue,
-                &view,
-            )
+            .render(&context, &mut encoder, &target)
             .unwrap();
 
         self.save_file.as_ref().map(|sf| {

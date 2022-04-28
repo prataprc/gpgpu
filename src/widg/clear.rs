@@ -1,4 +1,4 @@
-use crate::Result;
+use crate::{widg, Result};
 
 pub struct Clear {
     bg: wgpu::Color,
@@ -11,13 +11,14 @@ impl Clear {
     {
         Clear { bg: bg.into() }
     }
+}
 
-    pub fn render(
+impl widg::Widget for Clear {
+    fn render(
         &self,
+        _: &widg::Context,
         encoder: &mut wgpu::CommandEncoder,
-        _device: &wgpu::Device,
-        _queue: &wgpu::Queue,
-        color_view: &wgpu::TextureView,
+        target: &widg::ColorTarget,
     ) -> Result<()> {
         let ops = wgpu::Operations {
             load: wgpu::LoadOp::Clear(self.bg),
@@ -26,7 +27,7 @@ impl Clear {
         let desc = wgpu::RenderPassDescriptor {
             label: Some("widgets/clear:render-pass"),
             color_attachments: &[wgpu::RenderPassColorAttachment {
-                view: color_view,
+                view: target.view,
                 resolve_target: None,
                 ops,
             }],

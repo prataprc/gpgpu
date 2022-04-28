@@ -10,7 +10,9 @@ use winit::{
 use std::{sync::Arc, time};
 
 use gpgpu::{
-    niw, widg::Circle, Config, Perspective, Render, SaveFile, Screen, Transforms,
+    niw,
+    widg::{self, Circle, Widget},
+    Config, Perspective, Render, SaveFile, Screen, Transforms,
 };
 
 const SSAA: f32 = 2.0;
@@ -23,6 +25,9 @@ pub struct Opt {
 
     #[structopt(long = "radius", default_value = "200")]
     radius: f32,
+
+    #[structopt(long = "center", default_value = "0,0", use_delimiter = true)]
+    center: Vec<f32>,
 
     #[structopt(long = "fill")]
     fill: bool,
@@ -52,8 +57,7 @@ impl State {
             return;
         }
 
-        self.circle
-            .pre_render(SSAA, self.render.as_screen().as_ref());
+        let size = self.render.as_screen().to_extent3d(SSAA as u32);
 
         let view = {
             let desc = wgpu::TextureViewDescriptor::default();
@@ -75,15 +79,17 @@ impl State {
             };
             screen.device.create_command_encoder(&desc)
         };
-        self.circle
-            .render(
-                &transforms,
-                &mut encoder,
-                &screen.device,
-                &screen.queue,
-                &view,
-            )
-            .unwrap();
+        let context = widg::Context {
+            transforms: &transforms,
+            device: &screen.device,
+            queue: &screen.queue,
+        };
+        let target = widg::ColorTarget {
+            size,
+            format: FORMAT,
+            view: &view,
+        };
+        self.circle.render(&context, &mut encoder, &target).unwrap();
 
         self.save_file.as_ref().map(|sf| {
             sf.load_from_texture(&mut encoder, &screen.device, &self.color_texture)
@@ -116,6 +122,7 @@ fn main() {
         [x, y, z] => vec![*x, *y, *z],
         [x, y, z, ..] => vec![*x, *y, *z],
     };
+    let center = [opts.center[0], opts.center[1]];
 
     let name = "example-triangle".to_string();
     let config = Config::default();
@@ -144,7 +151,7 @@ fn main() {
             near: 0.1,
             far: 100.0,
         };
-        let mut circle = Circle::new(opts.radius, FORMAT, &screen.device);
+        let mut circle = Circle::new(&screen.device, opts.radius, center, FORMAT);
         circle.set_fill(opts.fill);
 
         let color_texture = Arc::new(screen.like_surface_texture(SSAA, FORMAT));

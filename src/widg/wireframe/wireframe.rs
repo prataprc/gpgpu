@@ -3,7 +3,7 @@ use cgmath::{Matrix4, Point3, Vector4};
 
 use std::{fmt, path, result};
 
-use crate::{Error, Result, Transforms};
+use crate::{widg, Error, Result, Transforms};
 
 pub struct Wireframe {
     bg: wgpu::Color,
@@ -159,21 +159,23 @@ impl Wireframe {
 
         Ok(val)
     }
+}
 
-    pub fn render(
+impl widg::Widget for Wireframe {
+    fn render(
         &self,
-        transf: &Transforms,
+        context: &widg::Context,
         encoder: &mut wgpu::CommandEncoder,
-        device: &wgpu::Device,
-        queue: &wgpu::Queue,
-        color_view: &wgpu::TextureView,
+        target: &widg::ColorTarget,
     ) -> Result<()> {
         let num_vertices = self.num_vertices() as u32;
-        let vertex_buffer = self.to_vertex_buffer(device);
+        let vertex_buffer = self.to_vertex_buffer(context.device);
         // overwrite the transform mvp buffer.
         {
-            let content = transf.to_bind_content();
-            queue.write_buffer(&self.transform_buffer, 0, &content);
+            let content = context.transforms.to_bind_content();
+            context
+                .queue
+                .write_buffer(&self.transform_buffer, 0, &content);
         }
 
         {
@@ -181,7 +183,7 @@ impl Wireframe {
                 let desc = wgpu::RenderPassDescriptor {
                     label: Some("widg/wireframe:render-pass"),
                     color_attachments: &[wgpu::RenderPassColorAttachment {
-                        view: &color_view,
+                        view: target.view,
                         resolve_target: None,
                         ops: wgpu::Operations {
                             load: wgpu::LoadOp::Clear(self.bg),

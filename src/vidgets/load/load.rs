@@ -1,7 +1,7 @@
 use crate::{Error, Result};
 
 pub struct Load {
-    frame_view: Option<wgpu::TextureView>,
+    source: Option<wgpu::TextureView>,
     bind_group_layout: wgpu::BindGroupLayout,
     pipeline: wgpu::RenderPipeline,
 }
@@ -9,8 +9,8 @@ pub struct Load {
 impl Load {
     pub fn new(
         device: &wgpu::Device,
-        frame_view: wgpu::TextureView,
-        format: wgpu::TextureFormat,
+        source: wgpu::TextureView,
+        target_format: wgpu::TextureFormat,
     ) -> Result<Load> {
         let bind_group_layout = Self::to_bind_group_layout(device);
 
@@ -58,7 +58,7 @@ impl Load {
             module: &module,
             entry_point: "fs_main",
             targets: &[wgpu::ColorTargetState {
-                format,
+                format: target_format,
                 blend: Some(wgpu::BlendState::REPLACE),
                 write_mask: wgpu::ColorWrites::ALL,
             }],
@@ -79,7 +79,7 @@ impl Load {
         };
 
         let val = Load {
-            frame_view: Some(frame_view),
+            source: Some(source),
             bind_group_layout,
             pipeline,
         };
@@ -87,11 +87,8 @@ impl Load {
         Ok(val)
     }
 
-    pub fn set_source_texture(
-        &mut self,
-        view: wgpu::TextureView,
-    ) -> Option<wgpu::TextureView> {
-        self.frame_view.replace(view)
+    pub fn set_source(&mut self, src: wgpu::TextureView) -> Option<wgpu::TextureView> {
+        self.source.replace(src)
     }
 
     pub fn render(
@@ -101,8 +98,8 @@ impl Load {
         _queue: &wgpu::Queue,
         color_view: &wgpu::TextureView,
     ) -> Result<()> {
-        let frame_view = match self.frame_view.as_ref() {
-            Some(frame_view) => frame_view,
+        let source = match self.source.as_ref() {
+            Some(source) => source,
             None => err_at!(Fatal, msg: "set source frame-view for loading")?,
         };
 
@@ -126,7 +123,7 @@ impl Load {
                 entries: &[
                     wgpu::BindGroupEntry {
                         binding: 0,
-                        resource: wgpu::BindingResource::TextureView(frame_view),
+                        resource: wgpu::BindingResource::TextureView(source),
                     },
                     wgpu::BindGroupEntry {
                         binding: 1,

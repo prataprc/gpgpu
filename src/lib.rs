@@ -97,19 +97,21 @@ pub type Result<T> = result::Result<T, Error>;
 mod backends;
 mod config;
 mod render;
+mod save;
 mod screen;
 mod spinlock;
 mod transforms;
-
-pub mod vidgets;
 
 pub mod fonts;
 pub mod niw;
 pub mod pretty;
 pub mod util;
+pub mod vidgets;
 
 pub use backends::{backend, backend_to_string};
 pub use config::{Config, ConfigAdapter, ConfigWinit};
 pub use render::Render;
+pub use save::SaveFile;
 pub use screen::Screen;
+pub use spinlock::Spinlock;
 pub use transforms::{Camera, Ortho, Perspective, Transforms};

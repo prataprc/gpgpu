@@ -22,3 +22,6 @@ run-examples:
 	cargo run --example wirecube -- --vertices examples/wirecube/cube.txt --rotate 1,1,1
 	cargo run --example circle -- --radius 200
 	cargo run --example circle -- --radius 200 --fill
+
+clean:
+	rm -f heaptrack* circle.png wirecube.gif out core

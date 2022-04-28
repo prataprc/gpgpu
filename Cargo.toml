@@ -19,10 +19,6 @@ name = "fonts"
 required-features = ["fonts"]
 
 [[bin]]
-name = "vk"
-required-features = ["vk"]
-
-[[bin]]
 name = "wgpu"
 required-features = ["wgpu"]
 
@@ -56,5 +52,4 @@ image = "0.24.1"
 [features]
 cgm = []
 fonts = []
-vk = []
 wgpu = []

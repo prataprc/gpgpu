@@ -106,7 +106,7 @@ pub mod fonts;
 pub mod niw;
 pub mod pretty;
 pub mod util;
-pub mod vidgets;
+pub mod widg;
 
 pub use backends::{backend, backend_to_string};
 pub use config::{Config, ConfigAdapter, ConfigWinit};

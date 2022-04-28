@@ -63,7 +63,7 @@ impl Circle {
 
         let pipeline_layout = {
             let desc = wgpu::PipelineLayoutDescriptor {
-                label: Some("vidgets/circle:pipeline-layout"),
+                label: Some("widg/circle:pipeline-layout"),
                 bind_group_layouts: &[&bind_group_layout],
                 push_constant_ranges: &[],
             };
@@ -73,7 +73,7 @@ impl Circle {
         let module = {
             let text = Cow::Borrowed(include_str!("circle.wgsl"));
             let desc = wgpu::ShaderModuleDescriptor {
-                label: Some("vidgets/circle:shader"),
+                label: Some("widg/circle:shader"),
                 source: wgpu::ShaderSource::Wgsl(text.into()),
             };
             device.create_shader_module(&desc)
@@ -113,7 +113,7 @@ impl Circle {
 
         let pipeline = {
             let desc = wgpu::RenderPipelineDescriptor {
-                label: Some("vidgets/circle:pipeline"),
+                label: Some("widg/circle:pipeline"),
                 layout: Some(&pipeline_layout),
                 vertex,
                 primitive: primitive_state,
@@ -130,7 +130,7 @@ impl Circle {
 
         let bind_group = {
             let desc = wgpu::BindGroupDescriptor {
-                label: Some("vidgets/circle:bind-group"),
+                label: Some("widg/circle:bind-group"),
                 layout: &bind_group_layout,
                 entries: &[
                     wgpu::BindGroupEntry {
@@ -195,7 +195,7 @@ impl Circle {
         queue: &wgpu::Queue,
         color_view: &wgpu::TextureView,
     ) -> Result<()> {
-        use crate::vidgets;
+        use crate::widg;
 
         let vertex_buffer = Self::to_vertex_buffer(device);
         // overwrite the transform mvp buffer.
@@ -213,12 +213,12 @@ impl Circle {
         {
             let mut render_pass = {
                 let desc = wgpu::RenderPassDescriptor {
-                    label: Some("vidgets/circle:render-pass"),
+                    label: Some("widg/circle:render-pass"),
                     color_attachments: &[wgpu::RenderPassColorAttachment {
                         view: &color_view,
                         resolve_target: None,
                         ops: wgpu::Operations {
-                            load: wgpu::LoadOp::Clear(vidgets::CLEAR_COLOR),
+                            load: wgpu::LoadOp::Clear(widg::CLEAR_COLOR),
                             store: true,
                         },
                     }],
@@ -254,7 +254,7 @@ impl Circle {
 
         let entry_0 = Transforms::to_bind_group_layout_entry();
         let desc = wgpu::BindGroupLayoutDescriptor {
-            label: Some("vidgets/circle:bind-group-layout"),
+            label: Some("widg/circle:bind-group-layout"),
             entries: &[
                 entry_0,
                 wgpu::BindGroupLayoutEntry {
@@ -281,7 +281,7 @@ impl Circle {
             contents.to_vec()
         };
         let desc = wgpu::util::BufferInitDescriptor {
-            label: Some("vidgets/circle:uniform-buffer"),
+            label: Some("widg/circle:uniform-buffer"),
             contents: &contents,
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         };
@@ -293,7 +293,7 @@ impl Circle {
 
         let contents: &[u8] = bytemuck::cast_slice(&VERTICES);
         let desc = wgpu::util::BufferInitDescriptor {
-            label: Some("vidgets/circle:vertex-buffer"),
+            label: Some("widg/circle:vertex-buffer"),
             contents,
             usage: BufferUsages::VERTEX,
         };

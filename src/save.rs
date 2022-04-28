@@ -153,7 +153,7 @@ impl SaveFile {
         match format {
             wgpu::TextureFormat::Rgba8Uint => 4,
             wgpu::TextureFormat::Rgba8UnormSrgb => 4,
-            val => panic!("format {:?} can't be handled for vidgets/save", val),
+            val => panic!("format {:?} can't be handled for widg/save", val),
         }
     }
 }

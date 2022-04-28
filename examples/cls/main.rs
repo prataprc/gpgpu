@@ -7,7 +7,7 @@ use winit::{
 
 use std::sync::Arc;
 
-use gpgpu::{niw, util, vidgets::Clear, Config, Render, Screen};
+use gpgpu::{niw, util, widg::Clear, Config, Render, Screen};
 
 const SSAA: f32 = 2.0;
 

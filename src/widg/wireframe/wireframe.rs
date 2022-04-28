@@ -65,7 +65,7 @@ impl Wireframe {
         let bind_group_layout = {
             let entry = Transforms::to_bind_group_layout_entry();
             let desc = wgpu::BindGroupLayoutDescriptor {
-                label: Some("vidgets/wireframe:bind-group-layout"),
+                label: Some("widg/wireframe:bind-group-layout"),
                 entries: &[entry],
             };
             device.create_bind_group_layout(&desc)
@@ -73,7 +73,7 @@ impl Wireframe {
 
         let pipeline_layout = {
             let desc = wgpu::PipelineLayoutDescriptor {
-                label: Some("vidgets/wireframe:pipeline-layout"),
+                label: Some("widg/wireframe:pipeline-layout"),
                 bind_group_layouts: &[&bind_group_layout],
                 push_constant_ranges: &[],
             };
@@ -83,7 +83,7 @@ impl Wireframe {
         let module = {
             let text = include_str!("wireframe.wgsl");
             let desc = wgpu::ShaderModuleDescriptor {
-                label: Some("vidgets/wireframe:shader"),
+                label: Some("widg/wireframe:shader"),
                 source: wgpu::ShaderSource::Wgsl(text.into()),
             };
             device.create_shader_module(&desc)
@@ -123,7 +123,7 @@ impl Wireframe {
 
         let pipeline = {
             let desc = wgpu::RenderPipelineDescriptor {
-                label: Some("vidgets/wireframe:pipeline"),
+                label: Some("widg/wireframe:pipeline"),
                 layout: Some(&pipeline_layout),
                 vertex,
                 primitive: primitive_state,
@@ -139,7 +139,7 @@ impl Wireframe {
 
         let bind_group = {
             let desc = wgpu::BindGroupDescriptor {
-                label: Some("vidgets/wireframe:bind-group"),
+                label: Some("widg/wireframe:bind-group"),
                 layout: &bind_group_layout,
                 entries: &[wgpu::BindGroupEntry {
                     binding: 0,
@@ -179,7 +179,7 @@ impl Wireframe {
         {
             let mut render_pass = {
                 let desc = wgpu::RenderPassDescriptor {
-                    label: Some("vidgets/wireframe:render-pass"),
+                    label: Some("widg/wireframe:render-pass"),
                     color_attachments: &[wgpu::RenderPassColorAttachment {
                         view: &color_view,
                         resolve_target: None,
@@ -221,7 +221,7 @@ impl Wireframe {
             Primitive::Lines { vertices } => {
                 let contents: &[u8] = bytemuck::cast_slice(vertices);
                 let desc = wgpu::util::BufferInitDescriptor {
-                    label: Some("vidgets/wireframe:vertex-buffer"),
+                    label: Some("widg/wireframe:vertex-buffer"),
                     contents,
                     usage: wgpu::BufferUsages::VERTEX,
                 };

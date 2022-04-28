@@ -5,7 +5,7 @@ use std::{
     thread,
 };
 
-use crate::{vidgets::Load, Error, Result, Screen};
+use crate::{widg::Load, Error, Result, Screen};
 
 /// Rendering thread
 pub struct Render {

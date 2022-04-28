@@ -10,7 +10,7 @@ use winit::{
 use std::{sync::Arc, time};
 
 use gpgpu::{
-    niw, vidgets::Circle, Config, Perspective, Render, SaveFile, Screen, Transforms,
+    niw, widg::Circle, Config, Perspective, Render, SaveFile, Screen, Transforms,
 };
 
 const SSAA: f32 = 2.0;

@@ -248,3 +248,41 @@ fn on_win_scale_factor_changed(
 
     None
 }
+
+fn on_win_close_requested(
+    _: &Window,
+    state: &mut State,
+    _: &mut Event<()>,
+) -> Option<ControlFlow> {
+    state.render.stop().ok();
+    Some(ControlFlow::Exit)
+}
+
+fn on_win_keyboard_input(
+    _: &Window,
+    state: &mut State,
+    event: &mut Event<()>,
+) -> Option<ControlFlow> {
+    match event {
+        Event::WindowEvent { event, .. } => match event {
+            WindowEvent::KeyboardInput {
+                input:
+                    KeyboardInput {
+                        state: ElementState::Pressed,
+                        virtual_keycode: Some(VirtualKeyCode::Escape),
+                        ..
+                    },
+                ..
+            } => {
+                if let Some(sf) = state.save_file.as_mut() {
+                    println!("saving to file ./circle.png ...");
+                    sf.save_to_png("./circle.png").unwrap();
+                }
+                state.render.stop().ok();
+                Some(ControlFlow::Exit)
+            }
+            _ => None,
+        },
+        _ => None,
+    }
+}

@@ -16,6 +16,23 @@ macro_rules! format_bool {
 }
 pub(crate) use format_bool;
 
+macro_rules! format_option {
+    ($val:expr) => {
+        match $val.as_ref() {
+            Some(val) => val.to_string().white(),
+            None => "✗".red(),
+        }
+    };
+
+    ($val:expr, $default:expr) => {
+        match $val.as_ref() {
+            Some(val) => val.to_string(),
+            None => $default.to_string(),
+        }
+    };
+}
+pub(crate) use format_option;
+
 pub trait PrettyRow {
     fn to_format() -> prettytable::format::TableFormat;
 

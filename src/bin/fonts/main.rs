@@ -1,4 +1,4 @@
-use log::{debug, error};
+use log::{debug, error, info};
 use structopt::StructOpt;
 
 use std::{fs, path};
@@ -6,6 +6,7 @@ use std::{fs, path};
 use gpgpu::{err_at, fonts, util, Error, Result};
 
 mod info;
+mod raster;
 
 #[derive(StructOpt)]
 #[structopt(name = "fonts", version = "0.0.1")]
@@ -68,15 +69,14 @@ pub enum SubCommand {
         #[structopt(short = "f")]
         loc: path::PathBuf,
 
-        #[structopt(long = "scale")]
-        scale: f32,
-
         ch: char,
     },
     Clean,
 }
 
 fn main() {
+    env_logger::init();
+
     let opts = Opt::from_args();
 
     make_dirs().ok();
@@ -89,7 +89,7 @@ fn main() {
         SubCommand::List { .. } => handle_list(opts),
         SubCommand::Unicode => handle_unicode(opts),
         SubCommand::Glyph { .. } => handle_glyph(opts),
-        SubCommand::Raster { .. } => handle_raster(opts),
+        SubCommand::Raster { .. } => raster::handle_raster(opts),
         SubCommand::Clean => handle_clean(opts),
     };
 
@@ -343,20 +343,6 @@ fn handle_glyph(opts: Opt) -> Result<()> {
     Ok(())
 }
 
-fn handle_raster(opts: Opt) -> Result<()> {
-    let (loc, scale, ch) = match opts.subcmd.clone() {
-        SubCommand::Raster { loc, scale, ch } => (loc, scale, ch),
-        _ => unreachable!(),
-    };
-
-    let mut fontfile = fonts::FontFile::new(loc, 0, scale)?;
-    fontfile.parse()?;
-
-    fontfile.rasterize_char(ch)?;
-
-    Ok(())
-}
-
 fn handle_clean(_opts: Opt) -> Result<()> {
     remove_dirs()
 }
@@ -390,8 +376,8 @@ fn make_dirs() -> Result<()> {
 
     for d in parents.into_iter() {
         match fs::create_dir_all(&d) {
-            Ok(()) => println!("creating dir {:?}", d),
-            Err(err) => println!("error creating dir {:?} {}", d, err),
+            Ok(()) => info!("creating dir {:?}", d),
+            Err(err) => error!("error creating dir {:?} {}", d, err),
         }
     }
 

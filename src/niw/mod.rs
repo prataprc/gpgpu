@@ -53,16 +53,62 @@ mod events_log;
 mod pretty;
 mod single_window;
 
-#[allow(unused_imports)]
-use std::path::PathBuf;
+pub use events_log::{to_event_name, EventsLog};
+pub use single_window::{Handler, SingleWindow};
+
 #[allow(unused_imports)]
 use winit::{
-    dpi::{PhysicalPosition, PhysicalSize},
+    dpi::{LogicalSize, PhysicalPosition, PhysicalSize},
     event::{
         DeviceEvent, Event, KeyboardInput, ModifiersState, StartCause, Touch, WindowEvent,
     },
+    event_loop::EventLoop,
     window::Theme,
 };
 
-pub use events_log::{to_event_name, EventsLog};
-pub use single_window::{Handler, SingleWindow};
+#[allow(unused_imports)]
+use std::path::PathBuf;
+use std::{fmt, result};
+
+use crate::{Error, Result};
+
+pub struct Monitor {
+    pub name: String,
+    pub size: PhysicalSize<u32>,
+    pub scale_factor: f64,
+}
+
+impl fmt::Display for Monitor {
+    fn fmt(&self, f: &mut fmt::Formatter) -> result::Result<(), fmt::Error> {
+        write!(
+            f,
+            "MONITOR: {:?}, physical_size:{}x{} scale_factor:{}",
+            self.name, self.size.width, self.size.height, self.scale_factor
+        )
+    }
+}
+
+impl Monitor {
+    pub fn to_logical_size(&self) -> LogicalSize<u32> {
+        self.size.to_logical(self.scale_factor)
+    }
+}
+
+pub fn get_monitor_info() -> Result<Monitor> {
+    let ev = EventLoop::new();
+    let mh = match ev.primary_monitor() {
+        Some(mh) => mh,
+        None => match ev.available_monitors().next() {
+            Some(mh) => mh.clone(),
+            None => err_at!(Invalid, msg: "Cannot find a monitor, check the cables")?,
+        },
+    };
+
+    let val = Monitor {
+        name: mh.name().unwrap_or("unnamed-monitor".to_string()),
+        size: mh.size(),
+        scale_factor: mh.scale_factor(),
+    };
+
+    Ok(val)
+}

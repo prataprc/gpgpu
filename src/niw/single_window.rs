@@ -157,7 +157,6 @@ where
         let event_loop = EventLoop::<E>::with_user_event();
 
         info!("inner_size {:?}", attrs.inner_size);
-        println!("inner_size {:?}", attrs.inner_size);
 
         let window = {
             let mut wb = WindowBuilder::new();

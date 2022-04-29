@@ -117,3 +117,12 @@ pub use screen::Screen;
 pub use spinlock::Spinlock;
 pub use style::{Border, BorderStyle, Length, Style};
 pub use transforms::{Camera, Ortho, Perspective, Transforms};
+
+pub struct ViewPort {
+    pub x: f32,
+    pub y: f32,
+    pub w: f32,
+    pub h: f32,
+    pub min_depth: f32,
+    pub max_depth: f32,
+}

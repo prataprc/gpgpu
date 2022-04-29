@@ -63,7 +63,7 @@ impl Wireframe {
         let primitive = Primitive::Lines { vertices };
 
         let bind_group_layout = {
-            let entry = Transforms::to_bind_group_layout_entry();
+            let entry = Transforms::to_bind_group_layout_entry(0);
             let desc = wgpu::BindGroupLayoutDescriptor {
                 label: Some("widg/wireframe:bind-group-layout"),
                 entries: &[entry],

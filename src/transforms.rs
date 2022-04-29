@@ -236,9 +236,9 @@ impl Transforms {
         contents.to_vec()
     }
 
-    pub fn to_bind_group_layout_entry() -> wgpu::BindGroupLayoutEntry {
+    pub fn to_bind_group_layout_entry(binding: u32) -> wgpu::BindGroupLayoutEntry {
         wgpu::BindGroupLayoutEntry {
-            binding: 0,
+            binding,
             visibility: wgpu::ShaderStages::VERTEX,
             ty: wgpu::BindingType::Buffer {
                 ty: wgpu::BufferBindingType::Uniform,

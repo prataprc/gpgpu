@@ -1,32 +1,30 @@
 use bytemuck::{Pod, Zeroable};
 
-use crate::{widg, Result, Transforms};
+use crate::{widg, Result, Style, Transforms};
 
 pub struct Circle {
-    bg: wgpu::Color,
-    fg: wgpu::Color,
     fill: bool,
     radius: f32,
     center: [f32; 2],
+    style: Style,
     // wgpu buffers
     pipeline: wgpu::RenderPipeline,
     bind_group: wgpu::BindGroup,
     transform_buffer: wgpu::Buffer,
+    style_buffer: wgpu::Buffer,
     uniform_buffer: wgpu::Buffer,
 }
 
 #[repr(C)]
 #[derive(Default, Copy, Clone, Debug, Pod, Zeroable)]
 struct UniformBuffer {
-    bg: [f32; 4],
-    fg: [f32; 4],
     fill: u32,
     radius: f32,
     center: [f32; 2],
 }
 
 impl UniformBuffer {
-    const SIZE: usize = 16 + 16 + 4 + 4 + 8;
+    const SIZE: usize = 4 + 4 + 8;
 
     fn update_size(&mut self, size: wgpu::Extent3d) {
         let wgpu::Extent3d { width, height, .. } = size;
@@ -41,18 +39,6 @@ impl UniformBuffer {
 impl<'a> From<&'a Circle> for UniformBuffer {
     fn from(val: &'a Circle) -> Self {
         UniformBuffer {
-            bg: [
-                val.bg.r as f32,
-                val.bg.g as f32,
-                val.bg.b as f32,
-                val.bg.a as f32,
-            ],
-            fg: [
-                val.fg.r as f32,
-                val.fg.g as f32,
-                val.fg.b as f32,
-                val.fg.a as f32,
-            ],
             fill: if val.fill { 1 } else { 0 },
             radius: val.radius,
             center: val.center,
@@ -136,6 +122,7 @@ impl Circle {
         };
 
         let transform_buffer = Self::to_transform_buffer(device);
+        let style_buffer = Self::to_style_buffer(device);
         let uniform_buffer = Self::to_uniform_buffer(device);
 
         let bind_group = {
@@ -149,6 +136,10 @@ impl Circle {
                     },
                     wgpu::BindGroupEntry {
                         binding: 1,
+                        resource: style_buffer.as_entire_binding(),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 2,
                         resource: uniform_buffer.as_entire_binding(),
                     },
                 ],
@@ -156,31 +147,34 @@ impl Circle {
             device.create_bind_group(&desc)
         };
 
+        let mut style = Style::default();
+        style.bg = wgpu::Color::BLACK;
+        style.fg = wgpu::Color {
+            r: 1.0,
+            g: 1.0,
+            b: 1.0,
+            a: 1.0,
+        };
         Circle {
-            bg: wgpu::Color::BLACK,
-            fg: wgpu::Color {
-                r: 1.0,
-                g: 1.0,
-                b: 1.0,
-                a: 1.0,
-            },
             fill: true,
             radius,
             center,
+            style,
             pipeline,
             bind_group,
             transform_buffer,
+            style_buffer,
             uniform_buffer,
         }
     }
 
     pub fn set_fg(&mut self, fg: wgpu::Color) -> &mut Self {
-        self.fg = fg;
+        self.style.fg = fg;
         self
     }
 
     pub fn set_bg(&mut self, bg: wgpu::Color) -> &mut Self {
-        self.bg = bg;
+        self.style.bg = bg;
         self
     }
 
@@ -205,7 +199,12 @@ impl widg::Widget for Circle {
                 .queue
                 .write_buffer(&self.transform_buffer, 0, &content);
         }
-        // overwrite the transform mvp buffer.
+        // overwrite the style buffer
+        {
+            let content = self.style.to_bind_content();
+            context.queue.write_buffer(&self.style_buffer, 0, &content);
+        }
+        // overwrite the uniform buffer
         {
             let mut ub: UniformBuffer = self.into();
             ub.update_size(target.size);
@@ -254,27 +253,16 @@ impl Circle {
         device.create_buffer_init(&desc)
     }
 
-    fn to_bind_group_layout(device: &wgpu::Device) -> wgpu::BindGroupLayout {
-        use wgpu::ShaderStages;
+    fn to_style_buffer(device: &wgpu::Device) -> wgpu::Buffer {
+        use wgpu::{util::DeviceExt, BufferUsages};
 
-        let entry_0 = Transforms::to_bind_group_layout_entry();
-        let desc = wgpu::BindGroupLayoutDescriptor {
-            label: Some("widg/circle:bind-group-layout"),
-            entries: &[
-                entry_0,
-                wgpu::BindGroupLayoutEntry {
-                    binding: 1,
-                    visibility: ShaderStages::VERTEX | ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Uniform,
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
-                    },
-                    count: None,
-                },
-            ],
+        let content = Style::default().to_bind_content();
+        let desc = wgpu::util::BufferInitDescriptor {
+            label: Some("style-buffer"),
+            contents: &content,
+            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         };
-        device.create_bind_group_layout(&desc)
+        device.create_buffer_init(&desc)
     }
 
     fn to_uniform_buffer(device: &wgpu::Device) -> wgpu::Buffer {
@@ -303,6 +291,31 @@ impl Circle {
             usage: BufferUsages::VERTEX,
         };
         device.create_buffer_init(&desc)
+    }
+
+    fn to_bind_group_layout(device: &wgpu::Device) -> wgpu::BindGroupLayout {
+        use wgpu::ShaderStages;
+
+        let entry_0 = Transforms::to_bind_group_layout_entry(0);
+        let entry_1 = Style::to_bind_group_layout_entry(1);
+        let desc = wgpu::BindGroupLayoutDescriptor {
+            label: Some("widg/circle:bind-group-layout"),
+            entries: &[
+                entry_0,
+                entry_1,
+                wgpu::BindGroupLayoutEntry {
+                    binding: 2,
+                    visibility: ShaderStages::VERTEX | ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                },
+            ],
+        };
+        device.create_bind_group_layout(&desc)
     }
 }
 

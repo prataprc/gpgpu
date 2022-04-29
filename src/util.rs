@@ -1,7 +1,7 @@
 use log::error;
 use serde::de::DeserializeOwned;
 
-use std::{fmt, fs, path, str::FromStr};
+use std::{fmt, fs, path, str::FromStr, time};
 
 use crate::{Error, Result};
 
@@ -210,4 +210,40 @@ where
     }
 
     Ok(())
+}
+
+pub struct FrameRate {
+    next_frame: time::Instant,
+    start_time: time::Instant,
+    n_frames: u64,
+}
+
+impl FrameRate {
+    pub fn new() -> FrameRate {
+        let now = time::Instant::now();
+        FrameRate {
+            next_frame: now,
+            start_time: now,
+            n_frames: 0,
+        }
+    }
+
+    pub fn is_redraw(&self) -> bool {
+        time::Instant::now() > self.next_frame
+    }
+
+    pub fn next_frame_after(&mut self, micros: u64) {
+        self.next_frame = time::Instant::now() + time::Duration::from_micros(micros)
+    }
+
+    pub fn total(&self) -> u64 {
+        self.n_frames
+    }
+
+    pub fn rate(&self) -> u64 {
+        match self.start_time.elapsed().as_secs() {
+            secs if secs > 0 && self.n_frames > 0 => self.n_frames / secs,
+            _ => 0,
+        }
+    }
 }

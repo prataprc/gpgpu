@@ -214,27 +214,25 @@ impl widg::Widget for Circle {
                 .write_buffer(&self.uniform_buffer, 0, &content.to_vec());
         }
 
-        {
-            let mut render_pass = {
-                let desc = wgpu::RenderPassDescriptor {
-                    label: Some("widg/circle:render-pass"),
-                    color_attachments: &[wgpu::RenderPassColorAttachment {
-                        view: target.view,
-                        resolve_target: None,
-                        ops: wgpu::Operations {
-                            load: wgpu::LoadOp::Clear(widg::CLEAR_COLOR),
-                            store: true,
-                        },
-                    }],
-                    depth_stencil_attachment: None,
-                };
-                encoder.begin_render_pass(&desc)
+        let mut render_pass = {
+            let desc = wgpu::RenderPassDescriptor {
+                label: Some("widg/circle:render-pass"),
+                color_attachments: &[wgpu::RenderPassColorAttachment {
+                    view: target.view,
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(widg::CLEAR_COLOR),
+                        store: true,
+                    },
+                }],
+                depth_stencil_attachment: None,
             };
-            render_pass.set_pipeline(&self.pipeline);
-            render_pass.set_vertex_buffer(0, vertex_buffer.slice(..));
-            render_pass.set_bind_group(0, &self.bind_group, &[]);
-            render_pass.draw(0..6, 0..1);
-        }
+            encoder.begin_render_pass(&desc)
+        };
+        render_pass.set_pipeline(&self.pipeline);
+        render_pass.set_vertex_buffer(0, vertex_buffer.slice(..));
+        render_pass.set_bind_group(0, &self.bind_group, &[]);
+        render_pass.draw(0..6, 0..1);
 
         Ok(())
     }

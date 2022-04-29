@@ -24,6 +24,7 @@ impl widg::Widget for Clear {
             load: wgpu::LoadOp::Clear(self.bg),
             store: true,
         };
+
         let desc = wgpu::RenderPassDescriptor {
             label: Some("widgets/clear:render-pass"),
             color_attachments: &[wgpu::RenderPassColorAttachment {

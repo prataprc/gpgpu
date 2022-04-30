@@ -96,26 +96,25 @@ pub type Result<T> = result::Result<T, Error>;
 
 mod backends;
 mod config;
-mod render;
+//mod render;
 mod save;
 mod screen;
 mod spinlock;
-mod style;
 mod transforms;
 
+pub mod dom;
 pub mod fonts;
 pub mod niw;
 pub mod pretty;
 pub mod util;
-pub mod widg;
+// pub mod widg;
 
 pub use backends::{backend, backend_to_string};
 pub use config::{Config, ConfigAdapter, ConfigWinit};
-pub use render::Render;
+//pub use render::Render;
 pub use save::SaveFile;
 pub use screen::Screen;
 pub use spinlock::Spinlock;
-pub use style::{Border, BorderStyle, Length, Style};
 pub use transforms::{Camera, Ortho, Perspective, Transforms};
 
 pub struct ViewPort {

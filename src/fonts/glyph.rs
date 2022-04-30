@@ -1,4 +1,5 @@
 use colored::Colorize;
+use log::warn;
 use prettytable::{cell, row};
 
 use std::{fmt, result};
@@ -73,6 +74,26 @@ impl<'a> Glyph<'a> {
         let mut outline = fonts::Outline::default();
         self.face.outline_glyph(self.id, &mut outline)?;
         Some(outline)
+    }
+
+    pub fn check_limits(&self) -> bool {
+        match self.bounding_box() {
+            Some(bb) if bb.x_min >= bb.x_max => {
+                warn!(
+                    "Bounding box for {} is x_min:{} x_max:{}",
+                    self.codepoint, bb.x_min, bb.x_max
+                );
+                false
+            }
+            Some(bb) if bb.y_min >= bb.y_max => {
+                warn!(
+                    "Bounding box for {} is y_min:{} y_max:{}",
+                    self.codepoint, bb.y_min, bb.y_max
+                );
+                false
+            }
+            Some(_) | None => true,
+        }
     }
 }
 

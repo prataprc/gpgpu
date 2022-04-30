@@ -1,5 +1,5 @@
 use winit::{window::Window, dpi};
-use log::{error, debug, warn};
+use log::{error, debug, warn, info};
 
 use std::{sync::Arc};
 
@@ -23,7 +23,6 @@ impl Screen {
     /// * `config` is configuration parameter for working with this crate.
     pub async fn new(name: String, win: &Window, config: Config) -> Result<Screen> {
         let size: dpi::PhysicalSize<u32> = win.inner_size().into();
-        debug!("Screen at {}x{}", size.width, size.height);
 
         let instance = wgpu::Instance::new(wgpu::Backends::all());
         let surface = unsafe { instance.create_surface(&win) };
@@ -34,6 +33,12 @@ impl Screen {
                 None => err_at!(Wgpu, msg: "can't find matching adapter")?,
             }
         };
+        let surface_format = surface.get_preferred_format(&adapter).unwrap();
+
+        info!(
+            "Surface created with size {}x{} format {:?}",
+            size.width, size.height, surface_format,
+        );
 
         let desc = wgpu::DeviceDescriptor {
             label: Some(&name),
@@ -48,7 +53,7 @@ impl Screen {
 
         let surface_config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-            format: surface.get_preferred_format(&adapter).unwrap(),
+            format: surface_format,
             width: size.width,
             height: size.height,
             present_mode: config.present_mode,
@@ -135,7 +140,29 @@ impl Screen {
         }
     }
 
-    pub fn like_surface_texture(&self, ssaa: f32, format: wgpu::TextureFormat) -> wgpu::Texture {
+    // width / height of the surface
+    pub fn to_aspect_ratio(&self) -> f32 {
+        let sc = self.to_surface_config();
+        (sc.width as f32) / (sc.height as f32)
+    }
+
+    pub fn to_texture_format(&self) -> wgpu::TextureFormat {
+        self.to_surface_config().format
+    }
+
+    pub fn to_physical_size(&self) -> dpi::PhysicalSize<u32> {
+        let sc = self.to_surface_config();
+        dpi::PhysicalSize {
+            width: sc.width,
+            height: sc.height,
+        }
+    }
+
+    pub fn like_surface_texture(
+        &self,
+        ssaa: f32,
+        format: wgpu::TextureFormat
+    ) -> wgpu::Texture {
         use wgpu::TextureUsages;
 
         let desc = wgpu::TextureDescriptor {
@@ -154,23 +181,6 @@ impl Screen {
         self.device.create_texture(&desc)
     }
 
-    // width / height of the surface
-    pub fn to_aspect_ratio(&self) -> f32 {
-        let sc = self.to_surface_config();
-        (sc.width as f32) / (sc.height as f32)
-    }
-
-    pub fn to_texture_format(&self) -> wgpu::TextureFormat {
-        self.to_surface_config().format
-    }
-
-    pub fn to_physical_size(&self) -> dpi::PhysicalSize<u32> {
-        let sc = self.to_surface_config();
-        dpi::PhysicalSize {
-            width: sc.width,
-            height: sc.height,
-        }
-    }
 }
 
 fn uncaptured_error_handler(err: wgpu::Error) {

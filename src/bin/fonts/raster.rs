@@ -1,5 +1,6 @@
 use log::info;
 use winit::{
+    dpi,
     event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent},
     event_loop::ControlFlow,
     window::Window,
@@ -27,6 +28,12 @@ struct State {
 }
 
 impl State {
+    fn resize(&mut self, size: dpi::PhysicalSize<u32>, scale_factor: Option<f64>) {
+        let screen = self.render.as_screen();
+        screen.resize(size, scale_factor);
+        self.color_attach = Arc::new(screen.like_surface_texture(SSAA, FORMAT));
+    }
+
     fn redraw(&mut self) {
         if !self.frames.is_redraw() {
             return;
@@ -158,7 +165,7 @@ fn on_win_resized(
     match event {
         Event::WindowEvent { event, .. } => match event {
             WindowEvent::Resized(size) => {
-                state.render.as_screen().resize(*size, None);
+                state.resize(*size, None);
             }
             _ => unreachable!(),
         },
@@ -179,9 +186,7 @@ fn on_win_scale_factor_changed(
                 new_inner_size,
                 scale_factor,
             } => {
-                let screen = state.render.as_screen();
-                screen.resize(**new_inner_size, Some(*scale_factor));
-                state.color_attach = Arc::new(screen.like_surface_texture(SSAA, FORMAT));
+                state.resize(**new_inner_size, Some(*scale_factor));
             }
             _ => unreachable!(),
         },

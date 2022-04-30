@@ -1,18 +1,22 @@
 use bytemuck::{Pod, Zeroable};
 
-use crate::{widg, Result, Style, Transforms};
+use crate::{dom, widg, Result, Transforms};
 
 pub struct Circle {
-    fill: bool,
-    radius: f32,
-    center: [f32; 2],
-    style: Style,
+    state: State,
     // wgpu buffers
     pipeline: wgpu::RenderPipeline,
     bind_group: wgpu::BindGroup,
     transform_buffer: wgpu::Buffer,
     style_buffer: wgpu::Buffer,
     uniform_buffer: wgpu::Buffer,
+}
+
+struct State {
+    fill: bool,
+    radius: f32,
+    center: [f32; 2],
+    style: dom::Style,
 }
 
 #[repr(C)]
@@ -39,9 +43,9 @@ impl UniformBuffer {
 impl<'a> From<&'a Circle> for UniformBuffer {
     fn from(val: &'a Circle) -> Self {
         UniformBuffer {
-            fill: if val.fill { 1 } else { 0 },
-            radius: val.radius,
-            center: val.center,
+            fill: if val.state.fill { 1 } else { 0 },
+            radius: val.state.radius,
+            center: val.state.center,
         }
     }
 }
@@ -147,19 +151,14 @@ impl Circle {
             device.create_bind_group(&desc)
         };
 
-        let mut style = Style::default();
-        style.bg = wgpu::Color::BLACK;
-        style.fg = wgpu::Color {
-            r: 1.0,
-            g: 1.0,
-            b: 1.0,
-            a: 1.0,
-        };
+        let style = dom::Style::default();
         Circle {
-            fill: true,
-            radius,
-            center,
-            style,
+            state: State {
+                fill: true,
+                radius,
+                center,
+                style,
+            },
             pipeline,
             bind_group,
             transform_buffer,
@@ -169,17 +168,17 @@ impl Circle {
     }
 
     pub fn set_fg(&mut self, fg: wgpu::Color) -> &mut Self {
-        self.style.fg = fg;
+        self.state.style.fg = Some(fg);
         self
     }
 
     pub fn set_bg(&mut self, bg: wgpu::Color) -> &mut Self {
-        self.style.bg = bg;
+        self.state.style.bg = Some(bg);
         self
     }
 
     pub fn set_fill(&mut self, fill: bool) -> &mut Self {
-        self.fill = fill;
+        self.state.fill = fill;
         self
     }
 }
@@ -201,7 +200,7 @@ impl widg::Widget for Circle {
         }
         // overwrite the style buffer
         {
-            let content = self.style.to_bind_content();
+            let content = self.state.style.to_bind_content();
             context.queue.write_buffer(&self.style_buffer, 0, &content);
         }
         // overwrite the uniform buffer
@@ -254,7 +253,7 @@ impl Circle {
     fn to_style_buffer(device: &wgpu::Device) -> wgpu::Buffer {
         use wgpu::{util::DeviceExt, BufferUsages};
 
-        let content = Style::default().to_bind_content();
+        let content = dom::Style::default().to_bind_content();
         let desc = wgpu::util::BufferInitDescriptor {
             label: Some("style-buffer"),
             contents: &content,
@@ -295,7 +294,7 @@ impl Circle {
         use wgpu::ShaderStages;
 
         let entry_0 = Transforms::to_bind_group_layout_entry(0);
-        let entry_1 = Style::to_bind_group_layout_entry(1);
+        let entry_1 = dom::Style::to_bind_group_layout_entry(1);
         let desc = wgpu::BindGroupLayoutDescriptor {
             label: Some("widg/circle:bind-group-layout"),
             entries: &[

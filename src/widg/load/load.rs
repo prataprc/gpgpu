@@ -9,7 +9,6 @@ pub struct Load {
 impl Load {
     pub fn new(
         device: &wgpu::Device,
-        source: wgpu::TextureView,
         target_format: wgpu::TextureFormat,
     ) -> Result<Load> {
         let bind_group_layout = Self::to_bind_group_layout(device);
@@ -79,7 +78,7 @@ impl Load {
         };
 
         let val = Load {
-            source: Some(source),
+            source: None,
             bind_group_layout,
             pipeline,
         };

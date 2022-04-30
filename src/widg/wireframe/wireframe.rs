@@ -3,15 +3,18 @@ use cgmath::{Matrix4, Point3, Vector4};
 
 use std::{fmt, path, result};
 
-use crate::{widg, Error, Result, Transforms};
+use crate::{dom, widg, Error, Result, Transforms};
 
 pub struct Wireframe {
-    bg: wgpu::Color,
-    primitive: Primitive,
-    // wgpu cache objects
+    state: State,
     pipeline: wgpu::RenderPipeline,
     bind_group: wgpu::BindGroup,
     transform_buffer: wgpu::Buffer,
+}
+
+struct State {
+    style: dom::Style,
+    primitive: Primitive,
 }
 
 enum Primitive {
@@ -20,7 +23,7 @@ enum Primitive {
 
 impl fmt::Display for Wireframe {
     fn fmt(&self, f: &mut fmt::Formatter) -> result::Result<(), fmt::Error> {
-        match &self.primitive {
+        match &self.state.primitive {
             Primitive::Lines { vertices } => {
                 for (i, v) in vertices.iter().enumerate() {
                     write!(f, "({:4})=> {:?}\n", i, v.position)?;
@@ -149,10 +152,10 @@ impl Wireframe {
             device.create_bind_group(&desc)
         };
 
+        let style = dom::Style::default();
         let val = Wireframe {
-            bg: wgpu::Color::BLACK,
+            state: State { style, primitive },
             pipeline,
-            primitive,
             transform_buffer,
             bind_group,
         };
@@ -185,7 +188,7 @@ impl widg::Widget for Wireframe {
                     view: target.view,
                     resolve_target: None,
                     ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(self.bg),
+                        load: wgpu::LoadOp::Clear(self.state.style.bg),
                         store: true,
                     },
                 }],
@@ -217,7 +220,7 @@ impl Wireframe {
     fn to_vertex_buffer(&self, device: &wgpu::Device) -> wgpu::Buffer {
         use wgpu::util::DeviceExt;
 
-        match &self.primitive {
+        match &self.state.primitive {
             Primitive::Lines { vertices } => {
                 let contents: &[u8] = bytemuck::cast_slice(vertices);
                 let desc = wgpu::util::BufferInitDescriptor {
@@ -233,19 +236,19 @@ impl Wireframe {
 
 impl Wireframe {
     pub fn num_vertices(&self) -> usize {
-        match &self.primitive {
+        match &self.state.primitive {
             Primitive::Lines { vertices } => vertices.len(),
         }
     }
 
     pub fn as_vertices(&self) -> &[Vertex] {
-        match &self.primitive {
+        match &self.state.primitive {
             Primitive::Lines { vertices } => vertices,
         }
     }
 
     pub fn transform_mut(&mut self, mat: Matrix4<f32>) -> &mut Self {
-        match &mut self.primitive {
+        match &mut self.state.primitive {
             Primitive::Lines { vertices } => vertices
                 .iter_mut()
                 .for_each(|v| v.position = (mat * Vector4::from(v.position)).into()),

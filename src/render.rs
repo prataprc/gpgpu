@@ -81,6 +81,8 @@ fn render_loop(screen: Arc<Screen>, rx: mpsc::Receiver<Request>) -> Result<()> {
     let mut resp_txs: Vec<mpsc::Sender<bool>> = vec![];
 
     let mut surface_texture: Option<wgpu::SurfaceTexture> = None;
+    let surface_format = screen.to_surface_config().format;
+    let mut load = Load::new(&screen.device, surface_format)?;
 
     debug!("starting the render_loop ..");
 
@@ -117,12 +119,11 @@ fn render_loop(screen: Arc<Screen>, rx: mpsc::Receiver<Request>) -> Result<()> {
             };
             screen.device.create_command_encoder(&desc)
         };
-        let load = {
+        {
             let frame_view = frame
                 .frame
                 .create_view(&wgpu::TextureViewDescriptor::default());
-            let format = screen.to_surface_config().format;
-            Load::new(&screen.device, frame_view, format)?
+            load.set_source(frame_view)
         };
 
         let context = widg::Context {

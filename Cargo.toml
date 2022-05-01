@@ -45,6 +45,7 @@ dirs = "4.0.0"
 gif = "0.11.3"
 
 ttf-parser = "0.15.0"
+stretch = "0.3.2"
 unicode-blocks = "0.1.4"
 fontdue = "0.7.2"
 image = "0.24.1"

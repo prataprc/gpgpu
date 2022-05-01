@@ -3,7 +3,7 @@ use log::{error, debug, warn, info};
 
 use std::{sync::Arc};
 
-use crate::{Config, Error, Result, spinlock::Spinlock};
+use crate::{Config, Error, Result, spinlock::Spinlock, };
 
 pub struct Screen {
     pub name: String,
@@ -180,7 +180,6 @@ impl Screen {
         };
         self.device.create_texture(&desc)
     }
-
 }
 
 fn uncaptured_error_handler(err: wgpu::Error) {

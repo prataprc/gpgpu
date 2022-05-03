@@ -10,7 +10,7 @@ struct Style {
     bg: vec4<f32>;
 };
 
-struct Params {
+struct Attributes {
     center: vec2<f32>;
     radius: f32;
     fill: u32;
@@ -27,7 +27,7 @@ struct VertexOutput {
 
 [[binding(0), group(0)]] var<uniform> transforms: Transforms;
 [[binding(1), group(0)]] var<uniform> style: Style;
-[[binding(2), group(0)]] var<uniform> params: Params;
+[[binding(2), group(0)]] var<uniform> attrs: Attributes;
 
 [[stage(vertex)]]
 fn vs_main(in: VertexInput) -> VertexOutput {
@@ -38,38 +38,38 @@ fn vs_main(in: VertexInput) -> VertexOutput {
 
 [[stage(fragment)]]
 fn fs_main(in: VertexOutput) -> [[location(0)]] vec4<f32> {
-    let x: f32 = params.center.x - in.clip_position.x;
-    let y: f32 = in.clip_position.y - params.center.y;
+    let x: f32 = attrs.center.x - in.clip_position.x;
+    let y: f32 = in.clip_position.y - attrs.center.y;
     let s: f32 = sqrt((x*x) + (y*y));
 
-    if (params.fill == u32(1)) {
-        if (s == params.radius) {
+    if (attrs.fill == u32(1)) {
+        if (s == attrs.radius) {
             return style.fg;
-        } else if (ceil(s) == params.radius) {
-            var fg = style.fg * (1.0 - (params.radius - s));
+        } else if (ceil(s) == attrs.radius) {
+            var fg = style.fg * (1.0 - (attrs.radius - s));
             fg.w = 1.0;
             return fg;
-        } else if (floor(s) == params.radius) {
-            var fg = style.fg * (1.0 - (s - params.radius));
+        } else if (floor(s) == attrs.radius) {
+            var fg = style.fg * (1.0 - (s - attrs.radius));
             fg.w = 1.0;
             return fg;
-        } else if (s < params.radius) {
+        } else if (s < attrs.radius) {
             return style.fg;
         } else {
             return vec4<f32>(0.0, 0.0, 0.0, 0.0);
         }
     } else {
-        if (s == params.radius) {
+        if (s == attrs.radius) {
             return style.fg;
-        } else if (ceil(s) == params.radius) {
-            var fg = style.fg * (1.0 - (params.radius - s));
+        } else if (ceil(s) == attrs.radius) {
+            var fg = style.fg * (1.0 - (attrs.radius - s));
             fg.w = 1.0;
             return fg;
-        } else if (floor(s) == params.radius) {
-            var fg = style.fg * (1.0 - (s - params.radius));
+        } else if (floor(s) == attrs.radius) {
+            var fg = style.fg * (1.0 - (s - attrs.radius));
             fg.w = 1.0;
             return fg;
-        } else if (s < params.radius) {
+        } else if (s < attrs.radius) {
             return style.bg;
         } else {
             return vec4<f32>(0.0, 0.0, 0.0, 0.0);

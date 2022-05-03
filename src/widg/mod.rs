@@ -1,7 +1,7 @@
 pub mod circle;
 pub mod clear;
 pub mod load;
-// mod wireframe;
+pub mod wireframe;
 
 use crate::{Result, Transforms};
 

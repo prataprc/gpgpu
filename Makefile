@@ -19,8 +19,8 @@ run-examples:
 	cargo run --example points
 	cargo run --example triangle
 	cargo run --example wirecube -- --vertices examples/wirecube/cube.txt --rotate 1,1,1
-	cargo run --example circle -- --radius .4
-	cargo run --example circle -- --radius .1 --fill
+	cargo run --example circle -- --radius 200
+	cargo run --example circle -- --radius 300 --fill
 
 clean:
 	rm -f heaptrack* circle.png wirecube.gif out core

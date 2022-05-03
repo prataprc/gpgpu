@@ -241,3 +241,46 @@ pub struct Size {
     pub width: f32,
     pub height: f32,
 }
+
+#[derive(Clone, Copy, Debug)]
+pub struct AttrAttr<T>
+where
+    T: Clone + Transform2D,
+{
+    attrs: T,
+    computed: T,
+}
+
+impl<T> AttrAttr<T>
+where
+    T: Clone + Transform2D,
+{
+    pub fn new(attrs: T) -> Self {
+        AttrAttr {
+            attrs: attrs.clone(),
+            computed: attrs,
+        }
+    }
+
+    pub fn translate(&mut self, offset: Location) {
+        let mut attrs = self.attrs.clone();
+        attrs.translate(offset);
+        self.computed = attrs;
+    }
+
+    pub fn scale(&mut self, factor: f32) {
+        let mut attrs = self.attrs.clone();
+        attrs.scale(factor);
+        self.computed = attrs;
+    }
+
+    pub fn to_computed_attrs(&self) -> T {
+        self.computed.clone()
+    }
+}
+
+pub trait Transform2D {
+    fn translate(&mut self, offset: Location);
+
+    fn scale(&mut self, factor: f32);
+}

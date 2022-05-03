@@ -12,7 +12,7 @@ use std::{sync::Arc, time};
 use gpgpu::{
     niw,
     widg::{self, circle, Widget},
-    Config, Location, Perspective, Render, SaveFile, Screen, Transforms,
+    Config, Location, Perspective, Render, SaveFile, Screen, Transform2D, Transforms,
 };
 
 const SSAA: f32 = 2.0;
@@ -156,12 +156,13 @@ fn main() {
             far: 100.0,
         };
         let circle = {
-            let params = circle::Params {
+            let mut attrs = circle::Attributes {
                 center,
                 radius: opts.radius,
                 fill: opts.fill,
             };
-            circle::Circle::new(params.scale(SSAA), &screen.device, FORMAT)
+            attrs.scale(SSAA);
+            circle::Circle::new(attrs, &screen.device, FORMAT)
         };
 
         let color_texture = Arc::new(screen.like_surface_texture(SSAA, Some(FORMAT)));

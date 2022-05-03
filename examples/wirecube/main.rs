@@ -11,7 +11,7 @@ use std::{fs, path, sync::Arc, time};
 
 use gpgpu::{
     niw,
-    widg::{self, Widget, Wireframe},
+    widg::{self, wireframe, Widget},
     Config, Perspective, Render, SaveFile, Screen, Transforms,
 };
 
@@ -39,7 +39,7 @@ struct State {
     up: Vector3<f32>,
     p: Perspective<Deg<f32>>,
     transforms: Transforms,
-    wireframe: Wireframe,
+    wireframe: wireframe::Wireframe,
     next_frame: time::Instant,
     color_texture: Arc<wgpu::Texture>,
     save_file: Option<SaveFile>,
@@ -150,10 +150,10 @@ fn main() {
         };
         let wireframe = {
             let data = fs::read(opts.vertices.clone()).unwrap();
-            Wireframe::from_bytes(&data, FORMAT, &screen.device).unwrap()
+            wireframe::Wireframe::from_bytes(&data, FORMAT, &screen.device).unwrap()
         };
 
-        let color_texture = Arc::new(screen.like_surface_texture(SSAA, FORMAT));
+        let color_texture = Arc::new(screen.like_surface_texture(SSAA, Some(FORMAT)));
 
         let mut render = Render::new(screen);
         render.start();
@@ -259,7 +259,8 @@ fn on_win_scale_factor_changed(
             } => {
                 let screen = state.render.as_screen();
                 screen.resize(**new_inner_size, Some(*scale_factor));
-                state.color_texture = Arc::new(screen.like_surface_texture(SSAA, FORMAT));
+                state.color_texture =
+                    Arc::new(screen.like_surface_texture(SSAA, Some(FORMAT)));
             }
             _ => unreachable!(),
         },

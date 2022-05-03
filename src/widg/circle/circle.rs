@@ -1,10 +1,11 @@
 use bytemuck::{Pod, Zeroable};
 
-use crate::{dom, widg, BoxLayout, BoxVertex, Location, Result, Transforms};
+use crate::{
+    dom, widg, AttrAttr, BoxLayout, BoxVertex, Location, Result, Transform2D, Transforms,
+};
 
 pub struct Circle {
-    params: Params,
-    computed_params: Params,
+    attrs: AttrAttr<Attributes>,
     style: dom::StyleStyle,
     // wgpu items
     pipeline: wgpu::RenderPipeline,
@@ -20,35 +21,28 @@ impl AsMut<dom::StyleStyle> for Circle {
     }
 }
 
-/// Parameters are in pixels.
+/// measurements are in pixels.
 #[derive(Copy, Clone, Debug)]
-pub struct Params {
+pub struct Attributes {
     pub center: Location,
     pub radius: f32,
     pub fill: bool,
 }
 
-impl Params {
-    pub fn translate(&self, offset: Location) -> Params {
-        let center = Location {
+impl Transform2D for Attributes {
+    fn translate(&mut self, offset: Location) {
+        self.center = Location {
             x: self.center.x + offset.x,
             y: self.center.y + offset.y,
         };
-        Params {
-            center,
-            ..self.clone()
-        }
     }
 
-    pub fn scale(&self, ratio: f32) -> Params {
-        Params {
-            center: Location {
-                x: self.center.x * ratio,
-                y: self.center.y * ratio,
-            },
-            radius: self.radius * ratio,
-            ..self.clone()
-        }
+    fn scale(&mut self, factor: f32) {
+        self.center = Location {
+            x: self.center.x * factor,
+            y: self.center.y * factor,
+        };
+        self.radius = self.radius * factor;
     }
 }
 
@@ -60,8 +54,8 @@ struct UniformBuffer {
     fill: u32,
 }
 
-impl From<Params> for UniformBuffer {
-    fn from(val: Params) -> UniformBuffer {
+impl From<Attributes> for UniformBuffer {
+    fn from(val: Attributes) -> UniformBuffer {
         UniformBuffer {
             center: [val.center.x as f32, val.center.y as f32],
             radius: val.radius as f32,
@@ -76,7 +70,7 @@ impl UniformBuffer {
 
 impl Circle {
     pub fn new(
-        params: Params,
+        attrs: Attributes,
         device: &wgpu::Device,
         target_format: wgpu::TextureFormat,
     ) -> Circle {
@@ -181,8 +175,7 @@ impl Circle {
         };
 
         Circle {
-            params: params.clone(),
-            computed_params: params,
+            attrs: AttrAttr::new(attrs),
             style: dom::StyleStyle::new(style),
             // wgpu items
             pipeline,
@@ -194,19 +187,12 @@ impl Circle {
     }
 
     pub fn translate(&mut self, offset: Location) -> &mut Self {
-        self.computed_params = Params {
-            center: Location {
-                x: self.params.center.x + offset.x,
-                y: self.params.center.y + offset.y,
-            },
-            ..self.params.clone()
-        };
+        self.attrs.translate(offset);
         self
     }
 
-    pub fn scale(&mut self, ratio: f32) -> &mut Self {
-        self.computed_params = self.params.scale(ratio);
-        self.style.scale(ratio);
+    pub fn scale(&mut self, factor: f32) -> &mut Self {
+        self.attrs.scale(factor);
         self
     }
 }
@@ -233,7 +219,7 @@ impl widg::Widget for Circle {
         }
         // overwrite the uniform buffer
         {
-            let ub: UniformBuffer = self.computed_params.clone().into();
+            let ub: UniformBuffer = self.attrs.to_computed_attrs().into();
             let content: [u8; UniformBuffer::SIZE] = bytemuck::cast(ub);
             context
                 .queue
@@ -314,12 +300,12 @@ impl Circle {
         use wgpu::{util::DeviceExt, BufferUsages};
 
         let cbox = {
-            let cparams = self.computed_params.clone();
+            let attrs = self.attrs.to_computed_attrs();
             BoxLayout {
-                x: (cparams.center.x - cparams.radius) as f32,
-                y: (cparams.center.y - cparams.radius) as f32,
-                w: (cparams.radius * 2.0) as f32,
-                h: (cparams.radius * 2.0) as f32,
+                x: (attrs.center.x - attrs.radius) as f32,
+                y: (attrs.center.y - attrs.radius) as f32,
+                w: (attrs.radius * 2.0) as f32,
+                h: (attrs.radius * 2.0) as f32,
             }
         };
 

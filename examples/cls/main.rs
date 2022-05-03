@@ -9,7 +9,7 @@ use std::sync::Arc;
 
 use gpgpu::{
     niw, util,
-    widg::{self, Clear, Widget},
+    widg::{self, clear, Widget},
     Config, Render, Screen, Transforms,
 };
 
@@ -51,7 +51,7 @@ impl State {
             format: screen.to_texture_format(),
             view: &view,
         };
-        let clear = Clear::new(self.color);
+        let clear = clear::Clear::new(self.color);
         clear.render(&context, &mut encoder, &target).unwrap();
         screen.queue.submit(vec![encoder.finish()]);
 
@@ -90,7 +90,7 @@ fn main() {
         .unwrap();
 
         let color_texture =
-            Arc::new(screen.like_surface_texture(SSAA, screen.to_texture_format()));
+            Arc::new(screen.like_surface_texture(SSAA, Some(screen.to_texture_format())));
 
         let mut render = Render::new(screen);
         render.start();
@@ -158,7 +158,7 @@ fn on_win_scale_factor_changed(
                 let screen = state.render.as_screen();
                 screen.resize(**new_inner_size, Some(*scale_factor));
                 state.color_texture = Arc::new(
-                    screen.like_surface_texture(SSAA, screen.to_texture_format()),
+                    screen.like_surface_texture(SSAA, Some(screen.to_texture_format())),
                 );
             }
             _ => unreachable!(),

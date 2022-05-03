@@ -11,8 +11,8 @@ use std::{sync::Arc, time};
 
 use gpgpu::{
     niw,
-    widg::{self, Circle, Widget},
-    Config, Perspective, Render, SaveFile, Screen, Transforms,
+    widg::{self, circle, Widget},
+    Config, Location, Perspective, Render, SaveFile, Screen, Transforms,
 };
 
 const SSAA: f32 = 2.0;
@@ -45,7 +45,7 @@ struct State {
     up: Vector3<f32>,
     p: Perspective<Deg<f32>>,
     transforms: Transforms,
-    circle: Circle,
+    circle: circle::Circle,
     next_frame: time::Instant,
     color_texture: Arc<wgpu::Texture>,
     save_file: Option<SaveFile>,
@@ -122,13 +122,17 @@ fn main() {
         [x, y, z] => vec![*x, *y, *z],
         [x, y, z, ..] => vec![*x, *y, *z],
     };
-    let center = [opts.center[0], opts.center[1]];
+    let center = Location {
+        x: opts.center[0],
+        y: opts.center[1],
+    };
 
     let name = "example-triangle".to_string();
     let config = Config::default();
 
     let mut swin = {
         let wattrs = config.to_window_attributes().unwrap();
+        info!("winit::Window size {:?}", wattrs.inner_size);
         niw::SingleWindow::<State, ()>::from_config(wattrs).unwrap()
     };
 
@@ -151,10 +155,16 @@ fn main() {
             near: 0.1,
             far: 100.0,
         };
-        let mut circle = Circle::new(&screen.device, opts.radius, center, FORMAT);
-        circle.set_fill(opts.fill);
+        let circle = {
+            let params = circle::Params {
+                center,
+                radius: opts.radius,
+                fill: opts.fill,
+            };
+            circle::Circle::new(params.scale(SSAA), &screen.device, FORMAT)
+        };
 
-        let color_texture = Arc::new(screen.like_surface_texture(SSAA, FORMAT));
+        let color_texture = Arc::new(screen.like_surface_texture(SSAA, Some(FORMAT)));
 
         let mut render = Render::new(screen);
         render.start();
@@ -238,7 +248,10 @@ fn on_win_scale_factor_changed(
                 let screen = state.render.as_screen();
                 screen.resize(**new_inner_size, Some(*scale_factor));
 
-                state.color_texture = Arc::new(screen.like_surface_texture(SSAA, FORMAT));
+                state.circle.scale(*scale_factor as f32);
+
+                state.color_texture =
+                    Arc::new(screen.like_surface_texture(SSAA, Some(FORMAT)));
                 let extent = screen.to_extent3d(SSAA as u32);
 
                 state.save_file = match state.opts.save {

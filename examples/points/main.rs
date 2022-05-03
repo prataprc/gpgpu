@@ -59,7 +59,7 @@ fn main() {
         .unwrap();
 
         let color_texture =
-            Arc::new(screen.like_surface_texture(SSAA, screen.to_texture_format()));
+            Arc::new(screen.like_surface_texture(SSAA, Some(screen.to_texture_format())));
 
         let mut render = Render::new(screen);
         render.start();
@@ -194,7 +194,7 @@ fn on_win_scale_factor_changed(
                 let screen = state.render.as_screen();
                 screen.resize(**new_inner_size, Some(*scale_factor));
                 state.color_texture = Arc::new(
-                    screen.like_surface_texture(SSAA, screen.to_texture_format()),
+                    screen.like_surface_texture(SSAA, Some(screen.to_texture_format())),
                 );
             }
             _ => unreachable!(),

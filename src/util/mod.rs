@@ -1,10 +1,13 @@
+mod spinlock;
+
+pub use spinlock::Spinlock;
+
 use log::error;
 use serde::de::DeserializeOwned;
 
 use std::{fmt, fs, path, str::FromStr, time};
 
 use crate::{Error, Result};
-
 macro_rules! format_bool {
     ($val:expr) => {
         if $val {

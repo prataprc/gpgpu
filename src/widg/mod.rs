@@ -1,12 +1,7 @@
-mod circle;
-mod clear;
-mod load;
-mod wireframe;
-
-pub use circle::Circle;
-pub use clear::Clear;
-pub use load::Load;
-pub use wireframe::Wireframe;
+pub mod circle;
+pub mod clear;
+pub mod load;
+// mod wireframe;
 
 use crate::{Result, Transforms};
 

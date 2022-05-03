@@ -1,11 +1,13 @@
 mod style;
 mod win;
 
-pub use style::Style;
+pub use style::{
+    to_rgba8unorm_color, Border, Style, StyleBorder, StyleStyle, DEFAULT_FONT_SIZE,
+};
 
 use std::ops::{Deref, DerefMut};
 
-use crate::{Error, Result};
+use crate::{BoxLayout, Error, Result};
 
 macro_rules! derive_dom_attributes {
     ($ty:ty, $state:ident) => {
@@ -47,31 +49,6 @@ macro_rules! derive_dom_attributes {
     };
 }
 pub(crate) use derive_dom_attributes;
-
-#[derive(Default)]
-pub struct BoxLayout {
-    pub x: f32,
-    pub y: f32,
-    pub w: f32,
-    pub h: f32,
-}
-
-impl From<stretch::result::Layout> for BoxLayout {
-    fn from(val: stretch::result::Layout) -> BoxLayout {
-        let stretch::result::Layout {
-            size: stretch::geometry::Size { width, height },
-            location: stretch::geometry::Point { x, y },
-            ..
-        } = val;
-
-        BoxLayout {
-            x,
-            y,
-            w: width,
-            h: height,
-        }
-    }
-}
 
 pub struct State<T> {
     style: Style,

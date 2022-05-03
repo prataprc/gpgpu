@@ -1,9 +1,9 @@
 use winit::{window::Window, dpi};
-use log::{error, debug, warn, info};
+use log::{error, warn, info};
 
 use std::{sync::Arc};
 
-use crate::{Config, Error, Result, spinlock::Spinlock, };
+use crate::{Config, Error, Result, util::Spinlock};
 
 pub struct Screen {
     pub name: String,
@@ -79,13 +79,17 @@ impl Screen {
             warn!("screen-resize {:?}", new_size);
             return
         }
+        info!("screen-resize {:?}", new_size);
+        match scale_factor {
+            Some(scale) => info!("scale_factor: {}", scale),
+            None => (),
+        }
 
         let (sc, scale_factor) = {
             let s = self.state.read();
             (s.surface_config.clone(), scale_factor.unwrap_or(s.scale_factor))
         };
 
-        debug!("screen-resize {:?} scale_factor: {}", new_size, scale_factor);
 
         let surface_config = wgpu::SurfaceConfiguration {
             width: new_size.width,
@@ -161,10 +165,11 @@ impl Screen {
     pub fn like_surface_texture(
         &self,
         ssaa: f32,
-        format: wgpu::TextureFormat
+        format: Option<wgpu::TextureFormat>,
     ) -> wgpu::Texture {
         use wgpu::TextureUsages;
 
+        let format = format.unwrap_or_else(|| self.to_texture_format());
         let desc = wgpu::TextureDescriptor {
             label: Some("like-surface-texture"),
             size: self.to_extent3d(ssaa as u32),

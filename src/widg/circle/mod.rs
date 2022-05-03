@@ -1,3 +1,3 @@
 mod circle;
 
-pub use circle::Circle;
+pub use circle::{Circle, Params};

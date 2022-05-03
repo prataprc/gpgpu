@@ -11,7 +11,7 @@ use std::sync::Arc;
 use crate::Opt;
 use gpgpu::{
     fonts, niw, util,
-    widg::{self, Widget},
+    widg::{self, clear, Widget},
     Config, Render, Result, Screen, Transforms,
 };
 
@@ -22,7 +22,7 @@ struct State {
     font: fonts::FontFile,
     render: Render,
     transforms: Transforms,
-    clear: widg::Clear,
+    clear: clear::Clear,
     color_attach: Arc<wgpu::Texture>,
     frames: util::FrameRate,
 }
@@ -31,7 +31,7 @@ impl State {
     fn resize(&mut self, size: dpi::PhysicalSize<u32>, scale_factor: Option<f64>) {
         let screen = self.render.as_screen();
         screen.resize(size, scale_factor);
-        self.color_attach = Arc::new(screen.like_surface_texture(SSAA, FORMAT));
+        self.color_attach = Arc::new(screen.like_surface_texture(SSAA, Some(FORMAT)));
     }
 
     fn redraw(&mut self) {
@@ -78,12 +78,12 @@ impl State {
 pub fn handle_raster(opts: Opt) -> Result<()> {
     use crate::SubCommand;
 
-    let (loc, ch) = match opts.subcmd.clone() {
+    let (loc, _ch) = match opts.subcmd.clone() {
         SubCommand::Raster { loc, ch } => (loc, ch),
         _ => unreachable!(),
     };
 
-    let mut font = fonts::FontFile::new(loc, 0, 24.0)?;
+    let font = fonts::FontFile::new(loc, 0, 24.0)?;
 
     let name = "font-app".to_string();
     let mut config = gpgpu::Config::default();
@@ -110,12 +110,12 @@ pub fn handle_raster(opts: Opt) -> Result<()> {
             Config::default(),
         ))
         .unwrap();
-        let color_attach = Arc::new(screen.like_surface_texture(SSAA, FORMAT));
+        let color_attach = Arc::new(screen.like_surface_texture(SSAA, Some(FORMAT)));
 
         let mut render = Render::new(screen);
         render.start();
 
-        let clear = widg::Clear::new(wgpu::Color::WHITE);
+        let clear = clear::Clear::new(wgpu::Color::WHITE);
 
         State {
             font,

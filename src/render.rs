@@ -6,7 +6,7 @@ use std::{
 };
 
 use crate::{
-    widg::{self, Load, Widget},
+    widg::{self, load, Widget},
     Error, Result, Screen, Transforms,
 };
 
@@ -82,7 +82,7 @@ fn render_loop(screen: Arc<Screen>, rx: mpsc::Receiver<Request>) -> Result<()> {
 
     let mut surface_texture: Option<wgpu::SurfaceTexture> = None;
     let surface_format = screen.to_surface_config().format;
-    let mut load = Load::new(&screen.device, surface_format)?;
+    let mut load = load::Load::new(&screen.device, surface_format)?;
 
     debug!("starting the render_loop ..");
 

@@ -1,10 +1,12 @@
 use bytemuck::{Pod, Zeroable};
 
-use crate::{dom, widg, Result, Transforms};
+use crate::{dom, widg, BoxLayout, BoxVertex, Location, Result, Transforms};
 
 pub struct Circle {
-    state: State,
-    // wgpu buffers
+    params: Params,
+    computed_params: Params,
+    style: dom::StyleStyle,
+    // wgpu items
     pipeline: wgpu::RenderPipeline,
     bind_group: wgpu::BindGroup,
     transform_buffer: wgpu::Buffer,
@@ -12,49 +14,70 @@ pub struct Circle {
     uniform_buffer: wgpu::Buffer,
 }
 
-struct State {
-    fill: bool,
-    radius: f32,
-    center: [f32; 2],
-    style: dom::Style,
+impl AsMut<dom::StyleStyle> for Circle {
+    fn as_mut(&mut self) -> &mut dom::StyleStyle {
+        &mut self.style
+    }
+}
+
+/// Parameters are in pixels.
+#[derive(Copy, Clone, Debug)]
+pub struct Params {
+    pub center: Location,
+    pub radius: f32,
+    pub fill: bool,
+}
+
+impl Params {
+    pub fn translate(&self, offset: Location) -> Params {
+        let center = Location {
+            x: self.center.x + offset.x,
+            y: self.center.y + offset.y,
+        };
+        Params {
+            center,
+            ..self.clone()
+        }
+    }
+
+    pub fn scale(&self, ratio: f32) -> Params {
+        Params {
+            center: Location {
+                x: self.center.x * ratio,
+                y: self.center.y * ratio,
+            },
+            radius: self.radius * ratio,
+            ..self.clone()
+        }
+    }
 }
 
 #[repr(C)]
 #[derive(Default, Copy, Clone, Debug, Pod, Zeroable)]
 struct UniformBuffer {
-    fill: u32,
-    radius: f32,
     center: [f32; 2],
+    radius: f32,
+    fill: u32,
 }
 
-impl UniformBuffer {
-    const SIZE: usize = 4 + 4 + 8;
-
-    fn update_size(&mut self, size: wgpu::Extent3d) {
-        let wgpu::Extent3d { width, height, .. } = size;
-        let w = (width as f32) / 2.0;
-        let h = (height as f32) / 2.0;
-
-        self.radius = (self.radius * w).round();
-        self.center = [(self.center[0] * w) + w, h - (self.center[1] * h)];
-    }
-}
-
-impl<'a> From<&'a Circle> for UniformBuffer {
-    fn from(val: &'a Circle) -> Self {
+impl From<Params> for UniformBuffer {
+    fn from(val: Params) -> UniformBuffer {
         UniformBuffer {
-            fill: if val.state.fill { 1 } else { 0 },
-            radius: val.state.radius,
-            center: val.state.center,
+            center: [val.center.x as f32, val.center.y as f32],
+            radius: val.radius as f32,
+            fill: if val.fill { 1 } else { 0 },
         }
     }
 }
 
+impl UniformBuffer {
+    const SIZE: usize = 4 + 4 + 8;
+}
+
 impl Circle {
     pub fn new(
+        params: Params,
         device: &wgpu::Device,
-        radius: f32,
-        center: [f32; 2],
         target_format: wgpu::TextureFormat,
     ) -> Circle {
         use std::borrow::Cow;
@@ -82,7 +105,7 @@ impl Circle {
         let vertex = wgpu::VertexState {
             module: &module,
             entry_point: "vs_main",
-            buffers: &[Vertex::to_vertex_buffer_layout()],
+            buffers: &[BoxVertex::to_vertex_buffer_layout()],
         };
 
         let primitive_state = wgpu::PrimitiveState {
@@ -151,14 +174,17 @@ impl Circle {
             device.create_bind_group(&desc)
         };
 
-        let style = dom::Style::default();
+        let style = dom::Style {
+            fg: wgpu::Color::WHITE,
+            bg: wgpu::Color::BLACK,
+            ..dom::Style::default()
+        };
+
         Circle {
-            state: State {
-                fill: true,
-                radius,
-                center,
-                style,
-            },
+            params: params.clone(),
+            computed_params: params,
+            style: dom::StyleStyle::new(style),
+            // wgpu items
             pipeline,
             bind_group,
             transform_buffer,
@@ -167,18 +193,20 @@ impl Circle {
         }
     }
 
-    pub fn set_fg(&mut self, fg: wgpu::Color) -> &mut Self {
-        self.state.style.fg = Some(fg);
+    pub fn translate(&mut self, offset: Location) -> &mut Self {
+        self.computed_params = Params {
+            center: Location {
+                x: self.params.center.x + offset.x,
+                y: self.params.center.y + offset.y,
+            },
+            ..self.params.clone()
+        };
         self
     }
 
-    pub fn set_bg(&mut self, bg: wgpu::Color) -> &mut Self {
-        self.state.style.bg = Some(bg);
-        self
-    }
-
-    pub fn set_fill(&mut self, fill: bool) -> &mut Self {
-        self.state.fill = fill;
+    pub fn scale(&mut self, ratio: f32) -> &mut Self {
+        self.computed_params = self.params.scale(ratio);
+        self.style.scale(ratio);
         self
     }
 }
@@ -190,7 +218,7 @@ impl widg::Widget for Circle {
         encoder: &mut wgpu::CommandEncoder,
         target: &widg::ColorTarget,
     ) -> Result<()> {
-        let vertex_buffer = Self::to_vertex_buffer(context.device);
+        let vertex_buffer = self.to_vertex_buffer(context.device, target.size);
         // overwrite the transform mvp buffer.
         {
             let content = context.transforms.to_bind_content();
@@ -200,13 +228,12 @@ impl widg::Widget for Circle {
         }
         // overwrite the style buffer
         {
-            let content = self.state.style.to_bind_content();
+            let content = self.style.to_bind_content();
             context.queue.write_buffer(&self.style_buffer, 0, &content);
         }
         // overwrite the uniform buffer
         {
-            let mut ub: UniformBuffer = self.into();
-            ub.update_size(target.size);
+            let ub: UniformBuffer = self.computed_params.clone().into();
             let content: [u8; UniformBuffer::SIZE] = bytemuck::cast(ub);
             context
                 .queue
@@ -253,7 +280,8 @@ impl Circle {
     fn to_style_buffer(device: &wgpu::Device) -> wgpu::Buffer {
         use wgpu::{util::DeviceExt, BufferUsages};
 
-        let content = dom::Style::default().to_bind_content();
+        // this style is not rendered, check render()  function
+        let content = dom::StyleStyle::default().to_bind_content();
         let desc = wgpu::util::BufferInitDescriptor {
             label: Some("style-buffer"),
             contents: &content,
@@ -278,10 +306,25 @@ impl Circle {
         device.create_buffer_init(&desc)
     }
 
-    fn to_vertex_buffer(device: &wgpu::Device) -> wgpu::Buffer {
+    fn to_vertex_buffer(
+        &self,
+        device: &wgpu::Device,
+        size: wgpu::Extent3d,
+    ) -> wgpu::Buffer {
         use wgpu::{util::DeviceExt, BufferUsages};
 
-        let contents: &[u8] = bytemuck::cast_slice(&VERTICES);
+        let cbox = {
+            let cparams = self.computed_params.clone();
+            BoxLayout {
+                x: (cparams.center.x - cparams.radius) as f32,
+                y: (cparams.center.y - cparams.radius) as f32,
+                w: (cparams.radius * 2.0) as f32,
+                h: (cparams.radius * 2.0) as f32,
+            }
+        };
+
+        let box_vertices = cbox.to_vertices(size);
+        let contents: &[u8] = bytemuck::cast_slice(&box_vertices);
         let desc = wgpu::util::BufferInitDescriptor {
             label: Some("widg/circle:vertex-buffer"),
             contents,
@@ -294,7 +337,7 @@ impl Circle {
         use wgpu::ShaderStages;
 
         let entry_0 = Transforms::to_bind_group_layout_entry(0);
-        let entry_1 = dom::Style::to_bind_group_layout_entry(1);
+        let entry_1 = dom::StyleStyle::to_bind_group_layout_entry(1);
         let desc = wgpu::BindGroupLayoutDescriptor {
             label: Some("widg/circle:bind-group-layout"),
             entries: &[
@@ -313,52 +356,5 @@ impl Circle {
             ],
         };
         device.create_bind_group_layout(&desc)
-    }
-}
-
-const VERTICES: [Vertex; 6] = [
-    // lower half triangle
-    Vertex {
-        position: [-1.0, -1.0, 0.0, 1.0],
-    },
-    Vertex {
-        position: [1.0, -1.0, 0.0, 1.0],
-    },
-    Vertex {
-        position: [1.0, 1.0, 0.0, 1.0],
-    },
-    // upper half triangle
-    Vertex {
-        position: [-1.0, -1.0, 0.0, 1.0],
-    },
-    Vertex {
-        position: [1.0, 1.0, 0.0, 1.0],
-    },
-    Vertex {
-        position: [-1.0, 1.0, 0.0, 1.0],
-    },
-];
-
-#[repr(C)]
-#[derive(Copy, Clone, Debug, Pod, Zeroable)]
-struct Vertex {
-    position: [f32; 4],
-}
-
-impl Vertex {
-    const ATTRIBUTES: [wgpu::VertexAttribute; 1] = wgpu::vertex_attr_array![
-        0 => Float32x4,
-    ];
-}
-
-impl Vertex {
-    fn to_vertex_buffer_layout<'a>() -> wgpu::VertexBufferLayout<'a> {
-        use std::mem;
-
-        wgpu::VertexBufferLayout {
-            array_stride: mem::size_of::<Vertex>() as wgpu::BufferAddress,
-            step_mode: wgpu::VertexStepMode::Vertex,
-            attributes: &Self::ATTRIBUTES,
-        }
     }
 }

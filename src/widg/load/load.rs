@@ -1,4 +1,4 @@
-use crate::{widg, Error, Result};
+use crate::{ColorTarget, Context, Error, Result, Widget};
 
 pub struct Load {
     source: Option<wgpu::TextureView>,
@@ -15,7 +15,7 @@ impl Load {
 
         let pipeline_layout = {
             let desc = wgpu::PipelineLayoutDescriptor {
-                label: Some("widgets/load:pipeline-layout"),
+                label: Some("widg/load:pipeline-layout"),
                 bind_group_layouts: &[&bind_group_layout],
                 push_constant_ranges: &[],
             };
@@ -25,7 +25,7 @@ impl Load {
         let module = {
             let text = include_str!("load.wgsl");
             let desc = wgpu::ShaderModuleDescriptor {
-                label: Some("widgets/load:shader"),
+                label: Some("widg/load:shader"),
                 source: wgpu::ShaderSource::Wgsl(text.into()),
             };
             device.create_shader_module(&desc)
@@ -65,7 +65,7 @@ impl Load {
 
         let pipeline = {
             let desc = wgpu::RenderPipelineDescriptor {
-                label: Some("widgets/load:pipeline"),
+                label: Some("widg/load:pipeline"),
                 layout: Some(&pipeline_layout),
                 vertex,
                 primitive,
@@ -91,12 +91,12 @@ impl Load {
     }
 }
 
-impl widg::Widget for Load {
+impl Widget for Load {
     fn render(
         &self,
-        context: &widg::Context,
+        context: &Context,
         encoder: &mut wgpu::CommandEncoder,
-        target: &widg::ColorTarget,
+        target: &ColorTarget,
     ) -> Result<()> {
         let source = match self.source.as_ref() {
             Some(source) => source,
@@ -118,7 +118,7 @@ impl widg::Widget for Load {
                 context.device.create_sampler(&desc)
             };
             let desc = wgpu::BindGroupDescriptor {
-                label: Some("widgets/load:bind-group"),
+                label: Some("widg/load:bind-group"),
                 layout: &self.bind_group_layout,
                 entries: &[
                     wgpu::BindGroupEntry {
@@ -136,7 +136,7 @@ impl widg::Widget for Load {
 
         let mut render_pass = {
             let desc = wgpu::RenderPassDescriptor {
-                label: Some("widgets/load:render-pass"),
+                label: Some("widg/load:render-pass"),
                 color_attachments: &[wgpu::RenderPassColorAttachment {
                     view: target.view,
                     resolve_target: None,
@@ -166,7 +166,7 @@ impl Load {
         };
 
         let desc = wgpu::BindGroupLayoutDescriptor {
-            label: Some("widgets/load:bind-group-layout"),
+            label: Some("widg/load:bind-group-layout"),
             entries: &[
                 wgpu::BindGroupLayoutEntry {
                     binding: 0,
@@ -196,7 +196,7 @@ impl Load {
         use wgpu::util::DeviceExt;
 
         let desc = wgpu::util::BufferInitDescriptor {
-            label: Some("widgets/load:vertex-buffer"),
+            label: Some("widg/load:vertex-buffer"),
             contents: bytemuck::cast_slice(VERTICES),
             usage: wgpu::BufferUsages::VERTEX,
         };

@@ -1,7 +1,8 @@
 use bytemuck::{Pod, Zeroable};
 
 use crate::{
-    widg, BoxLayout, BoxVertex, Location, Result, Style, Transform2D, Transforms,
+    BoxLayout, BoxVertex, ColorTarget, Context, Location, Result, Style, Transform2D,
+    Transforms, Widget, CLEAR_COLOR,
 };
 
 pub struct Circle {
@@ -94,7 +95,7 @@ impl Circle {
 
         let pipeline_layout = {
             let desc = wgpu::PipelineLayoutDescriptor {
-                label: Some("widg/circle:pipeline-layout"),
+                label: Some("dom/circle:pipeline-layout"),
                 bind_group_layouts: &[&bind_group_layout],
                 push_constant_ranges: &[],
             };
@@ -104,7 +105,7 @@ impl Circle {
         let module = {
             let text = Cow::Borrowed(include_str!("circle.wgsl"));
             let desc = wgpu::ShaderModuleDescriptor {
-                label: Some("widg/circle:shader"),
+                label: Some("dom/circle:shader"),
                 source: wgpu::ShaderSource::Wgsl(text.into()),
             };
             device.create_shader_module(&desc)
@@ -144,7 +145,7 @@ impl Circle {
 
         let pipeline = {
             let desc = wgpu::RenderPipelineDescriptor {
-                label: Some("widg/circle:pipeline"),
+                label: Some("dom/circle:pipeline"),
                 layout: Some(&pipeline_layout),
                 vertex,
                 primitive: primitive_state,
@@ -162,7 +163,7 @@ impl Circle {
 
         let bind_group = {
             let desc = wgpu::BindGroupDescriptor {
-                label: Some("widg/circle:bind-group"),
+                label: Some("dom/circle:bind-group"),
                 layout: &bind_group_layout,
                 entries: &[
                     wgpu::BindGroupEntry {
@@ -229,12 +230,12 @@ impl Circle {
     }
 }
 
-impl widg::Widget for Circle {
+impl Widget for Circle {
     fn render(
         &self,
-        context: &widg::Context,
+        context: &Context,
         encoder: &mut wgpu::CommandEncoder,
-        target: &widg::ColorTarget,
+        target: &ColorTarget,
     ) -> Result<()> {
         let vertex_buffer = self.to_vertex_buffer(context.device, target.size);
         // overwrite the transform mvp buffer.
@@ -260,12 +261,12 @@ impl widg::Widget for Circle {
 
         let mut render_pass = {
             let desc = wgpu::RenderPassDescriptor {
-                label: Some("widg/circle:render-pass"),
+                label: Some("dom/circle:render-pass"),
                 color_attachments: &[wgpu::RenderPassColorAttachment {
                     view: target.view,
                     resolve_target: None,
                     ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(widg::CLEAR_COLOR),
+                        load: wgpu::LoadOp::Clear(CLEAR_COLOR),
                         store: true,
                     },
                 }],
@@ -317,7 +318,7 @@ impl Circle {
             contents.to_vec()
         };
         let desc = wgpu::util::BufferInitDescriptor {
-            label: Some("widg/circle:uniform-buffer"),
+            label: Some("dom/circle:uniform-buffer"),
             contents: &contents,
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         };
@@ -344,7 +345,7 @@ impl Circle {
         let box_vertices = cbox.to_vertices(size);
         let contents: &[u8] = bytemuck::cast_slice(&box_vertices);
         let desc = wgpu::util::BufferInitDescriptor {
-            label: Some("widg/circle:vertex-buffer"),
+            label: Some("dom/circle:vertex-buffer"),
             contents,
             usage: BufferUsages::VERTEX,
         };
@@ -357,7 +358,7 @@ impl Circle {
         let entry_0 = Transforms::to_bind_group_layout_entry(0);
         let entry_1 = Style::to_bind_group_layout_entry(1);
         let desc = wgpu::BindGroupLayoutDescriptor {
-            label: Some("widg/circle:bind-group-layout"),
+            label: Some("dom/circle:bind-group-layout"),
             entries: &[
                 entry_0,
                 entry_1,

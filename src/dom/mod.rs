@@ -1,4 +1,5 @@
-mod win;
+pub mod circle;
+pub mod win;
 
 use crate::{Error, Result, State, Style};
 

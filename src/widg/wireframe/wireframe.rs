@@ -3,7 +3,7 @@ use cgmath::{Matrix4, Point3, Vector4};
 
 use std::{fmt, path, result};
 
-use crate::{widg, Error, Result, Style, Transforms};
+use crate::{ColorTarget, Context, Error, Result, Style, Transforms, Widget};
 
 pub struct Wireframe {
     state: State,
@@ -164,12 +164,12 @@ impl Wireframe {
     }
 }
 
-impl widg::Widget for Wireframe {
+impl Widget for Wireframe {
     fn render(
         &self,
-        context: &widg::Context,
+        context: &Context,
         encoder: &mut wgpu::CommandEncoder,
-        target: &widg::ColorTarget,
+        target: &ColorTarget,
     ) -> Result<()> {
         let num_vertices = self.num_vertices() as u32;
         let vertex_buffer = self.to_vertex_buffer(context.device);

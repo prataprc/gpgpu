@@ -8,12 +8,12 @@ use winit::{
 
 use std::sync::Arc;
 
-use crate::Opt;
 use gpgpu::{
-    fonts, niw, util,
-    widg::{self, clear, Widget},
-    Config, Render, Result, Screen, Transforms,
+    fonts, niw, util, widg::clear, ColorTarget, Config, Context, Render, Result, Screen,
+    Transforms, Widget,
 };
+
+use crate::Opt;
 
 const SSAA: f32 = 1.0;
 const FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Rgba8UnormSrgb;
@@ -53,12 +53,12 @@ impl State {
             };
             screen.device.create_command_encoder(&desc)
         };
-        let context = widg::Context {
+        let context = Context {
             transforms: &self.transforms,
             device: &screen.device,
             queue: &screen.queue,
         };
-        let target = widg::ColorTarget {
+        let target = ColorTarget {
             size,
             format: FORMAT,
             view: &view,

@@ -1,5 +1,7 @@
+mod backend;
 mod spinlock;
 
+pub use backend::{backend, backend_to_string};
 pub use spinlock::Spinlock;
 
 use log::error;

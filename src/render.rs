@@ -6,8 +6,7 @@ use std::{
 };
 
 use crate::{
-    widg::{self, load, Widget},
-    Error, Result, Screen, Transforms,
+    widg::load, ColorTarget, Context, Error, Result, Screen, Transforms, Widget,
 };
 
 /// Rendering thread
@@ -126,12 +125,12 @@ fn render_loop(screen: Arc<Screen>, rx: mpsc::Receiver<Request>) -> Result<()> {
             load.set_source(frame_view)
         };
 
-        let context = widg::Context {
+        let context = Context {
             transforms: &Transforms::empty(),
             device: &screen.device,
             queue: &screen.queue,
         };
-        let target = widg::ColorTarget {
+        let target = ColorTarget {
             size: screen.to_extent3d(1),
             format: screen.to_texture_format(),
             view: &surface_view,

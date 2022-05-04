@@ -118,28 +118,30 @@ pub use style::{to_rgba8unorm_color, Border, Style, StyleBorder, DEFAULT_FONT_SI
 pub use transforms::{Camera, Ortho, Perspective, Transforms};
 pub use util::*;
 
-use wgpu::Backend;
+pub const CLEAR_COLOR: wgpu::Color = wgpu::Color {
+    r: 0.0,
+    g: 0.0,
+    b: 0.0,
+    a: 1.0,
+};
 
-#[cfg(target_os = "macos")]
-pub fn backend() -> Backend {
-    Backend::Metal
+pub trait Widget {
+    fn render(
+        &self,
+        _: &Context,
+        _: &mut wgpu::CommandEncoder,
+        _: &ColorTarget,
+    ) -> Result<()>;
 }
 
-#[cfg(target_os = "linux")]
-pub fn backend() -> Backend {
-    Backend::Vulkan
+pub struct Context<'a> {
+    pub transforms: &'a Transforms,
+    pub device: &'a wgpu::Device,
+    pub queue: &'a wgpu::Queue,
 }
 
-pub fn backend_to_string(backend: Backend) -> String {
-    let s = match backend {
-        Backend::Empty => "empty",
-        Backend::Vulkan => "vulkan",
-        Backend::Metal => "metal",
-        Backend::Dx12 => "directx12",
-        Backend::Dx11 => "directx11",
-        Backend::Gl => "opengl",
-        Backend::BrowserWebGpu => "web",
-    };
-
-    s.to_string()
+pub struct ColorTarget<'a> {
+    pub size: wgpu::Extent3d,
+    pub format: wgpu::TextureFormat,
+    pub view: &'a wgpu::TextureView,
 }

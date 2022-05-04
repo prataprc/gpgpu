@@ -38,6 +38,7 @@ pub struct Opt {
 
 struct State {
     opts: Opt,
+    scale_factor: f32,
     render: Render,
     rotate_by: Vec<f32>,
     eye: Point3<f32>,
@@ -135,6 +136,7 @@ fn main() {
         info!("winit::Window size {:?}", wattrs.inner_size);
         niw::SingleWindow::<State, ()>::from_config(wattrs).unwrap()
     };
+    let scale_factor = SSAA;
 
     let state = {
         let screen = pollster::block_on(Screen::new(
@@ -160,8 +162,9 @@ fn main() {
                 center,
                 radius: opts.radius,
                 fill: opts.fill,
+                ..circle::Attributes::default()
             };
-            attrs.scale(SSAA);
+            attrs.scale(scale_factor);
             circle::Circle::new(attrs, &screen.device, FORMAT)
         };
 
@@ -172,6 +175,7 @@ fn main() {
 
         State {
             opts: opts.clone(),
+            scale_factor,
             render,
             rotate_by: opts.rotate.clone(),
             eye: Point3::new(0.0, 0.0, 3.0),
@@ -246,10 +250,12 @@ fn on_win_scale_factor_changed(
                 new_inner_size,
                 scale_factor,
             } => {
+                state.scale_factor = state.scale_factor * (*scale_factor as f32);
+
                 let screen = state.render.as_screen();
                 screen.resize(**new_inner_size, Some(*scale_factor));
 
-                state.circle.scale(*scale_factor as f32);
+                state.circle.scale(state.scale_factor);
 
                 state.color_texture =
                     Arc::new(screen.like_surface_texture(SSAA, Some(FORMAT)));
@@ -294,8 +300,8 @@ fn on_win_keyboard_input(
                 ..
             } => {
                 if let Some(sf) = state.save_file.as_mut() {
-                    println!("saving to file ./circle.png ...");
-                    sf.save_to_png("./circle.png").unwrap();
+                    println!("saving to file ./circle.bmp ...");
+                    sf.save_to_bmp("./circle.bmp").unwrap();
                 }
                 state.render.stop().ok();
                 Some(ControlFlow::Exit)

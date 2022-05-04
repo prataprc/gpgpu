@@ -106,7 +106,7 @@ impl SaveFile {
         Ok(())
     }
 
-    pub fn save_to_png<P>(&mut self, loc: P) -> Result<()>
+    pub fn save_to_bmp<P>(&mut self, loc: P) -> Result<()>
     where
         P: AsRef<path::Path>,
     {

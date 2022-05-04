@@ -1,12 +1,12 @@
-use crate::dom;
+use crate::{dom, State};
 
 pub struct Win {
-    state: dom::State<()>,
+    state: State<()>,
 }
 dom::derive_dom_attributes!(Win, state);
 
 impl Win {
-    pub fn new(state: dom::State<()>) -> Self {
+    pub fn new(state: State<()>) -> Self {
         Win { state }
     }
 }

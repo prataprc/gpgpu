@@ -36,8 +36,8 @@ impl Screen {
         let surface_format = surface.get_preferred_format(&adapter).unwrap();
 
         info!(
-            "Surface created with size {}x{} format {:?}",
-            size.width, size.height, surface_format,
+            "Surface created with size {}x{} format {:?} scale_factor:{}",
+            size.width, size.height, surface_format, win.scale_factor()
         );
 
         let desc = wgpu::DeviceDescriptor {
@@ -121,10 +121,6 @@ impl Screen {
 
     pub fn to_surface_config(&self) -> wgpu::SurfaceConfiguration {
         self.state.read().surface_config.clone()
-    }
-
-    pub fn to_scale_factor(&self) -> f64 {
-        self.state.read().scale_factor
     }
 
     pub fn to_extent3d(&self, ssaa: u32) -> wgpu::Extent3d {

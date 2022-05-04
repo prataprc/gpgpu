@@ -16,25 +16,6 @@ use std::{convert::TryInto, ffi, path};
 use crate::niw;
 use crate::{util, Error, Result};
 
-// Local type that is friendly for converting from toml Value.
-#[derive(Clone, Deserialize)]
-struct TomlConfig {
-    web: Option<bool>,
-    trace_path: Option<ffi::OsString>,
-    present_mode: Option<String>,
-    adapter_options: Option<TomlConfigAdapter>,
-    winit: Option<TomlConfigWinit>,
-}
-
-// Local type that is friendly for converting from toml Value.
-#[derive(Clone, Deserialize)]
-struct TomlConfigAdapter {
-    power_preference: Option<String>,
-    force_fallback_adapter: Option<bool>,
-}
-
-//-----
-
 /// Configuration type for initializing gpgpu crate.
 #[derive(Clone)]
 pub struct Config {
@@ -50,6 +31,18 @@ pub struct Config {
     pub winit: ConfigWinit,
 }
 
+impl Default for Config {
+    fn default() -> Config {
+        Config {
+            web: false,
+            trace_path: None,
+            present_mode: wgpu::PresentMode::Fifo,
+            adapter_options: ConfigAdapter::default(),
+            winit: ConfigWinit::default(),
+        }
+    }
+}
+
 /// Configuration for [RequestAdapterOptions].
 #[derive(Clone)]
 pub struct ConfigAdapter {
@@ -57,20 +50,112 @@ pub struct ConfigAdapter {
     pub force_fallback_adapter: bool,
 }
 
-impl Default for Config {
-    fn default() -> Config {
-        let adapter_options = ConfigAdapter {
+impl Default for ConfigAdapter {
+    fn default() -> ConfigAdapter {
+        ConfigAdapter {
             power_preference: wgpu::PowerPreference::HighPerformance,
             force_fallback_adapter: false,
-        };
-        Config {
-            web: false,
-            trace_path: None,
-            present_mode: wgpu::PresentMode::Fifo,
-            adapter_options: adapter_options,
-            winit: ConfigWinit::default(),
         }
     }
+}
+
+/// Configuration options for creating winit [Window].
+///
+/// ConfigWinit can be initialized programatically or via toml configuration file.
+/// For the later case, refer to [ConfigWinit::from_toml] constructor. Subsequently
+/// [ConfigWinit] can be converted to [WindowAttributes], via TryFrom/TryInto trait,
+/// to create a winit window with desired attributes. Get Started with
+/// `ConfigWinit::default()`
+#[derive(Clone, Debug)]
+pub struct ConfigWinit {
+    pub title: String,
+    pub visible: bool,
+    pub transparent: bool,
+    pub always_on_top: bool,
+    pub maximized: bool,
+    pub minimised: bool,
+    pub resizable: bool,
+    pub cursor_position: Option<Vec<f64>>,
+    pub cursor_visible: bool,
+    pub decorations: bool,
+    pub inner_size: Option<Vec<f64>>,
+    pub max_inner_size: Option<Vec<f64>>,
+    pub min_inner_size: Option<Vec<f64>>,
+    pub position: Option<Vec<f64>>,
+    // TODO: ime_position
+    // TODO: cursor_icon
+    // TODO: fullscreen
+    // TODO: window_icon: Option<ffi::OsString>,
+}
+
+impl Default for ConfigWinit {
+    fn default() -> ConfigWinit {
+        ConfigWinit {
+            title: "gpgpu".to_string(),
+            visible: true,
+            transparent: false,
+            always_on_top: false,
+            maximized: false,
+            minimised: false,
+            resizable: true,
+            cursor_position: None,
+            cursor_visible: true,
+            decorations: false,
+            #[cfg(all(unix, not(target_os = "macos")))]
+            inner_size: Some(vec![800.0, 600.0]),
+            #[cfg(any(target_os = "android", target_os = "macos"))]
+            inner_size: Some(vec![800.0, 600.0]),
+            max_inner_size: None,
+            min_inner_size: None,
+            position: None,
+        }
+    }
+}
+
+impl Config {
+    /// Construct a new configuration from a file located by `loc`.
+    pub fn from_file<P>(loc: P) -> Result<Config>
+    where
+        P: AsRef<path::Path>,
+    {
+        let value: TomlConfig = util::load_toml(loc)?;
+        value.try_into()
+    }
+
+    /// Return [RequestAdapterOptions] that can be used to fetch a new compatible adapter,
+    /// for `surface`, from wgpu [Instance].
+    pub fn to_request_adapter_options<'a>(
+        &self,
+        surface: &'a wgpu::Surface,
+    ) -> wgpu::RequestAdapterOptions<'a> {
+        wgpu::RequestAdapterOptions {
+            power_preference: self.adapter_options.power_preference,
+            force_fallback_adapter: self.adapter_options.force_fallback_adapter,
+            compatible_surface: Some(surface),
+        }
+    }
+
+    /// Return window-attributes to instantiate a window instance,
+    /// like [niw::SingleWindow].
+    pub fn to_window_attributes(&self) -> Result<winit::window::WindowAttributes> {
+        self.winit.clone().try_into()
+    }
+
+    /// Return the trace path for API call tracing, if that feature is enabled in
+    /// wgpu-core.
+    pub fn to_trace_path(&self) -> Option<&path::Path> {
+        self.trace_path.as_ref().map(|x| x.as_path())
+    }
+}
+
+// Local type that is friendly for converting from toml Value.
+#[derive(Clone, Deserialize)]
+struct TomlConfig {
+    web: Option<bool>,
+    trace_path: Option<ffi::OsString>,
+    present_mode: Option<String>,
+    adapter_options: Option<TomlConfigAdapter>,
+    winit: Option<TomlConfigWinit>,
 }
 
 impl TryFrom<TomlConfig> for Config {
@@ -109,84 +194,11 @@ impl TryFrom<TomlConfig> for Config {
     }
 }
 
-impl Config {
-    /// Construct a new configuration from a file located by `loc`.
-    pub fn from_file<P>(loc: P) -> Result<Config>
-    where
-        P: AsRef<path::Path>,
-    {
-        let value: TomlConfig = util::load_toml(loc)?;
-        value.try_into()
-    }
-
-    /// Return [RequestAdapterOptions] that can be used to fetch a new compatible adapter,
-    /// for `surface`, from wgpu [Instance].
-    pub fn to_request_adapter_options<'a>(
-        &self,
-        surface: &'a wgpu::Surface,
-    ) -> wgpu::RequestAdapterOptions<'a> {
-        wgpu::RequestAdapterOptions {
-            power_preference: self.adapter_options.power_preference,
-            force_fallback_adapter: self.adapter_options.force_fallback_adapter,
-            compatible_surface: Some(surface),
-        }
-    }
-
-    /// Return window-attributes to instantiate a window instance,
-    /// like [niw::SingleWindow].
-    pub fn to_window_attributes(&self) -> Result<winit::window::WindowAttributes> {
-        self.winit.clone().try_into()
-    }
-
-    /// Return the trace path for API call tracing, if that feature is enabled in
-    /// wgpu-core.
-    pub fn to_trace_path(&self) -> Option<&path::Path> {
-        self.trace_path.as_ref().map(|x| x.as_path())
-    }
-
-    pub fn scale_inner_size(mut self, scale_factor: f64) -> Config {
-        self.winit = self.winit.scale_inner_size(scale_factor);
-        self
-    }
-}
-
-fn power_preference(s: &str) -> Result<wgpu::PowerPreference> {
-    let val = match s {
-        "low_power" => wgpu::PowerPreference::LowPower,
-        "high_performance" => wgpu::PowerPreference::HighPerformance,
-        _ => err_at!(Invalid, msg: "invalid config.adapter_options.power_preference")?,
-    };
-
-    Ok(val)
-}
-
-/// Configuration options for creating winit [Window].
-///
-/// ConfigWinit can be initialized programatically or via toml configuration file.
-/// For the later case, refer to [ConfigWinit::from_toml] constructor. Subsequently
-/// [ConfigWinit] can be converted to [WindowAttributes], via TryFrom/TryInto trait,
-/// to create a winit window with desired attributes. Get Started with
-/// `ConfigWinit::default()`
-#[derive(Clone, Debug)]
-pub struct ConfigWinit {
-    pub title: String,
-    pub visible: bool,
-    pub transparent: bool,
-    pub always_on_top: bool,
-    pub maximized: bool,
-    pub minimised: bool,
-    pub resizable: bool,
-    pub cursor_position: Option<Vec<f64>>,
-    pub cursor_visible: bool,
-    pub decorations: bool,
-    pub inner_size: Option<Vec<f64>>,
-    pub max_inner_size: Option<Vec<f64>>,
-    pub min_inner_size: Option<Vec<f64>>,
-    pub position: Option<Vec<f64>>,
-    // TODO: ime_position
-    // TODO: cursor_icon
-    // TODO: fullscreen
-    // TODO: window_icon: Option<ffi::OsString>,
+// Local type that is friendly for converting from toml Value.
+#[derive(Clone, Deserialize)]
+struct TomlConfigAdapter {
+    power_preference: Option<String>,
+    force_fallback_adapter: Option<bool>,
 }
 
 // local type friendly to toml text/value.
@@ -210,30 +222,6 @@ struct TomlConfigWinit {
     // TODO: cursor_icon
     // TODO: fullscreen
     // TODO: window_icon: Option<ffi::OsString>,
-}
-
-impl Default for ConfigWinit {
-    fn default() -> ConfigWinit {
-        ConfigWinit {
-            title: "gpgpu".to_string(),
-            visible: true,
-            transparent: false,
-            always_on_top: false,
-            maximized: false,
-            minimised: false,
-            resizable: true,
-            cursor_position: None,
-            cursor_visible: true,
-            decorations: false,
-            #[cfg(all(unix, not(target_os = "macos")))]
-            inner_size: Some(vec![800.0, 600.0]),
-            #[cfg(any(target_os = "android", target_os = "macos"))]
-            inner_size: Some(vec![800.0, 600.0]),
-            max_inner_size: None,
-            min_inner_size: None,
-            position: None,
-        }
-    }
 }
 
 macro_rules! from_toml {
@@ -305,17 +293,6 @@ impl ConfigWinit {
         Ok(toml_config.into())
     }
 
-    pub fn scale_inner_size(mut self, scale_factor: f64) -> ConfigWinit {
-        self.inner_size = match self.inner_size.as_deref() {
-            Some([w, h]) => Some([*w * scale_factor, *h * scale_factor].to_vec()),
-            _ => None,
-        };
-        self
-    }
-}
-
-// local functions
-impl ConfigWinit {
     fn to_inner_size(&self) -> Result<Option<dpi::Size>> {
         match &self.inner_size {
             Some(s) => Some(to_logical_size(s.as_slice())).transpose(),
@@ -339,7 +316,7 @@ impl ConfigWinit {
 
     fn to_position(&self) -> Result<Option<dpi::Position>> {
         match &self.position {
-            Some(s) => Some(to_physical_position(s.as_slice())).transpose(),
+            Some(s) => Some(to_logical_position(s.as_slice())).transpose(),
             None => Ok(None),
         }
     }
@@ -347,7 +324,6 @@ impl ConfigWinit {
 
 /// Convert slice of [f64] into dpi::Size. Note that length of slice should be 2 and the
 /// returned size is [dpi::Size::Logical].
-#[allow(dead_code)]
 pub fn to_logical_size(size: &[f64]) -> Result<dpi::Size> {
     if size.len() == 2 {
         Ok(dpi::Size::Logical((size[0], size[1]).into()))
@@ -356,20 +332,8 @@ pub fn to_logical_size(size: &[f64]) -> Result<dpi::Size> {
     }
 }
 
-/// Convert slice of [f64] into dpi::Size. Note that length of slice should be 2 and the
-/// returned size is [dpi::Size::Physical].
-#[allow(dead_code)]
-pub fn to_physical_size(size: &[f64]) -> Result<dpi::Size> {
-    if size.len() == 2 {
-        Ok(dpi::Size::Physical((size[0], size[1]).into()))
-    } else {
-        err_at!(Invalid, msg: "size invalid {:?}", size)
-    }
-}
-
 /// Convert slice of [f64] into dpi::Position. Note that length of slice should be 2 and
 /// the returned position is [dpi::Position::Logical].
-#[allow(dead_code)]
 pub fn to_logical_position(pos: &[f64]) -> Result<dpi::Position> {
     if pos.len() == 2 {
         Ok(dpi::Position::Logical((pos[0], pos[1]).into()))
@@ -378,12 +342,12 @@ pub fn to_logical_position(pos: &[f64]) -> Result<dpi::Position> {
     }
 }
 
-/// Convert slice of [f64] into dpi::Position. Note that length of slice should be 2 and
-/// the returned position is [dpi::Position::Physical].
-pub fn to_physical_position(pos: &[f64]) -> Result<dpi::Position> {
-    if pos.len() == 2 {
-        Ok(dpi::Position::Physical((pos[0], pos[1]).into()))
-    } else {
-        err_at!(Invalid, msg: "position invalid {:?}", pos)
-    }
+fn power_preference(s: &str) -> Result<wgpu::PowerPreference> {
+    let val = match s {
+        "low_power" => wgpu::PowerPreference::LowPower,
+        "high_performance" => wgpu::PowerPreference::HighPerformance,
+        _ => err_at!(Invalid, msg: "invalid config.adapter_options.power_preference")?,
+    };
+
+    Ok(val)
 }

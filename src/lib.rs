@@ -1,7 +1,5 @@
 //! General Purpose GPU.
 
-use bytemuck::{Pod, Zeroable};
-
 use std::{error, fmt, result};
 
 /// Short form to compose Error values.
@@ -97,9 +95,11 @@ impl error::Error for Error {}
 pub type Result<T> = result::Result<T, Error>;
 
 mod config;
+mod layout;
 mod render;
 mod save;
 mod screen;
+mod style;
 mod transforms;
 
 pub mod dom;
@@ -110,9 +110,11 @@ pub mod util;
 pub mod widg;
 
 pub use config::{Config, ConfigAdapter, ConfigWinit};
+pub use layout::{BoxLayout, BoxVertex, Location, Size, State, Transform2D};
 pub use render::Render;
 pub use save::SaveFile;
 pub use screen::Screen;
+pub use style::{to_rgba8unorm_color, Border, Style, StyleBorder, DEFAULT_FONT_SIZE};
 pub use transforms::{Camera, Ortho, Perspective, Transforms};
 pub use util::*;
 
@@ -140,147 +142,4 @@ pub fn backend_to_string(backend: Backend) -> String {
     };
 
     s.to_string()
-}
-
-#[derive(Clone, Copy, Default)]
-pub struct BoxLayout {
-    pub x: f32,
-    pub y: f32,
-    pub w: f32,
-    pub h: f32,
-}
-
-impl From<stretch::result::Layout> for BoxLayout {
-    fn from(val: stretch::result::Layout) -> BoxLayout {
-        let stretch::result::Layout {
-            size: stretch::geometry::Size { width, height },
-            location: stretch::geometry::Point { x, y },
-            ..
-        } = val;
-
-        BoxLayout {
-            x,
-            y,
-            w: width,
-            h: height,
-        }
-    }
-}
-
-impl BoxLayout {
-    pub fn to_vertices(&self, size: wgpu::Extent3d) -> Vec<BoxVertex> {
-        let tl = [
-            ((self.x / (size.width as f32)) * 2.0) - 1.0,
-            1.0 - ((self.y / (size.height as f32)) * 2.0),
-            0.0,
-            1.0,
-        ];
-        let tr = [
-            (((self.x + self.w) / (size.width as f32)) * 2.0) - 1.0,
-            1.0 - ((self.y / (size.height as f32)) * 2.0),
-            0.0,
-            1.0,
-        ];
-        let br = [
-            (((self.x + self.w) / (size.width as f32)) * 2.0) - 1.0,
-            1.0 - (((self.y + self.h) / (size.height as f32)) * 2.0),
-            0.0,
-            1.0,
-        ];
-        let bl = [
-            ((self.x / (size.width as f32)) * 2.0) - 1.0,
-            1.0 - (((self.y + self.h) / (size.height as f32)) * 2.0),
-            0.0,
-            1.0,
-        ];
-        vec![
-            BoxVertex { position: tl },
-            BoxVertex { position: bl },
-            BoxVertex { position: tr },
-            BoxVertex { position: tr },
-            BoxVertex { position: bl },
-            BoxVertex { position: br },
-        ]
-    }
-}
-
-#[repr(C)]
-#[derive(Copy, Clone, Debug, Pod, Zeroable)]
-pub struct BoxVertex {
-    position: [f32; 4],
-}
-
-impl BoxVertex {
-    const ATTRIBUTES: [wgpu::VertexAttribute; 1] = wgpu::vertex_attr_array![
-        0 => Float32x4,
-    ];
-}
-
-impl BoxVertex {
-    pub fn to_vertex_buffer_layout<'a>() -> wgpu::VertexBufferLayout<'a> {
-        use std::mem;
-
-        wgpu::VertexBufferLayout {
-            array_stride: mem::size_of::<BoxVertex>() as wgpu::BufferAddress,
-            step_mode: wgpu::VertexStepMode::Vertex,
-            attributes: &Self::ATTRIBUTES,
-        }
-    }
-}
-
-// of screen coordinate, in pixels
-#[derive(Clone, Copy, Debug)]
-pub struct Location {
-    pub x: f32,
-    pub y: f32,
-}
-
-// of screen coordinate, in pixels
-#[derive(Clone, Copy, Debug)]
-pub struct Size {
-    pub width: f32,
-    pub height: f32,
-}
-
-#[derive(Clone, Copy, Debug)]
-pub struct AttrAttr<T>
-where
-    T: Clone + Transform2D,
-{
-    attrs: T,
-    computed: T,
-}
-
-impl<T> AttrAttr<T>
-where
-    T: Clone + Transform2D,
-{
-    pub fn new(attrs: T) -> Self {
-        AttrAttr {
-            attrs: attrs.clone(),
-            computed: attrs,
-        }
-    }
-
-    pub fn translate(&mut self, offset: Location) {
-        let mut attrs = self.attrs.clone();
-        attrs.translate(offset);
-        self.computed = attrs;
-    }
-
-    pub fn scale(&mut self, factor: f32) {
-        let mut attrs = self.attrs.clone();
-        attrs.scale(factor);
-        self.computed = attrs;
-    }
-
-    pub fn to_computed_attrs(&self) -> T {
-        self.computed.clone()
-    }
-}
-
-pub trait Transform2D {
-    fn translate(&mut self, offset: Location);
-
-    fn scale(&mut self, factor: f32);
 }

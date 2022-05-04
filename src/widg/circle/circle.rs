@@ -1,12 +1,12 @@
 use bytemuck::{Pod, Zeroable};
 
 use crate::{
-    dom, widg, AttrAttr, BoxLayout, BoxVertex, Location, Result, Transform2D, Transforms,
+    widg, BoxLayout, BoxVertex, Location, Result, Style, Transform2D, Transforms,
 };
 
 pub struct Circle {
-    attrs: AttrAttr<Attributes>,
-    style: dom::StyleStyle,
+    attrs: Attributes,
+    style: Style,
     // wgpu items
     pipeline: wgpu::RenderPipeline,
     bind_group: wgpu::BindGroup,
@@ -15,34 +15,48 @@ pub struct Circle {
     uniform_buffer: wgpu::Buffer,
 }
 
-impl AsMut<dom::StyleStyle> for Circle {
-    fn as_mut(&mut self) -> &mut dom::StyleStyle {
-        &mut self.style
-    }
-}
-
 /// measurements are in pixels.
 #[derive(Copy, Clone, Debug)]
 pub struct Attributes {
     pub center: Location,
     pub radius: f32,
     pub fill: bool,
+    pub scale_factor: f32,
+    pub offset: Location,
+}
+
+impl Default for Attributes {
+    fn default() -> Attributes {
+        Attributes {
+            center: Location { x: 0.0, y: 0.0 },
+            radius: 1.0,
+            fill: false,
+            scale_factor: 1.0,
+            offset: Location { x: 0.0, y: 0.0 },
+        }
+    }
 }
 
 impl Transform2D for Attributes {
     fn translate(&mut self, offset: Location) {
-        self.center = Location {
-            x: self.center.x + offset.x,
-            y: self.center.y + offset.y,
-        };
+        self.offset = offset;
     }
 
     fn scale(&mut self, factor: f32) {
-        self.center = Location {
-            x: self.center.x * factor,
-            y: self.center.y * factor,
-        };
-        self.radius = self.radius * factor;
+        self.scale_factor = factor;
+    }
+
+    fn compute(&self) -> Attributes {
+        Attributes {
+            center: Location {
+                x: (self.center.x + self.offset.x) * self.scale_factor,
+                y: (self.center.y + self.offset.y) * self.scale_factor,
+            },
+            radius: self.radius * self.scale_factor,
+            fill: self.fill,
+            scale_factor: 1.0,
+            offset: Location { x: 0.0, y: 0.0 },
+        }
     }
 }
 
@@ -168,15 +182,15 @@ impl Circle {
             device.create_bind_group(&desc)
         };
 
-        let style = dom::Style {
+        let style = Style {
             fg: wgpu::Color::WHITE,
             bg: wgpu::Color::BLACK,
-            ..dom::Style::default()
+            ..Style::default()
         };
 
         Circle {
-            attrs: AttrAttr::new(attrs),
-            style: dom::StyleStyle::new(style),
+            attrs,
+            style,
             // wgpu items
             pipeline,
             bind_group,
@@ -188,12 +202,30 @@ impl Circle {
 
     pub fn translate(&mut self, offset: Location) -> &mut Self {
         self.attrs.translate(offset);
+        self.style.translate(offset);
         self
     }
 
     pub fn scale(&mut self, factor: f32) -> &mut Self {
         self.attrs.scale(factor);
+        self.style.scale(factor);
         self
+    }
+
+    pub fn as_attrs(&self) -> &Attributes {
+        &self.attrs
+    }
+
+    pub fn as_mut_attrs(&mut self) -> &mut Attributes {
+        &mut self.attrs
+    }
+
+    pub fn as_style(&self) -> &Style {
+        &self.style
+    }
+
+    pub fn as_mut_style(&mut self) -> &mut Style {
+        &mut self.style
     }
 }
 
@@ -214,12 +246,12 @@ impl widg::Widget for Circle {
         }
         // overwrite the style buffer
         {
-            let content = self.style.to_bind_content();
+            let content = self.style.compute().to_bind_content();
             context.queue.write_buffer(&self.style_buffer, 0, &content);
         }
         // overwrite the uniform buffer
         {
-            let ub: UniformBuffer = self.attrs.to_computed_attrs().into();
+            let ub: UniformBuffer = self.attrs.compute().into();
             let content: [u8; UniformBuffer::SIZE] = bytemuck::cast(ub);
             context
                 .queue
@@ -267,7 +299,7 @@ impl Circle {
         use wgpu::{util::DeviceExt, BufferUsages};
 
         // this style is not rendered, check render()  function
-        let content = dom::StyleStyle::default().to_bind_content();
+        let content = Style::default().to_bind_content();
         let desc = wgpu::util::BufferInitDescriptor {
             label: Some("style-buffer"),
             contents: &content,
@@ -300,7 +332,7 @@ impl Circle {
         use wgpu::{util::DeviceExt, BufferUsages};
 
         let cbox = {
-            let attrs = self.attrs.to_computed_attrs();
+            let attrs = self.attrs.compute();
             BoxLayout {
                 x: (attrs.center.x - attrs.radius) as f32,
                 y: (attrs.center.y - attrs.radius) as f32,
@@ -323,7 +355,7 @@ impl Circle {
         use wgpu::ShaderStages;
 
         let entry_0 = Transforms::to_bind_group_layout_entry(0);
-        let entry_1 = dom::StyleStyle::to_bind_group_layout_entry(1);
+        let entry_1 = Style::to_bind_group_layout_entry(1);
         let desc = wgpu::BindGroupLayoutDescriptor {
             label: Some("widg/circle:bind-group-layout"),
             entries: &[

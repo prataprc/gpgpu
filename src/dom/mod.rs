@@ -1,36 +1,29 @@
-mod style;
 mod win;
 
-pub use style::{
-    to_rgba8unorm_color, Border, Style, StyleBorder, StyleStyle, DEFAULT_FONT_SIZE,
-};
-
-use std::ops::{Deref, DerefMut};
-
-use crate::{BoxLayout, Error, Result};
+use crate::{Error, Result, State, Style};
 
 macro_rules! derive_dom_attributes {
     ($ty:ty, $state:ident) => {
-        impl AsRef<crate::dom::Style> for $ty {
-            fn as_ref(&self) -> &crate::dom::Style {
+        impl AsRef<crate::Style> for $ty {
+            fn as_ref(&self) -> &crate::Style {
                 self.$state.as_ref()
             }
         }
 
-        impl AsMut<crate::dom::Style> for $ty {
-            fn as_mut(&mut self) -> &mut crate::dom::Style {
+        impl AsMut<crate::Style> for $ty {
+            fn as_mut(&mut self) -> &mut crate::Style {
                 self.$state.as_mut()
             }
         }
 
-        impl AsRef<crate::dom::BoxLayout> for $ty {
-            fn as_ref(&self) -> &crate::dom::BoxLayout {
+        impl AsRef<crate::BoxLayout> for $ty {
+            fn as_ref(&self) -> &crate::BoxLayout {
                 self.$state.as_ref()
             }
         }
 
-        impl AsMut<crate::dom::BoxLayout> for $ty {
-            fn as_mut(&mut self) -> &mut crate::dom::BoxLayout {
+        impl AsMut<crate::BoxLayout> for $ty {
+            fn as_mut(&mut self) -> &mut crate::BoxLayout {
                 self.$state.as_mut()
             }
         }
@@ -49,63 +42,6 @@ macro_rules! derive_dom_attributes {
     };
 }
 pub(crate) use derive_dom_attributes;
-
-pub struct State<T> {
-    style: Style,
-    layout: BoxLayout,
-    node: stretch::node::Node,
-    state: T,
-}
-
-impl<T> AsRef<Style> for State<T> {
-    fn as_ref(&self) -> &Style {
-        &self.style
-    }
-}
-
-impl<T> AsMut<Style> for State<T> {
-    fn as_mut(&mut self) -> &mut Style {
-        &mut self.style
-    }
-}
-
-impl<T> AsRef<BoxLayout> for State<T> {
-    fn as_ref(&self) -> &BoxLayout {
-        &self.layout
-    }
-}
-
-impl<T> AsMut<BoxLayout> for State<T> {
-    fn as_mut(&mut self) -> &mut BoxLayout {
-        &mut self.layout
-    }
-}
-
-impl<T> AsRef<stretch::node::Node> for State<T> {
-    fn as_ref(&self) -> &stretch::node::Node {
-        &self.node
-    }
-}
-
-impl<T> AsMut<stretch::node::Node> for State<T> {
-    fn as_mut(&mut self) -> &mut stretch::node::Node {
-        &mut self.node
-    }
-}
-
-impl<T> Deref for State<T> {
-    type Target = T;
-
-    fn deref(&self) -> &T {
-        &self.state
-    }
-}
-
-impl<T> DerefMut for State<T> {
-    fn deref_mut(&mut self) -> &mut T {
-        &mut self.state
-    }
-}
 
 pub enum Node {
     Win(win::Win),
@@ -142,9 +78,12 @@ impl Dom {
     }
 
     pub fn new_win(&mut self, style: Style, children: &[Node]) -> Result<Node> {
-        let children: Vec<stretch::node::Node> =
-            children.iter().map(|n| n.to_stretch_node()).collect();
-        let node = err_at!(Invalid, self.stretch.new_node(style.flex.clone(), children))?;
+        use stretch::node::Node;
+
+        let node = {
+            let cs: Vec<Node> = children.iter().map(|n| n.to_stretch_node()).collect();
+            err_at!(Invalid, self.stretch.new_node(style.flex.clone(), cs))?
+        };
 
         let state: State<()> = State {
             style,

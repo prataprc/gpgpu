@@ -3,7 +3,7 @@ use cgmath::{Matrix4, Point3, Vector4};
 
 use std::{fmt, path, result};
 
-use crate::{dom, widg, Error, Result, Transforms};
+use crate::{widg, Error, Result, Style, Transforms};
 
 pub struct Wireframe {
     state: State,
@@ -13,7 +13,7 @@ pub struct Wireframe {
 }
 
 struct State {
-    style: dom::Style,
+    style: Style,
     primitive: Primitive,
 }
 
@@ -152,7 +152,7 @@ impl Wireframe {
             device.create_bind_group(&desc)
         };
 
-        let style = dom::Style::default();
+        let style = Style::default();
         let val = Wireframe {
             state: State { style, primitive },
             pipeline,

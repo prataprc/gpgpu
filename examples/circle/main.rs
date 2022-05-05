@@ -1,20 +1,19 @@
-use cgmath::{Deg, Point3, Vector3};
+use cgmath::Deg;
 use log::info;
 use structopt::StructOpt;
 use winit::{
-    event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent},
+    event::{Event, WindowEvent},
     event_loop::ControlFlow,
     window::Window,
 };
 
-use std::{sync::Arc, time};
+use std::{path, time};
 
 use gpgpu::{
-    dom::circle, niw, ColorTarget, Config, Context, Location, Perspective, Render,
-    SaveFile, Screen, Transforms, Widget,
+    dom::circle, niw, Config, Context, Location, Render, Screen, Transforms, Widget,
 };
 
-const SSAA: f32 = 2.0;
+const SSAA: f32 = 1.0;
 const FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Rgba8UnormSrgb;
 
 #[derive(Clone, StructOpt)]
@@ -32,23 +31,22 @@ pub struct Opt {
     fill: bool,
 
     #[structopt(long = "save")]
-    save: bool,
+    save: Option<path::PathBuf>,
 }
 
 struct State {
     opts: Opt,
-    scale_factor: f32,
     render: Render,
     rotate_by: Vec<f32>,
-    eye: Point3<f32>,
-    center: Point3<f32>,
-    up: Vector3<f32>,
-    p: Perspective<Deg<f32>>,
     transforms: Transforms,
     circle: circle::Circle,
     next_frame: time::Instant,
-    color_texture: Arc<wgpu::Texture>,
-    save_file: Option<SaveFile>,
+}
+
+impl AsMut<Render> for State {
+    fn as_mut(&mut self) -> &mut Render {
+        &mut self.render
+    }
 }
 
 impl State {
@@ -57,51 +55,30 @@ impl State {
             return;
         }
 
-        let size = self.render.as_screen().to_extent3d(SSAA as u32);
-
-        let view = {
-            let desc = wgpu::TextureViewDescriptor::default();
-            self.color_texture.create_view(&desc)
-        };
+        let screen = self.render.as_screen();
 
         let mut transforms = self.transforms;
         transforms
             .rotate_x_by(Deg(self.rotate_by[0]))
             .rotate_y_by(Deg(self.rotate_by[1]))
-            .rotate_z_by(Deg(self.rotate_by[2]))
-            .look_at_rh(self.eye, self.center, self.up)
-            .perspective_by(self.p);
+            .rotate_z_by(Deg(self.rotate_by[2]));
 
-        let screen = self.render.as_screen();
         let mut encoder = {
             let desc = wgpu::CommandEncoderDescriptor {
                 label: Some("examples/circle:command-encoder"),
             };
             screen.device.create_command_encoder(&desc)
         };
+
         let context = Context {
             transforms: &transforms,
             device: &screen.device,
             queue: &screen.queue,
         };
-        let target = ColorTarget {
-            size,
-            format: FORMAT,
-            view: &view,
-        };
+        let target = self.render.to_color_target();
         self.circle.render(&context, &mut encoder, &target).unwrap();
 
-        self.save_file.as_ref().map(|sf| {
-            sf.load_from_texture(&mut encoder, &screen.device, &self.color_texture)
-                .unwrap();
-        });
-
-        screen.queue.submit(vec![encoder.finish()]);
-        self.save_file.as_mut().map(|sf| sf.capture(&screen.device));
-
-        self.render
-            .post_frame(Arc::clone(&self.color_texture))
-            .unwrap();
+        self.render.submit(encoder).unwrap();
 
         self.rotate_by[0] += self.opts.rotate[0];
         self.rotate_by[1] += self.opts.rotate[1];
@@ -127,7 +104,7 @@ fn main() {
         y: opts.center[1],
     };
 
-    let name = "example-triangle".to_string();
+    let name = "example-circle".to_string();
     let config = Config::default();
 
     let mut swin = {
@@ -135,27 +112,22 @@ fn main() {
         info!("winit::Window size {:?}", wattrs.inner_size);
         niw::SingleWindow::<State, ()>::from_config(wattrs).unwrap()
     };
-    let scale_factor = SSAA;
+
+    let screen = pollster::block_on(Screen::new(
+        name.clone(),
+        swin.as_window(),
+        Config::default(),
+    ))
+    .unwrap();
+
+    let mut render = Render::new_super_sampled(screen, SSAA);
+    match opts.save.clone() {
+        Some(loc) => render.save_bmp(loc),
+        None => &mut render,
+    }
+    .set_format(FORMAT);
 
     let state = {
-        let screen = pollster::block_on(Screen::new(
-            name.clone(),
-            swin.as_window(),
-            Config::default(),
-        ))
-        .unwrap();
-        let extent = screen.to_extent3d(SSAA as u32);
-        let save_file = match opts.save {
-            true => Some(SaveFile::new_frame(&screen.device, extent, FORMAT)),
-            false => None,
-        };
-
-        let p = Perspective {
-            fov: Deg(90.0),
-            aspect: screen.to_aspect_ratio(),
-            near: 0.1,
-            far: 100.0,
-        };
         let mut circle = {
             let attrs = circle::Attributes {
                 center,
@@ -163,51 +135,26 @@ fn main() {
                 fill: opts.fill,
                 ..circle::Attributes::default()
             };
-            circle::Circle::new(attrs, &screen.device, FORMAT)
+            circle::Circle::new(attrs, &render.as_screen().device, FORMAT)
         };
-        circle.scale(scale_factor).transform();
+        circle.scale(render.to_scale_factor()).transform();
 
-        let color_texture = Arc::new(screen.like_surface_texture(SSAA, Some(FORMAT)));
-
-        let mut render = Render::new(screen);
         render.start();
-
         State {
             opts: opts.clone(),
-            scale_factor,
             render,
             rotate_by: opts.rotate.clone(),
-            eye: Point3::new(0.0, 0.0, 3.0),
-            center: Point3::new(0.0, 0.0, 0.0),
-            up: Vector3::unit_y(),
-            p,
             transforms: Transforms::empty(),
             circle,
             next_frame: time::Instant::now(),
-            color_texture,
-            save_file,
         }
     };
 
-    swin.on_win_close_requested(Box::new(on_win_close_requested))
-        .on_win_keyboard_input(Box::new(on_win_keyboard_input))
-        .on_win_resized(Box::new(on_win_resized))
-        .on_win_scale_factor_changed(Box::new(on_win_scale_factor_changed))
-        .on_main_events_cleared(Box::new(on_main_events_cleared))
+    swin.on_win_scale_factor_changed(Box::new(on_win_scale_factor_changed))
         .on_redraw_requested(Box::new(on_redraw_requested));
 
     info!("Press Esc to exit");
     swin.run(state);
-}
-
-// RedrawRequested will only trigger once, unless we manually request it.
-fn on_main_events_cleared(
-    w: &Window,
-    _state: &mut State,
-    _event: &mut Event<()>,
-) -> Option<ControlFlow> {
-    w.request_redraw();
-    None
 }
 
 fn on_redraw_requested(
@@ -219,94 +166,19 @@ fn on_redraw_requested(
     None
 }
 
-fn on_win_resized(
-    _: &Window,
-    state: &mut State,
-    event: &mut Event<()>,
-) -> Option<ControlFlow> {
-    match event {
-        Event::WindowEvent { event, .. } => match event {
-            WindowEvent::Resized(size) => {
-                state.p.aspect = state.render.as_screen().to_aspect_ratio();
-                state.render.as_screen().resize(*size, None);
-            }
-            _ => unreachable!(),
-        },
-        _ => unreachable!(),
-    }
-
-    None
-}
-
 fn on_win_scale_factor_changed(
     _: &Window,
     state: &mut State,
     event: &mut Event<()>,
 ) -> Option<ControlFlow> {
-    match event {
-        Event::WindowEvent { event, .. } => match event {
-            WindowEvent::ScaleFactorChanged {
-                new_inner_size,
-                scale_factor,
-            } => {
-                state.scale_factor = state.scale_factor * (*scale_factor as f32);
-
-                let screen = state.render.as_screen();
-                screen.resize(**new_inner_size, Some(*scale_factor));
-
-                state.circle.scale(state.scale_factor).transform();
-
-                state.color_texture =
-                    Arc::new(screen.like_surface_texture(SSAA, Some(FORMAT)));
-                let extent = screen.to_extent3d(SSAA as u32);
-
-                state.save_file = match state.opts.save {
-                    true => Some(SaveFile::new_frame(&screen.device, extent, FORMAT)),
-                    false => None,
-                };
-            }
-            _ => unreachable!(),
-        },
-        _ => unreachable!(),
+    if let Event::WindowEvent { event, .. } = event {
+        if let WindowEvent::ScaleFactorChanged { .. } = event {
+            state
+                .circle
+                .scale(state.render.to_scale_factor())
+                .transform();
+        }
     }
 
     None
-}
-
-fn on_win_close_requested(
-    _: &Window,
-    state: &mut State,
-    _: &mut Event<()>,
-) -> Option<ControlFlow> {
-    state.render.stop().ok();
-    Some(ControlFlow::Exit)
-}
-
-fn on_win_keyboard_input(
-    _: &Window,
-    state: &mut State,
-    event: &mut Event<()>,
-) -> Option<ControlFlow> {
-    match event {
-        Event::WindowEvent { event, .. } => match event {
-            WindowEvent::KeyboardInput {
-                input:
-                    KeyboardInput {
-                        state: ElementState::Pressed,
-                        virtual_keycode: Some(VirtualKeyCode::Escape),
-                        ..
-                    },
-                ..
-            } => {
-                if let Some(sf) = state.save_file.as_mut() {
-                    println!("saving to file ./circle.bmp ...");
-                    sf.save_to_bmp("./circle.bmp").unwrap();
-                }
-                state.render.stop().ok();
-                Some(ControlFlow::Exit)
-            }
-            _ => None,
-        },
-        _ => None,
-    }
 }

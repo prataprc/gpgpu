@@ -28,7 +28,7 @@ impl Widget for Clear {
         let desc = wgpu::RenderPassDescriptor {
             label: Some("widg/clear:render-pass"),
             color_attachments: &[wgpu::RenderPassColorAttachment {
-                view: target.view,
+                view: &target.view,
                 resolve_target: None,
                 ops,
             }],

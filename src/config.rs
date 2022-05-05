@@ -100,7 +100,7 @@ impl Default for ConfigWinit {
             resizable: true,
             cursor_position: None,
             cursor_visible: true,
-            decorations: false,
+            decorations: true,
             #[cfg(all(unix, not(target_os = "macos")))]
             inner_size: Some(vec![800.0, 600.0]),
             #[cfg(any(target_os = "android", target_os = "macos"))]

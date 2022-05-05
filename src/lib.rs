@@ -140,12 +140,8 @@ pub struct Context<'a> {
     pub queue: &'a wgpu::Queue,
 }
 
-pub struct ColorTarget<'a> {
+pub struct ColorTarget {
     pub size: wgpu::Extent3d,
     pub format: wgpu::TextureFormat,
-    pub view: &'a wgpu::TextureView,
-}
-
-pub trait Application {
-    fn as_render(&self) -> &Render;
+    pub view: wgpu::TextureView,
 }

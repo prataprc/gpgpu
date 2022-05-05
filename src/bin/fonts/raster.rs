@@ -1,16 +1,13 @@
 use log::info;
 use winit::{
-    dpi,
-    event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent},
+    event::{Event, WindowEvent},
     event_loop::ControlFlow,
     window::Window,
 };
 
-use std::sync::Arc;
-
 use gpgpu::{
-    fonts, niw, util, widg::clear, ColorTarget, Config, Context, Render, Result, Screen,
-    Transforms, Widget,
+    fonts, niw, util, widg::clear, Config, Context, Render, Result, Screen, Transforms,
+    Widget,
 };
 
 use crate::Opt;
@@ -23,29 +20,22 @@ struct State {
     render: Render,
     transforms: Transforms,
     clear: clear::Clear,
-    color_attach: Arc<wgpu::Texture>,
     frames: util::FrameRate,
 }
 
-impl State {
-    fn resize(&mut self, size: dpi::PhysicalSize<u32>, scale_factor: Option<f64>) {
-        let screen = self.render.as_screen();
-        screen.resize(size, scale_factor);
-        self.color_attach = Arc::new(screen.like_surface_texture(SSAA, Some(FORMAT)));
+impl AsMut<Render> for State {
+    fn as_mut(&mut self) -> &mut Render {
+        &mut self.render
     }
+}
 
+impl State {
     fn redraw(&mut self) {
         if !self.frames.is_redraw() {
             return;
         }
 
-        let size = self.render.as_screen().to_extent3d(SSAA as u32);
         let screen = self.render.as_screen();
-
-        let view = {
-            let desc = wgpu::TextureViewDescriptor::default();
-            self.color_attach.create_view(&desc)
-        };
 
         let mut encoder = {
             let desc = wgpu::CommandEncoderDescriptor {
@@ -58,18 +48,10 @@ impl State {
             device: &screen.device,
             queue: &screen.queue,
         };
-        let target = ColorTarget {
-            size,
-            format: FORMAT,
-            view: &view,
-        };
+        let target = self.render.to_color_target();
         self.clear.render(&context, &mut encoder, &target).unwrap();
 
-        screen.queue.submit(vec![encoder.finish()]);
-
-        self.render
-            .post_frame(Arc::clone(&self.color_attach))
-            .unwrap();
+        self.render.submit(encoder).unwrap();
 
         self.frames.next_frame_after(10_000 /*micros*/);
     }
@@ -110,42 +92,27 @@ pub fn handle_raster(opts: Opt) -> Result<()> {
             Config::default(),
         ))
         .unwrap();
-        let color_attach = Arc::new(screen.like_surface_texture(SSAA, Some(FORMAT)));
 
         let mut render = Render::new(screen);
-        render.start();
+        render.set_format(FORMAT);
 
         let clear = clear::Clear::new(wgpu::Color::WHITE);
 
+        render.start();
         State {
             font,
             render,
             transforms: Transforms::empty(),
             clear,
-            color_attach,
             frames: util::FrameRate::new(),
         }
     };
 
-    swin.on_win_close_requested(Box::new(on_win_close_requested))
-        .on_win_keyboard_input(Box::new(on_win_keyboard_input))
-        .on_win_resized(Box::new(on_win_resized))
-        .on_win_scale_factor_changed(Box::new(on_win_scale_factor_changed))
-        .on_main_events_cleared(Box::new(on_main_events_cleared))
+    swin.on_win_scale_factor_changed(Box::new(on_win_scale_factor_changed))
         .on_redraw_requested(Box::new(on_redraw_requested));
 
     info!("Press Esc to exit");
     swin.run(state);
-}
-
-// RedrawRequested will only trigger once, unless we manually request it.
-fn on_main_events_cleared(
-    w: &Window,
-    _state: &mut State,
-    _event: &mut Event<()>,
-) -> Option<ControlFlow> {
-    w.request_redraw();
-    None
 }
 
 fn on_redraw_requested(
@@ -157,80 +124,18 @@ fn on_redraw_requested(
     None
 }
 
-fn on_win_resized(
-    _: &Window,
-    state: &mut State,
-    event: &mut Event<()>,
-) -> Option<ControlFlow> {
-    match event {
-        Event::WindowEvent { event, .. } => match event {
-            WindowEvent::Resized(size) => {
-                state.resize(*size, None);
-            }
-            _ => unreachable!(),
-        },
-        _ => unreachable!(),
-    }
-
-    None
-}
-
 fn on_win_scale_factor_changed(
     _: &Window,
-    state: &mut State,
+    _state: &mut State,
     event: &mut Event<()>,
 ) -> Option<ControlFlow> {
     match event {
         Event::WindowEvent { event, .. } => match event {
-            WindowEvent::ScaleFactorChanged {
-                new_inner_size,
-                scale_factor,
-            } => {
-                state.resize(**new_inner_size, Some(*scale_factor));
-            }
+            WindowEvent::ScaleFactorChanged { .. } => (),
             _ => unreachable!(),
         },
         _ => unreachable!(),
     }
 
     None
-}
-
-fn on_win_close_requested(
-    _: &Window,
-    state: &mut State,
-    _: &mut Event<()>,
-) -> Option<ControlFlow> {
-    state.render.stop().ok();
-    Some(ControlFlow::Exit)
-}
-
-fn on_win_keyboard_input(
-    _: &Window,
-    state: &mut State,
-    event: &mut Event<()>,
-) -> Option<ControlFlow> {
-    match event {
-        Event::WindowEvent { event, .. } => match event {
-            WindowEvent::KeyboardInput {
-                input:
-                    KeyboardInput {
-                        state: ElementState::Pressed,
-                        virtual_keycode: Some(VirtualKeyCode::Escape),
-                        ..
-                    },
-                ..
-            } => {
-                println!(
-                    "frame rate {}/s total:{} frames",
-                    state.frames.rate(),
-                    state.frames.total(),
-                );
-                state.render.stop().ok();
-                Some(ControlFlow::Exit)
-            }
-            _ => None,
-        },
-        _ => None,
-    }
 }

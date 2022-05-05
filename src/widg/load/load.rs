@@ -138,7 +138,7 @@ impl Widget for Load {
             let desc = wgpu::RenderPassDescriptor {
                 label: Some("widg/load:render-pass"),
                 color_attachments: &[wgpu::RenderPassColorAttachment {
-                    view: target.view,
+                    view: &target.view,
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),

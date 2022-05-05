@@ -185,7 +185,7 @@ impl Widget for Wireframe {
             let desc = wgpu::RenderPassDescriptor {
                 label: Some("widg/wireframe:render-pass"),
                 color_attachments: &[wgpu::RenderPassColorAttachment {
-                    view: target.view,
+                    view: &target.view,
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(self.state.style.bg),

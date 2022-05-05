@@ -35,14 +35,16 @@ impl Default for Attributes {
 
 impl Transform2D for Attributes {
     fn transform(&self, offset: Location, scale_factor: f32) -> Attributes {
-        Attributes {
+        let val = Attributes {
             center: Location {
                 x: (self.center.x + offset.x) * scale_factor,
                 y: (self.center.y + offset.y) * scale_factor,
             },
             radius: self.radius * scale_factor,
             ..*self
-        }
+        };
+        println!("{:?}", val);
+        val
     }
 }
 
@@ -239,7 +241,7 @@ impl Widget for Circle {
             let desc = wgpu::RenderPassDescriptor {
                 label: Some("dom/circle:render-pass"),
                 color_attachments: &[wgpu::RenderPassColorAttachment {
-                    view: target.view,
+                    view: &target.view,
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(CLEAR_COLOR),

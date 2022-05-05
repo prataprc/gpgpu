@@ -1,11 +1,11 @@
-pub fn render_pipeline(gpu: &gpgpu::Screen) -> wgpu::RenderPipeline {
+pub fn render_pipeline(screen: &gpgpu::Screen) -> wgpu::RenderPipeline {
     let module = {
         let text = include_str!("shader.wgsl");
         let desc = wgpu::ShaderModuleDescriptor {
             label: Some("Point-Shader"),
             source: wgpu::ShaderSource::Wgsl(text.into()),
         };
-        gpu.device.create_shader_module(&desc)
+        screen.device.create_shader_module(&desc)
     };
     let pipeline_layout = {
         let desc = wgpu::PipelineLayoutDescriptor {
@@ -13,11 +13,11 @@ pub fn render_pipeline(gpu: &gpgpu::Screen) -> wgpu::RenderPipeline {
             bind_group_layouts: &[],
             push_constant_ranges: &[],
         };
-        gpu.device.create_pipeline_layout(&desc)
+        screen.device.create_pipeline_layout(&desc)
     };
     let color_target_states = {
         vec![wgpu::ColorTargetState {
-            format: gpu.to_texture_format(),
+            format: screen.to_surface_config().format,
             blend: Some(wgpu::BlendState::REPLACE),
             write_mask: wgpu::ColorWrites::ALL,
         }]
@@ -54,7 +54,7 @@ pub fn render_pipeline(gpu: &gpgpu::Screen) -> wgpu::RenderPipeline {
         }),
         multiview: None,
     };
-    gpu.device.create_render_pipeline(&desc)
+    screen.device.create_render_pipeline(&desc)
 }
 
 #[repr(C)]

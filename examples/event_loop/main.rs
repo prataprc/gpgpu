@@ -5,8 +5,6 @@ use winit::{
     window::Window,
 };
 
-use std::sync::Arc;
-
 use gpgpu::{niw, Config, Render, Screen};
 
 #[derive(StructOpt, Clone)]
@@ -19,10 +17,13 @@ struct State {
     opts: Opt,
     render: Render,
     events_log: niw::EventsLog,
-    color_texture: Arc<wgpu::Texture>,
 }
 
-const SSAA: f32 = 1.0;
+impl AsMut<Render> for State {
+    fn as_mut(&mut self) -> &mut Render {
+        &mut self.render
+    }
+}
 
 fn main() {
     env_logger::init();
@@ -44,9 +45,6 @@ fn main() {
     ))
     .unwrap();
 
-    let color_texture =
-        Arc::new(screen.like_surface_texture(SSAA, Some(screen.to_texture_format())));
-
     let mut render = Render::new(screen);
     render.start();
 
@@ -54,28 +52,14 @@ fn main() {
         opts: opts.clone(),
         render,
         events_log: niw::EventsLog::default(),
-        color_texture,
     };
 
-    swin.on_win_close_requested(Box::new(on_win_close_requested))
-        .on_win_keyboard_input(Box::new(on_win_keyboard_input))
-        .on_win_resized(Box::new(on_win_resized))
-        .on_win_scale_factor_changed(Box::new(on_win_scale_factor_changed))
-        .on_main_events_cleared(Box::new(on_main_events_cleared))
+    swin.on_win_keyboard_input(Box::new(on_win_keyboard_input))
         .on_redraw_requested(Box::new(on_redraw_requested))
         .on_event(Box::new(on_event));
 
     println!("Press Esc to exit");
     swin.run(state);
-}
-
-fn on_win_close_requested(
-    _: &Window,
-    state: &mut State,
-    _: &mut Event<()>,
-) -> Option<ControlFlow> {
-    state.render.stop().ok();
-    Some(ControlFlow::Exit)
 }
 
 fn on_win_keyboard_input(
@@ -103,64 +87,21 @@ fn on_win_keyboard_input(
     }
 }
 
-fn on_win_resized(
-    _: &Window,
-    state: &mut State,
-    event: &mut Event<()>,
-) -> Option<ControlFlow> {
-    match event {
-        Event::WindowEvent { event, .. } => match event {
-            WindowEvent::Resized(size) => state.render.as_screen().resize(*size, None),
-            _ => unreachable!(),
-        },
-        _ => unreachable!(),
-    }
-
-    None
-}
-
-fn on_win_scale_factor_changed(
-    _: &Window,
-    state: &mut State,
-    event: &mut Event<()>,
-) -> Option<ControlFlow> {
-    match event {
-        Event::WindowEvent { event, .. } => match event {
-            WindowEvent::ScaleFactorChanged {
-                new_inner_size,
-                scale_factor,
-            } => {
-                state
-                    .render
-                    .as_screen()
-                    .resize(**new_inner_size, Some(*scale_factor));
-            }
-            _ => unreachable!(),
-        },
-        _ => unreachable!(),
-    }
-
-    None
-}
-
-fn on_main_events_cleared(
-    w: &Window,
-    _state: &mut State,
-    _event: &mut Event<()>,
-) -> Option<ControlFlow> {
-    w.request_redraw();
-    None
-}
-
 fn on_redraw_requested(
     _: &Window,
     state: &mut State,
     _event: &mut Event<()>,
 ) -> Option<ControlFlow> {
-    state
-        .render
-        .post_frame(Arc::clone(&state.color_texture))
-        .unwrap();
+    let screen = state.render.as_screen();
+
+    let encoder = {
+        let desc = wgpu::CommandEncoderDescriptor {
+            label: Some("examples/event_loop:command-encoder"),
+        };
+        screen.device.create_command_encoder(&desc)
+    };
+
+    state.render.submit(encoder).unwrap();
     None
 }
 

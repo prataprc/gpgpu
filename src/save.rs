@@ -1,8 +1,17 @@
+use log::{error, info};
+
 use std::path;
 
 use crate::{Error, Result};
 
+enum Type {
+    Bmp,
+    Gif,
+}
+
 pub struct SaveFile {
+    loc: path::PathBuf,
+    typ: Type,
     size: wgpu::Extent3d,
     format: wgpu::TextureFormat,
     buffer: wgpu::Buffer,
@@ -12,17 +21,20 @@ pub struct SaveFile {
 }
 
 impl SaveFile {
-    pub fn new_frames(
+    pub fn new_gif(
+        loc: path::PathBuf,
         device: &wgpu::Device,
         size: wgpu::Extent3d,
         format: wgpu::TextureFormat,
     ) -> SaveFile {
-        let mut val = Self::new_frame(device, size, format);
+        let mut val = Self::new_bmp(loc, device, size, format);
+        val.typ = Type::Gif;
         val.frames = Vec::with_capacity(8);
         val
     }
 
-    pub fn new_frame(
+    pub fn new_bmp(
+        loc: path::PathBuf,
         device: &wgpu::Device,
         size: wgpu::Extent3d,
         format: wgpu::TextureFormat,
@@ -45,12 +57,22 @@ impl SaveFile {
         let buffer = device.create_buffer(&desc);
 
         SaveFile {
+            loc,
+            typ: Type::Bmp,
             size,
             format,
             buffer,
             unpadded_bytes_per_row,
             padded_bytes_per_row,
             frames: Vec::with_capacity(1),
+        }
+    }
+
+    pub fn resize(&self, device: &wgpu::Device, size: wgpu::Extent3d) -> SaveFile {
+        let loc = self.loc.clone();
+        match self.typ {
+            Type::Bmp => SaveFile::new_bmp(loc, device, size, self.format),
+            Type::Gif => SaveFile::new_gif(loc, device, size, self.format),
         }
     }
 
@@ -106,10 +128,25 @@ impl SaveFile {
         Ok(())
     }
 
-    pub fn save_to_bmp<P>(&mut self, loc: P) -> Result<()>
-    where
-        P: AsRef<path::Path>,
-    {
+    fn texel_size(format: wgpu::TextureFormat) -> u32 {
+        match format {
+            wgpu::TextureFormat::Rgba8Uint => 4,
+            wgpu::TextureFormat::Rgba8UnormSrgb => 4,
+            wgpu::TextureFormat::Bgra8UnormSrgb => 4,
+            val => panic!("format {:?} can't be handled for widg/save", val),
+        }
+    }
+}
+
+impl SaveFile {
+    pub fn save_to_file(&mut self) {
+        match self.typ {
+            Type::Bmp => self.save_to_bmp(),
+            Type::Gif => self.save_to_gif(),
+        }
+    }
+
+    fn save_to_bmp(&mut self) {
         match self.frames.pop() {
             Some(frame) => {
                 let imgbuf: image::ImageBuffer<image::Rgba<u8>, Vec<u8>> =
@@ -119,41 +156,57 @@ impl SaveFile {
                         frame,
                     )
                     .unwrap();
-                err_at!(Fatal, imgbuf.save(loc))
+
+                match imgbuf.save(&self.loc) {
+                    Ok(_) => info!("Saving to bitmap file, {:?}", self.loc),
+                    Err(err) => {
+                        error!("Fail saving to bitmap file, {:?}, {}", self.loc, err)
+                    }
+                }
             }
-            None => err_at!(Invalid, msg: "No frames to save"),
+            None => error!("No frames to save to bitmap"),
         }
     }
 
-    pub fn save_to_gif<P>(&mut self, loc: P, speed: i32) -> Result<()>
-    where
-        P: AsRef<path::Path>,
-    {
+    fn save_to_gif(&mut self) {
         use gif::{Encoder, Frame, Repeat};
 
         let wgpu::Extent3d { width, height, .. } = self.size.clone();
+        let (width, height) = (width as u16, height as u16);
 
-        let mut image = err_at!(Fatal, std::fs::File::create(loc))?;
-        let mut encoder = err_at!(
-            Fatal,
-            Encoder::new(&mut image, width as u16, height as u16, &[])
-        )?;
-        err_at!(Fatal, encoder.set_repeat(Repeat::Infinite))?;
+        let mut image = match std::fs::File::create(&self.loc) {
+            Ok(f) => f,
+            Err(err) => {
+                error!("Fail creating Gif file {:?}, {}", self.loc, err);
+                return;
+            }
+        };
+        let mut encoder = match Encoder::new(&mut image, width, height, &[]) {
+            Ok(encoder) => encoder,
+            Err(err) => {
+                error!("Fail creating Gif encoder {:?} {}", self.loc, err);
+                return;
+            }
+        };
+        match encoder.set_repeat(Repeat::Infinite) {
+            Ok(()) => (),
+            Err(err) => {
+                error!("Fail Gif encoder::set_repeat {}", err);
+                return;
+            }
+        }
 
         for mut frame in self.frames.drain(..) {
-            let frame =
-                Frame::from_rgba_speed(width as u16, height as u16, &mut frame, speed);
-            err_at!(Fatal, encoder.write_frame(&frame))?;
+            let frame = Frame::from_rgba_speed(width, height, &mut frame, 30);
+            match encoder.write_frame(&frame) {
+                Ok(()) => (),
+                Err(err) => {
+                    error!("Fail writing to Gif frame {}", err);
+                    return;
+                }
+            }
         }
 
-        Ok(())
-    }
-
-    fn texel_size(format: wgpu::TextureFormat) -> u32 {
-        match format {
-            wgpu::TextureFormat::Rgba8Uint => 4,
-            wgpu::TextureFormat::Rgba8UnormSrgb => 4,
-            val => panic!("format {:?} can't be handled for widg/save", val),
-        }
+        info!("Saving to gif file, {:?}", self.loc);
     }
 }

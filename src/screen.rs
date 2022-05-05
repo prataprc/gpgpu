@@ -119,56 +119,16 @@ impl Screen {
         }
     }
 
-    pub fn to_surface_config(&self) -> wgpu::SurfaceConfiguration {
-        self.state.read().surface_config.clone()
-    }
-
-    pub fn to_extent3d(&self, ssaa: u32) -> wgpu::Extent3d {
-        let sc = self.to_surface_config();
-        let width = sc.width * ssaa;
-        let height = sc.height * ssaa;
-        let depth_or_array_layers = 1;
-        wgpu::Extent3d { width, height, depth_or_array_layers }
-    }
-
-    pub fn to_center(&self, ssaa: u32) -> wgpu::Origin3d {
-        let sc = self.to_surface_config();
-        wgpu::Origin3d {
-            x: (sc.width / 2) * ssaa ,
-            y: (sc.height / 2) * ssaa ,
-            z: 0,
-        }
-    }
-
-    // width / height of the surface
-    pub fn to_aspect_ratio(&self) -> f32 {
-        let sc = self.to_surface_config();
-        (sc.width as f32) / (sc.height as f32)
-    }
-
-    pub fn to_texture_format(&self) -> wgpu::TextureFormat {
-        self.to_surface_config().format
-    }
-
-    pub fn to_physical_size(&self) -> dpi::PhysicalSize<u32> {
-        let sc = self.to_surface_config();
-        dpi::PhysicalSize {
-            width: sc.width,
-            height: sc.height,
-        }
-    }
-
     pub fn like_surface_texture(
         &self,
-        ssaa: f32,
-        format: Option<wgpu::TextureFormat>,
+        size: wgpu::Extent3d,
+        format: wgpu::TextureFormat,
     ) -> wgpu::Texture {
         use wgpu::TextureUsages;
 
-        let format = format.unwrap_or_else(|| self.to_texture_format());
         let desc = wgpu::TextureDescriptor {
             label: Some("like-surface-texture"),
-            size: self.to_extent3d(ssaa as u32),
+            size,
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
@@ -182,6 +142,32 @@ impl Screen {
         self.device.create_texture(&desc)
     }
 }
+
+impl Screen {
+    pub fn to_surface_config(&self) -> wgpu::SurfaceConfiguration {
+        self.state.read().surface_config.clone()
+    }
+
+    pub fn to_scale_factor(&self) -> f64 {
+        self.state.read().scale_factor
+    }
+
+    pub fn to_extent3d(&self) -> wgpu::Extent3d {
+        let sc = self.to_surface_config();
+        wgpu::Extent3d{
+            width: sc.width,
+            height: sc.height,
+            depth_or_array_layers: 1,
+        }
+    }
+
+    // width / height of the surface
+    pub fn to_aspect_ratio(&self) -> f32 {
+        let sc = self.to_surface_config();
+        (sc.width as f32) / (sc.height as f32)
+    }
+}
+
 
 fn uncaptured_error_handler(err: wgpu::Error) {
     error!("uncaptured error: {}", err)

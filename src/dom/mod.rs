@@ -35,16 +35,16 @@ pub enum Node {
 }
 
 pub struct Dom {
-    root: Node,
-    stretch: stretch::node::Stretch,
+    _root: Node,
+    _stretch: stretch::node::Stretch,
 }
 
 impl Dom {
     pub fn new_win(win: win::Win) -> Dom {
         let root = Node::Win(win);
         Dom {
-            root,
-            stretch: stretch::node::Stretch::new(),
+            _root: root,
+            _stretch: stretch::node::Stretch::new(),
         }
     }
 }

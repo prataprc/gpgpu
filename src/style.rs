@@ -1,6 +1,6 @@
 use bytemuck::{Pod, Zeroable};
 
-use crate::{Location, Size, Transform2D};
+use crate::{Location, Size};
 
 pub const DEFAULT_FONT_SIZE: f32 = 15.0; // in pixels.
 
@@ -11,8 +11,6 @@ pub struct Style {
     pub flex: stretch::style::Style,
     pub fg: wgpu::Color,
     pub bg: wgpu::Color,
-    pub scale_factor: f32,
-    pub offset: Location,
 }
 
 impl Default for Style {
@@ -22,25 +20,14 @@ impl Default for Style {
             fg: wgpu::Color::WHITE,
             bg: wgpu::Color::BLACK,
             border: Border::default(),
-            scale_factor: 1.0,
-            offset: Location { x: 0.0, y: 0.0 },
             flex: stretch::style::Style::default(),
         }
     }
 }
 
-impl Transform2D for Style {
-    fn translate(&mut self, offset: Location) {
-        self.offset = offset;
-    }
-
-    fn scale(&mut self, factor: f32) {
-        self.scale_factor = factor;
-    }
-
-    fn compute(&self) -> Style {
-        let factor = self.scale_factor;
-        let offset = self.offset;
+impl Style {
+    pub fn transform(&self, offset: Location, scale_factor: f32) -> Style {
+        let factor = scale_factor;
         let flex = {
             let flex = self.flex;
             stretch::style::Style {
@@ -59,8 +46,6 @@ impl Transform2D for Style {
             font_size: self.font_size * factor,
             border: self.border.scale(factor),
             flex,
-            scale_factor: 1.0,
-            offset: Location { x: 0.0, y: 0.0 },
             ..*self
         }
     }

@@ -145,3 +145,7 @@ pub struct ColorTarget<'a> {
     pub format: wgpu::TextureFormat,
     pub view: &'a wgpu::TextureView,
 }
+
+pub trait Application {
+    fn as_render(&self) -> &Render;
+}

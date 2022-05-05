@@ -11,7 +11,7 @@ use std::{sync::Arc, time};
 
 use gpgpu::{
     dom::circle, niw, ColorTarget, Config, Context, Location, Perspective, Render,
-    SaveFile, Screen, Transform2D, Transforms, Widget,
+    SaveFile, Screen, Transforms, Widget,
 };
 
 const SSAA: f32 = 2.0;
@@ -156,16 +156,16 @@ fn main() {
             near: 0.1,
             far: 100.0,
         };
-        let circle = {
-            let mut attrs = circle::Attributes {
+        let mut circle = {
+            let attrs = circle::Attributes {
                 center,
                 radius: opts.radius,
                 fill: opts.fill,
                 ..circle::Attributes::default()
             };
-            attrs.scale(scale_factor);
             circle::Circle::new(attrs, &screen.device, FORMAT)
         };
+        circle.scale(scale_factor).transform();
 
         let color_texture = Arc::new(screen.like_surface_texture(SSAA, Some(FORMAT)));
 
@@ -254,7 +254,7 @@ fn on_win_scale_factor_changed(
                 let screen = state.render.as_screen();
                 screen.resize(**new_inner_size, Some(*scale_factor));
 
-                state.circle.scale(state.scale_factor);
+                state.circle.scale(state.scale_factor).transform();
 
                 state.color_texture =
                     Arc::new(screen.like_surface_texture(SSAA, Some(FORMAT)));

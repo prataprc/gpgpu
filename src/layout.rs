@@ -6,11 +6,7 @@ use crate::Style;
 
 /// Two Dimensional transforms, translate, scale.
 pub trait Transform2D {
-    fn translate(&mut self, offset: Location);
-
-    fn scale(&mut self, factor: f32);
-
-    fn compute(&self) -> Self;
+    fn transform(&self, offset: Location, scale_factor: f32) -> Self;
 }
 
 // screen coordinate, in pixels
@@ -29,10 +25,32 @@ pub struct Size {
 
 /// State common to widgets and doms.
 pub struct State<T> {
+    pub scale_factor: f32,
+    pub offset: Location,
     pub style: Style,
-    pub layout: BoxLayout,
-    pub node: stretch::node::Node,
+    pub computed_style: Style,
     pub state: T,
+    pub computed_state: T,
+    pub node: Option<stretch::node::Node>,
+    pub box_layout: BoxLayout,
+}
+
+impl<T> Default for State<T>
+where
+    T: Default,
+{
+    fn default() -> State<T> {
+        State {
+            scale_factor: 1.0,
+            offset: Location { x: 0.0, y: 0.0 },
+            style: Style::default(),
+            computed_style: Style::default(),
+            state: T::default(),
+            computed_state: T::default(),
+            node: None,
+            box_layout: BoxLayout::default(),
+        }
+    }
 }
 
 impl<T> AsRef<Style> for State<T> {
@@ -49,25 +67,13 @@ impl<T> AsMut<Style> for State<T> {
 
 impl<T> AsRef<BoxLayout> for State<T> {
     fn as_ref(&self) -> &BoxLayout {
-        &self.layout
+        &self.box_layout
     }
 }
 
 impl<T> AsMut<BoxLayout> for State<T> {
     fn as_mut(&mut self) -> &mut BoxLayout {
-        &mut self.layout
-    }
-}
-
-impl<T> AsRef<stretch::node::Node> for State<T> {
-    fn as_ref(&self) -> &stretch::node::Node {
-        &self.node
-    }
-}
-
-impl<T> AsMut<stretch::node::Node> for State<T> {
-    fn as_mut(&mut self) -> &mut stretch::node::Node {
-        &mut self.node
+        &mut self.box_layout
     }
 }
 
@@ -82,6 +88,34 @@ impl<T> Deref for State<T> {
 impl<T> DerefMut for State<T> {
     fn deref_mut(&mut self) -> &mut T {
         &mut self.state
+    }
+}
+
+impl<T> State<T> {
+    pub fn translate(&mut self, offset: Location) -> &mut Self {
+        self.offset = offset;
+        self
+    }
+
+    pub fn scale(&mut self, factor: f32) -> &mut Self {
+        self.scale_factor = factor;
+        self
+    }
+
+    pub fn transform(&mut self)
+    where
+        T: Transform2D,
+    {
+        self.computed_style = self.style.transform(self.offset, self.scale_factor);
+        self.computed_state = self.state.transform(self.offset, self.scale_factor);
+    }
+
+    pub fn as_computed_style(&self) -> &Style {
+        &self.computed_style
+    }
+
+    pub fn as_computed_state(&self) -> &T {
+        &self.computed_state
     }
 }
 

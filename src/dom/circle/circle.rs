@@ -1,8 +1,8 @@
 use bytemuck::{Pod, Zeroable};
 
 use crate::{
-    BoxLayout, BoxVertex, ColorTarget, Context, Location, Result, State, Style,
-    Transform2D, Transforms, Widget, CLEAR_COLOR,
+    dom, BoxLayout, BoxVertex, ColorTarget, Context, Location, Result, Size, State,
+    Style, Transform2D, Transforms, Widget, CLEAR_COLOR,
 };
 
 pub struct Circle {
@@ -180,8 +180,8 @@ impl Circle {
             state: State {
                 style: style.clone(),
                 computed_style: style,
-                state: attrs,
-                computed_state: attrs,
+                attrs,
+                computed_attrs: attrs,
                 ..State::default()
             },
             // wgpu items
@@ -208,6 +208,29 @@ impl Circle {
     }
 }
 
+impl Circle {
+    pub fn as_state(&self) -> &State<Attributes> {
+        &self.state
+    }
+
+    pub fn as_mut_state(&mut self) -> &mut State<Attributes> {
+        &mut self.state
+    }
+
+    pub fn to_mut_children(&mut self) -> Option<&mut Vec<dom::Node>> {
+        None
+    }
+
+    pub fn to_extent(&self) -> Option<Size> {
+        let radius = self.state.as_computed_attrs().radius;
+        let size = Size {
+            width: radius,
+            height: radius,
+        };
+        Some(size)
+    }
+}
+
 impl Widget for Circle {
     fn render(
         &self,
@@ -230,7 +253,7 @@ impl Widget for Circle {
         }
         // overwrite the uniform buffer
         {
-            let ub: UniformBuffer = self.state.as_computed_state().clone().into();
+            let ub: UniformBuffer = self.state.as_computed_attrs().clone().into();
             let content: [u8; UniformBuffer::SIZE] = bytemuck::cast(ub);
             context
                 .queue
@@ -311,7 +334,7 @@ impl Circle {
         use wgpu::{util::DeviceExt, BufferUsages};
 
         let cbox = {
-            let attrs = self.state.as_computed_state();
+            let attrs = self.state.as_computed_attrs();
             BoxLayout {
                 x: (attrs.center.x - attrs.radius) as f32,
                 y: (attrs.center.y - attrs.radius) as f32,

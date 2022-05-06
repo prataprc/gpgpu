@@ -128,12 +128,10 @@ fn main() {
         wireframe::Wireframe::from_bytes(&data, FORMAT, &screen.device).unwrap()
     };
 
-    let mut render = Render::new_super_sampled(screen, SSAA);
-    match opts.save.clone() {
-        Some(loc) => render.save_gif(loc),
-        None => &mut render,
+    let mut render = Render::new_super_sampled(screen, SSAA, FORMAT);
+    if let Some(loc) = opts.save.clone() {
+        render.save_gif(loc, FORMAT);
     }
-    .set_format(FORMAT);
 
     let state = {
         let p = Perspective {

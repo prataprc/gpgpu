@@ -14,7 +14,7 @@ use gpgpu::{
 };
 
 const SSAA: f32 = 1.0;
-const FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Rgba8UnormSrgb;
+const FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Rgba8Unorm;
 
 #[derive(Clone, StructOpt)]
 pub struct Opt {
@@ -120,12 +120,10 @@ fn main() {
     ))
     .unwrap();
 
-    let mut render = Render::new_super_sampled(screen, SSAA);
-    match opts.save.clone() {
-        Some(loc) => render.save_bmp(loc),
-        None => &mut render,
+    let mut render = Render::new_super_sampled(screen, SSAA, FORMAT);
+    if let Some(loc) = opts.save.clone() {
+        render.save_bmp(loc, FORMAT);
     }
-    .set_format(FORMAT);
 
     let state = {
         let mut circle = {

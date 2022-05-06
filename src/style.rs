@@ -8,7 +8,7 @@ pub const DEFAULT_FONT_SIZE: f32 = 15.0; // in pixels.
 pub struct Style {
     pub font_size: stretch::number::Number, // in pixels
     pub border: Border,
-    pub flex: stretch::style::Style,
+    pub flex_style: stretch::style::Style,
     pub fg: wgpu::Color,
     pub bg: wgpu::Color,
 }
@@ -20,7 +20,7 @@ impl Default for Style {
             fg: wgpu::Color::WHITE,
             bg: wgpu::Color::BLACK,
             border: Border::default(),
-            flex: stretch::style::Style::default(),
+            flex_style: stretch::style::Style::default(),
         }
     }
 }
@@ -28,8 +28,8 @@ impl Default for Style {
 impl Style {
     pub fn transform(&self, offset: Location, scale_factor: f32) -> Style {
         let factor = scale_factor;
-        let flex = {
-            let flex = self.flex;
+        let flex_style = {
+            let flex = self.flex_style;
             stretch::style::Style {
                 position: scale_rect(translate_rect(flex.position, offset), factor),
                 margin: scale_rect(flex.margin, factor),
@@ -39,13 +39,13 @@ impl Style {
                 size: scale_size(flex.size, factor),
                 min_size: scale_size(flex.min_size, factor),
                 max_size: scale_size(flex.max_size, factor),
-                ..self.flex
+                ..self.flex_style
             }
         };
         Style {
             font_size: self.font_size * factor,
             border: self.border.scale(factor),
-            flex,
+            flex_style,
             ..*self
         }
     }
@@ -68,7 +68,7 @@ impl Style {
     }
 
     pub fn set_aspect_ratio(&mut self, aspect_ratio: f32) -> &mut Self {
-        self.flex.aspect_ratio = stretch::number::Number::Defined(aspect_ratio);
+        self.flex_style.aspect_ratio = stretch::number::Number::Defined(aspect_ratio);
         self
     }
 
@@ -78,8 +78,8 @@ impl Style {
             style::{Dimension, PositionType},
         };
 
-        self.flex.position_type = PositionType::Absolute;
-        self.flex.position = Rect {
+        self.flex_style.position_type = PositionType::Absolute;
+        self.flex_style.position = Rect {
             start: Dimension::Points(loc.x),
             end: Dimension::Points(loc.x + size.width),
             top: Dimension::Points(loc.y),
@@ -94,8 +94,8 @@ impl Style {
             style::{Dimension, PositionType},
         };
 
-        self.flex.position_type = PositionType::Relative;
-        self.flex.position = Rect {
+        self.flex_style.position_type = PositionType::Relative;
+        self.flex_style.position = Rect {
             start: Dimension::Points(loc.x),
             end: Dimension::Points(loc.x + size.width),
             top: Dimension::Points(loc.y),

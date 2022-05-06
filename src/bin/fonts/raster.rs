@@ -12,7 +12,6 @@ use gpgpu::{
 
 use crate::Opt;
 
-const SSAA: f32 = 1.0;
 const FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Rgba8UnormSrgb;
 
 struct State {
@@ -93,8 +92,7 @@ pub fn handle_raster(opts: Opt) -> Result<()> {
         ))
         .unwrap();
 
-        let mut render = Render::new(screen);
-        render.set_format(FORMAT);
+        let mut render = Render::new(screen, FORMAT);
 
         let clear = clear::Clear::new(wgpu::Color::WHITE);
 

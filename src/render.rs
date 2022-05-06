@@ -33,8 +33,11 @@ impl Drop for Render {
 }
 
 impl Render {
-    pub fn new_super_sampled(screen: Screen, ssaa: f32) -> Render {
-        let color_format = screen.to_surface_config().format;
+    pub fn new_super_sampled(
+        screen: Screen,
+        ssaa: f32,
+        color_format: wgpu::TextureFormat,
+    ) -> Render {
         let size = {
             let mut size = screen.to_extent3d();
             size.width = size.width * ssaa as u32;
@@ -53,21 +56,11 @@ impl Render {
         }
     }
 
-    pub fn new(screen: Screen) -> Render {
-        Render::new_super_sampled(screen, 1.0)
+    pub fn new(screen: Screen, color_format: wgpu::TextureFormat) -> Render {
+        Render::new_super_sampled(screen, 1.0, color_format)
     }
 
-    pub fn set_format(&mut self, color_format: wgpu::TextureFormat) -> &mut Self {
-        let color_texture = Arc::new(
-            self.screen
-                .like_surface_texture(self.to_extent3d(), color_format),
-        );
-        self.color_texture = color_texture;
-        self.color_format = color_format;
-        self
-    }
-
-    pub fn save_bmp<P>(&mut self, loc: P) -> &mut Self
+    pub fn save_bmp<P>(&mut self, loc: P, format: wgpu::TextureFormat) -> &mut Self
     where
         P: AsRef<path::Path>,
     {
@@ -75,7 +68,6 @@ impl Render {
             let loc: &path::Path = loc.as_ref();
             loc.into()
         };
-        let format = self.screen.to_surface_config().format;
         self.save_file = Some(SaveFile::new_bmp(
             loc,
             &self.screen.device,
@@ -85,7 +77,7 @@ impl Render {
         self
     }
 
-    pub fn save_gif<P>(&mut self, loc: P) -> &mut Self
+    pub fn save_gif<P>(&mut self, loc: P, format: wgpu::TextureFormat) -> &mut Self
     where
         P: AsRef<path::Path>,
     {
@@ -93,7 +85,6 @@ impl Render {
             let loc: &path::Path = loc.as_ref();
             loc.into()
         };
-        let format = self.screen.to_surface_config().format;
         self.save_file = Some(SaveFile::new_gif(
             loc,
             &self.screen.device,

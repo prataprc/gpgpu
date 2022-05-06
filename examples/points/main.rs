@@ -6,6 +6,8 @@ use gpgpu::{niw, util, Config, Render, Screen};
 
 mod render;
 
+const FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Rgba8UnormSrgb;
+
 #[derive(Clone, StructOpt)]
 pub struct Opt {
     #[structopt(short = "fg")]
@@ -48,7 +50,7 @@ fn main() {
     .unwrap();
 
     let state = {
-        let mut render = Render::new(screen);
+        let mut render = Render::new(screen, FORMAT);
 
         render.start();
         State {

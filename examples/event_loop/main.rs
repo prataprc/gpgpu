@@ -7,6 +7,8 @@ use winit::{
 
 use gpgpu::{niw, Config, Render, Screen};
 
+const FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Rgba8UnormSrgb;
+
 #[derive(StructOpt, Clone)]
 pub struct Opt {
     #[structopt(long = "event")]
@@ -45,7 +47,7 @@ fn main() {
     ))
     .unwrap();
 
-    let mut render = Render::new(screen);
+    let mut render = Render::new(screen, FORMAT);
     render.start();
 
     let state = State {

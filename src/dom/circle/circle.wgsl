@@ -43,32 +43,36 @@ fn fs_main(in: VertexOutput) -> [[location(0)]] vec4<f32> {
     let s: f32 = sqrt((x*x) + (y*y));
 
     if (attrs.fill == u32(1)) {
-        if (s == attrs.radius) {
-            return style.fg;
-        } else if (ceil(s) == attrs.radius) {
-            var fg = style.fg * (1.0 - (attrs.radius - s));
-            fg.w = 1.0;
-            return fg;
-        } else if (floor(s) == attrs.radius) {
-            var fg = style.fg * (1.0 - (s - attrs.radius));
-            fg.w = 1.0;
-            return fg;
+        if (round(s) == attrs.radius) {
+            if (s == attrs.radius) {
+                return style.fg;
+            } else if (ceil(s) == attrs.radius) {
+                var fg = style.fg * (1.0 - (attrs.radius - s));
+                fg.w = 1.0;
+                return fg;
+            } else { // (floor(s) == attrs.radius)
+                var fg = style.fg * (1.0 - (s - attrs.radius));
+                fg.w = 1.0;
+                return fg;
+            }
         } else if (s < attrs.radius) {
             return style.fg;
         } else {
             return vec4<f32>(0.0, 0.0, 0.0, 0.0);
         }
     } else {
-        if (s == attrs.radius) {
-            return style.fg;
-        } else if (ceil(s) == attrs.radius) {
-            var fg = style.fg * (1.0 - (attrs.radius - s));
-            fg.w = 1.0;
-            return fg;
-        } else if (floor(s) == attrs.radius) {
-            var fg = style.fg * (1.0 - (s - attrs.radius));
-            fg.w = 1.0;
-            return fg;
+        if (round(s) == attrs.radius) {
+            if (s == attrs.radius) {
+                return style.fg;
+            } else if (ceil(s) == attrs.radius) {
+                var fg = style.fg * (1.0 - (attrs.radius - s));
+                fg.w = 1.0;
+                return fg;
+            } else { // (floor(s) == attrs.radius)
+                var fg = style.fg * (1.0 - (s - attrs.radius));
+                fg.w = 1.0;
+                return fg;
+            }
         } else if (s < attrs.radius) {
             return style.bg;
         } else {

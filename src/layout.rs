@@ -29,10 +29,10 @@ pub struct State<T> {
     pub offset: Location,
     pub style: Style,
     pub computed_style: Style,
-    pub state: T,
-    pub computed_state: T,
-    pub node: Option<stretch::node::Node>,
+    pub flex_node: Option<stretch::node::Node>,
     pub box_layout: BoxLayout,
+    pub attrs: T,
+    pub computed_attrs: T,
 }
 
 impl<T> Default for State<T>
@@ -45,10 +45,10 @@ where
             offset: Location { x: 0.0, y: 0.0 },
             style: Style::default(),
             computed_style: Style::default(),
-            state: T::default(),
-            computed_state: T::default(),
-            node: None,
+            flex_node: None,
             box_layout: BoxLayout::default(),
+            attrs: T::default(),
+            computed_attrs: T::default(),
         }
     }
 }
@@ -81,13 +81,13 @@ impl<T> Deref for State<T> {
     type Target = T;
 
     fn deref(&self) -> &T {
-        &self.state
+        &self.attrs
     }
 }
 
 impl<T> DerefMut for State<T> {
     fn deref_mut(&mut self) -> &mut T {
-        &mut self.state
+        &mut self.attrs
     }
 }
 
@@ -107,15 +107,15 @@ impl<T> State<T> {
         T: Transform2D,
     {
         self.computed_style = self.style.transform(self.offset, self.scale_factor);
-        self.computed_state = self.state.transform(self.offset, self.scale_factor);
+        self.computed_attrs = self.attrs.transform(self.offset, self.scale_factor);
     }
 
     pub fn as_computed_style(&self) -> &Style {
         &self.computed_style
     }
 
-    pub fn as_computed_state(&self) -> &T {
-        &self.computed_state
+    pub fn as_computed_attrs(&self) -> &T {
+        &self.computed_attrs
     }
 }
 

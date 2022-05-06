@@ -6,6 +6,7 @@ use gpgpu::{
 };
 
 const SSAA: f32 = 2.0;
+const FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Rgba8UnormSrgb;
 
 #[derive(Clone, StructOpt)]
 pub struct Opt {
@@ -69,7 +70,7 @@ fn main() {
     ))
     .unwrap();
 
-    let mut render = Render::new_super_sampled(screen, SSAA);
+    let mut render = Render::new_super_sampled(screen, SSAA, FORMAT);
 
     let state = {
         render.start();

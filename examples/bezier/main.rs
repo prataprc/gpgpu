@@ -47,7 +47,7 @@ fn main() {
 
     let opts = Opt::from_args();
 
-    let name = "example-triangle".to_string();
+    let name = "example-bezier".to_string();
     let config = Config::default();
 
     let mut swin = {
@@ -86,16 +86,13 @@ fn on_redraw_requested(
 ) -> Option<ControlFlow> {
     let vertex_buffer =
         render::Vertex::to_buffer(&state.render.as_screen().device, VERTICES);
-    let pipeline = render::render_pipeline(
-        &state.render.as_screen().device,
-        state.render.as_screen().to_surface_config().format,
-    );
+    let pipeline = render::render_pipeline(&state.render.as_screen().device, FORMAT);
 
     let target = state.render.to_color_target();
 
     let mut encoder = {
         let desc = wgpu::CommandEncoderDescriptor {
-            label: Some("triangle"),
+            label: Some("bezier-encoder"),
         };
         state
             .render

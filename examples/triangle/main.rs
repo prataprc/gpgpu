@@ -83,10 +83,7 @@ fn on_redraw_requested(
 ) -> Option<ControlFlow> {
     let vertex_buffer =
         render::Vertex::to_buffer(&state.render.as_screen().device, VERTICES);
-    let pipeline = render::render_pipeline(
-        &state.render.as_screen().device,
-        state.render.as_screen().to_surface_config().format,
-    );
+    let pipeline = render::render_pipeline(&state.render.as_screen().device, FORMAT);
 
     let target = state.render.to_color_target();
 

@@ -86,7 +86,7 @@ fn on_redraw_requested(
         .collect();
     let vertex_buffer =
         render::Vertex::to_buffer(&state.render.as_screen().device, vertices.as_slice());
-    let pipeline = render::render_pipeline(&state.render.as_screen());
+    let pipeline = render::render_pipeline(&state.render.as_screen(), FORMAT);
 
     let target = state.render.to_color_target();
 

@@ -1,32 +1,72 @@
 use bytemuck::{Pod, Zeroable};
 
-use std::ops::{Deref, DerefMut};
+use std::{
+    fmt,
+    ops::{Deref, DerefMut},
+    result,
+};
 
 use crate::Style;
 
 /// Two Dimensional transforms, translate, scale.
 pub trait Transform2D {
-    fn transform(&self, offset: Location, scale_factor: f32) -> Self;
+    fn transform2d(&self, offset: Location, scale_factor: f32) -> Self;
+}
+
+impl Transform2D for () {
+    fn transform2d(&self, _: Location, _: f32) -> Self {
+        ()
+    }
 }
 
 // screen coordinate, in pixels
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Default)]
 pub struct Location {
     pub x: f32,
     pub y: f32,
 }
 
 // screen coordinate, in pixels
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Default)]
 pub struct Size {
     pub width: f32,
     pub height: f32,
 }
 
+impl From<Size> for stretch::geometry::Size<stretch::style::Dimension> {
+    fn from(val: Size) -> stretch::geometry::Size<stretch::style::Dimension> {
+        stretch::geometry::Size {
+            width: stretch::style::Dimension::Points(val.width),
+            height: stretch::style::Dimension::Points(val.height),
+        }
+    }
+}
+
+impl From<Size> for stretch::geometry::Size<f32> {
+    fn from(val: Size) -> stretch::geometry::Size<f32> {
+        stretch::geometry::Size {
+            width: val.width,
+            height: val.height,
+        }
+    }
+}
+
+impl From<stretch::geometry::Size<stretch::style::Dimension>> for Size {
+    fn from(val: stretch::geometry::Size<stretch::style::Dimension>) -> Size {
+        let width = match val.width {
+            stretch::style::Dimension::Points(w) => w,
+            _ => 0.0,
+        };
+        let height = match val.width {
+            stretch::style::Dimension::Points(h) => h,
+            _ => 0.0,
+        };
+        Size { width, height }
+    }
+}
+
 /// State common to widgets and doms.
 pub struct State<T> {
-    pub scale_factor: f32,
-    pub offset: Location,
     pub style: Style,
     pub computed_style: Style,
     pub flex_node: Option<stretch::node::Node>,
@@ -41,8 +81,6 @@ where
 {
     fn default() -> State<T> {
         State {
-            scale_factor: 1.0,
-            offset: Location { x: 0.0, y: 0.0 },
             style: Style::default(),
             computed_style: Style::default(),
             flex_node: None,
@@ -92,22 +130,12 @@ impl<T> DerefMut for State<T> {
 }
 
 impl<T> State<T> {
-    pub fn translate(&mut self, offset: Location) -> &mut Self {
-        self.offset = offset;
-        self
-    }
-
-    pub fn scale(&mut self, factor: f32) -> &mut Self {
-        self.scale_factor = factor;
-        self
-    }
-
-    pub fn transform(&mut self)
+    pub fn transform(&mut self, offset: Location, scale_factor: f32)
     where
-        T: Transform2D,
+        T: Transform2D + fmt::Debug,
     {
-        self.computed_style = self.style.transform(self.offset, self.scale_factor);
-        self.computed_attrs = self.attrs.transform(self.offset, self.scale_factor);
+        self.computed_style = self.style.transform2d(offset, scale_factor);
+        self.computed_attrs = self.attrs.transform2d(offset, scale_factor);
     }
 
     pub fn as_computed_style(&self) -> &Style {
@@ -117,6 +145,17 @@ impl<T> State<T> {
     pub fn as_computed_attrs(&self) -> &T {
         &self.computed_attrs
     }
+
+    pub fn to_viewport(&self) -> Viewport {
+        Viewport {
+            x: self.box_layout.x,
+            y: self.box_layout.y,
+            w: self.box_layout.w,
+            h: self.box_layout.h,
+            min_depth: 1.0,
+            max_depth: 1.0,
+        }
+    }
 }
 
 #[derive(Clone, Copy, Default)]
@@ -125,6 +164,12 @@ pub struct BoxLayout {
     pub y: f32,
     pub w: f32,
     pub h: f32,
+}
+
+impl fmt::Display for BoxLayout {
+    fn fmt(&self, f: &mut fmt::Formatter) -> result::Result<(), fmt::Error> {
+        write!(f, "Box<{},{}..{},{}>", self.x, self.y, self.w, self.h)
+    }
 }
 
 impl From<stretch::result::Layout> for BoxLayout {
@@ -144,47 +189,10 @@ impl From<stretch::result::Layout> for BoxLayout {
     }
 }
 
-impl BoxLayout {
-    pub fn to_vertices(&self, size: wgpu::Extent3d) -> Vec<BoxVertex> {
-        let tl = [
-            ((self.x / (size.width as f32)) * 2.0) - 1.0,
-            1.0 - ((self.y / (size.height as f32)) * 2.0),
-            0.0,
-            1.0,
-        ];
-        let tr = [
-            (((self.x + self.w) / (size.width as f32)) * 2.0) - 1.0,
-            1.0 - ((self.y / (size.height as f32)) * 2.0),
-            0.0,
-            1.0,
-        ];
-        let br = [
-            (((self.x + self.w) / (size.width as f32)) * 2.0) - 1.0,
-            1.0 - (((self.y + self.h) / (size.height as f32)) * 2.0),
-            0.0,
-            1.0,
-        ];
-        let bl = [
-            ((self.x / (size.width as f32)) * 2.0) - 1.0,
-            1.0 - (((self.y + self.h) / (size.height as f32)) * 2.0),
-            0.0,
-            1.0,
-        ];
-        vec![
-            BoxVertex { position: tl },
-            BoxVertex { position: bl },
-            BoxVertex { position: tr },
-            BoxVertex { position: tr },
-            BoxVertex { position: bl },
-            BoxVertex { position: br },
-        ]
-    }
-}
-
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Pod, Zeroable)]
 pub struct BoxVertex {
-    position: [f32; 4],
+    pub position: [f32; 4],
 }
 
 impl BoxVertex {
@@ -202,5 +210,39 @@ impl BoxVertex {
             step_mode: wgpu::VertexStepMode::Vertex,
             attributes: &Self::ATTRIBUTES,
         }
+    }
+}
+
+#[derive(Copy, Clone, Debug, Default)]
+pub struct Viewport {
+    pub x: f32,
+    pub y: f32,
+    pub w: f32,
+    pub h: f32,
+    pub min_depth: f32,
+    pub max_depth: f32,
+}
+
+impl Viewport {
+    pub fn root_viewport(size: Size) -> Viewport {
+        Viewport {
+            x: 0.0,
+            y: 0.0,
+            w: size.width,
+            h: size.height,
+            min_depth: 1.0,
+            max_depth: 1.0,
+        }
+    }
+
+    pub fn set_viewport(&self, render_pass: &mut wgpu::RenderPass) {
+        render_pass.set_viewport(
+            self.x,
+            self.y,
+            self.w,
+            self.h,
+            self.min_depth,
+            self.max_depth,
+        );
     }
 }

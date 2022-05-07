@@ -110,7 +110,7 @@ pub mod util;
 pub mod widg;
 
 pub use config::{Config, ConfigAdapter, ConfigWinit};
-pub use layout::{BoxLayout, BoxVertex, Location, Size, State, Transform2D};
+pub use layout::{BoxLayout, BoxVertex, Location, Size, State, Transform2D, Viewport};
 pub use render::Render;
 pub use save::SaveFile;
 pub use screen::Screen;
@@ -141,7 +141,7 @@ pub struct Context<'a> {
 }
 
 pub struct ColorTarget {
-    pub size: wgpu::Extent3d,
     pub format: wgpu::TextureFormat,
     pub view: wgpu::TextureView,
+    pub view_port: Viewport,
 }

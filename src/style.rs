@@ -4,7 +4,7 @@ use crate::{Location, Size};
 
 pub const DEFAULT_FONT_SIZE: f32 = 15.0; // in pixels.
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct Style {
     pub font_size: stretch::number::Number, // in pixels
     pub border: Border,
@@ -26,7 +26,7 @@ impl Default for Style {
 }
 
 impl Style {
-    pub fn transform(&self, offset: Location, scale_factor: f32) -> Style {
+    pub fn transform2d(&self, offset: Location, scale_factor: f32) -> Style {
         let factor = scale_factor;
         let flex_style = {
             let flex = self.flex_style;
@@ -72,6 +72,11 @@ impl Style {
         self
     }
 
+    pub fn set_size(&mut self, size: Size) -> &mut Self {
+        self.flex_style.size = size.into();
+        self
+    }
+
     pub fn set_absolute_position(&mut self, loc: Location, size: Size) -> &mut Self {
         use stretch::{
             geometry::Rect,
@@ -105,7 +110,7 @@ impl Style {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum StyleBorder {
     /// Specifies no border
     None,
@@ -127,7 +132,7 @@ impl Default for StyleBorder {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct Border {
     pub style: StyleBorder,
     pub width: stretch::geometry::Rect<stretch::style::Dimension>,

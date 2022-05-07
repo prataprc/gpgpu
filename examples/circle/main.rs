@@ -1,4 +1,3 @@
-use cgmath::Deg;
 use log::info;
 use structopt::StructOpt;
 use winit::{
@@ -10,17 +9,15 @@ use winit::{
 use std::{path, time};
 
 use gpgpu::{
-    dom::circle, niw, Config, Context, Location, Render, Screen, Transforms, Widget,
+    dom::{self, circle, win, Dom},
+    niw, Config, Context, Location, Render, Screen, Size, Transforms,
 };
 
 const SSAA: f32 = 1.0;
 const FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Rgba8Unorm;
 
-#[derive(Clone, StructOpt)]
+#[derive(StructOpt)]
 pub struct Opt {
-    #[structopt(long = "rotate", default_value = "0", use_delimiter = true)]
-    rotate: Vec<f32>,
-
     #[structopt(long = "radius", default_value = "200")]
     radius: f32,
 
@@ -35,12 +32,9 @@ pub struct Opt {
 }
 
 struct State {
-    opts: Opt,
     render: Render,
-    rotate_by: Vec<f32>,
-    transforms: Transforms,
-    circle: circle::Circle,
     next_frame: time::Instant,
+    domr: Dom,
 }
 
 impl AsMut<Render> for State {
@@ -55,34 +49,24 @@ impl State {
             return;
         }
 
-        let screen = self.render.as_screen();
-
-        let mut transforms = self.transforms;
-        transforms
-            .rotate_x_by(Deg(self.rotate_by[0]))
-            .rotate_y_by(Deg(self.rotate_by[1]))
-            .rotate_z_by(Deg(self.rotate_by[2]));
-
         let mut encoder = {
             let desc = wgpu::CommandEncoderDescriptor {
                 label: Some("examples/circle:command-encoder"),
             };
-            screen.device.create_command_encoder(&desc)
+            self.render.as_device().create_command_encoder(&desc)
         };
 
         let context = Context {
-            transforms: &transforms,
-            device: &screen.device,
-            queue: &screen.queue,
+            transforms: &Transforms::empty(),
+            device: self.render.as_device(),
+            queue: self.render.as_queue(),
         };
-        let target = self.render.to_color_target();
-        self.circle.render(&context, &mut encoder, &target).unwrap();
+        let mut target = self.render.to_color_target();
+        self.domr
+            .redraw(&context, &mut encoder, &mut target)
+            .unwrap();
 
         self.render.submit(encoder).unwrap();
-
-        self.rotate_by[0] += self.opts.rotate[0];
-        self.rotate_by[1] += self.opts.rotate[1];
-        self.rotate_by[2] += self.opts.rotate[2];
 
         self.next_frame = time::Instant::now() + time::Duration::from_millis(10);
     }
@@ -91,19 +75,7 @@ impl State {
 fn main() {
     env_logger::init();
 
-    let mut opts = Opt::from_args();
-    opts.rotate = match opts.rotate.as_slice() {
-        [] => vec![0.0, 0.0, 0.0],
-        [x] => vec![*x, 0.0, 0.0],
-        [x, y] => vec![*x, *y, 0.0],
-        [x, y, z] => vec![*x, *y, *z],
-        [x, y, z, ..] => vec![*x, *y, *z],
-    };
-    let center = Location {
-        x: opts.center[0],
-        y: opts.center[1],
-    };
-
+    let opts = Opt::from_args();
     let name = "example-circle".to_string();
     let config = Config::default();
 
@@ -126,25 +98,17 @@ fn main() {
     }
 
     let state = {
-        let mut circle = {
-            let attrs = circle::Attributes {
-                center,
-                radius: opts.radius,
-                fill: opts.fill,
-                ..circle::Attributes::default()
-            };
-            circle::Circle::new(attrs, &render.as_screen().device, FORMAT)
-        };
-        circle.scale(render.to_scale_factor()).transform();
+        let mut domr = make_dom(&opts, &render, FORMAT);
+        let wgpu::Extent3d { width, height, .. } = render.to_extent3d();
+        domr.compute_layout(Some(width as f32), Some(height as f32))
+            .unwrap();
+        domr.print();
 
         render.start();
         State {
-            opts: opts.clone(),
             render,
-            rotate_by: opts.rotate.clone(),
-            transforms: Transforms::empty(),
-            circle,
             next_frame: time::Instant::now(),
+            domr,
         }
     };
 
@@ -171,12 +135,43 @@ fn on_win_scale_factor_changed(
 ) -> Option<ControlFlow> {
     if let Event::WindowEvent { event, .. } = event {
         if let WindowEvent::ScaleFactorChanged { .. } = event {
+            let scale_factor = state.render.to_scale_factor();
+            state.domr.transform(Location::default(), scale_factor);
+
+            let wgpu::Extent3d { width, height, .. } = state.render.to_extent3d();
+            println!("width {} height {}", width, height);
             state
-                .circle
-                .scale(state.render.to_scale_factor())
-                .transform();
+                .domr
+                .compute_layout(Some(width as f32), Some(height as f32))
+                .unwrap();
+            state.domr.print();
         }
     }
 
     None
+}
+
+fn make_dom(opts: &Opt, render: &Render, format: wgpu::TextureFormat) -> Dom {
+    let wgpu::Extent3d { width, height, .. } = render.to_extent3d();
+    let (width, height) = (width as f32, height as f32);
+
+    let circles: Vec<dom::Node> = {
+        let attrs = circle::Attributes {
+            radius: opts.radius,
+            fill: opts.fill,
+            ..circle::Attributes::default()
+        };
+        (0..5)
+            .map(|_| {
+                dom::Node::from(circle::Circle::new(attrs, render.as_device(), format))
+            })
+            .collect()
+    };
+    let mut win = {
+        let size = Size { width, height };
+        win::Win::new(size, circles)
+    };
+    win.set_size(width as f32, height as f32);
+    win.transform(Location::default(), render.to_scale_factor());
+    Dom::new(win)
 }

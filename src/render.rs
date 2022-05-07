@@ -8,7 +8,8 @@ use std::{
 };
 
 use crate::{
-    widg::load, ColorTarget, Context, Error, Result, SaveFile, Screen, Transforms, Widget,
+    widg::load, ColorTarget, Context, Error, Result, SaveFile, Screen, Transforms,
+    Viewport, Widget,
 };
 
 /// Rendering thread
@@ -113,6 +114,25 @@ impl Render {
         }
     }
 
+    pub fn resize(
+        &mut self,
+        new_size: dpi::PhysicalSize<u32>,
+        scale_factor: Option<f64>,
+    ) {
+        // first do this
+        self.screen.resize(new_size, scale_factor);
+
+        let size = self.to_extent3d();
+        self.color_texture = {
+            let texture = self.screen.like_surface_texture(size, self.color_format);
+            Arc::new(texture)
+        };
+        self.save_file = match &self.save_file {
+            Some(sf) => Some(sf.resize(&self.screen.device, size)),
+            None => None,
+        };
+    }
+
     pub fn submit(&mut self, mut encoder: wgpu::CommandEncoder) -> Result<()> {
         match self.save_file.as_ref() {
             Some(sf) => sf.load_from_texture(
@@ -146,27 +166,16 @@ impl Render {
 }
 
 impl Render {
-    pub fn resize(
-        &mut self,
-        new_size: dpi::PhysicalSize<u32>,
-        scale_factor: Option<f64>,
-    ) {
-        // first do this
-        self.screen.resize(new_size, scale_factor);
-
-        let size = self.to_extent3d();
-        self.color_texture = {
-            let texture = self.screen.like_surface_texture(size, self.color_format);
-            Arc::new(texture)
-        };
-        self.save_file = match &self.save_file {
-            Some(sf) => Some(sf.resize(&self.screen.device, size)),
-            None => None,
-        };
-    }
-
     pub fn as_screen(&self) -> Arc<Screen> {
         Arc::clone(&self.screen)
+    }
+
+    pub fn as_device(&self) -> &wgpu::Device {
+        &self.screen.device
+    }
+
+    pub fn as_queue(&self) -> &wgpu::Queue {
+        &self.screen.queue
     }
 
     pub fn to_scale_factor(&self) -> f32 {
@@ -186,9 +195,9 @@ impl Render {
             self.color_texture.create_view(&desc)
         };
         ColorTarget {
-            size: self.to_extent3d(),
             format: self.color_format,
             view,
+            view_port: Viewport::default(),
         }
     }
 }
@@ -255,9 +264,10 @@ fn render_loop(screen: Arc<Screen>, rx: mpsc::Receiver<Request>) -> Result<()> {
             queue: &screen.queue,
         };
         let target = ColorTarget {
-            size: screen.to_extent3d(),
             format: surface_format,
             view: surface_view,
+            // TODO let is be same as other dom elements, should we ?
+            view_port: Viewport::default(),
         };
         load.render(&context, &mut encoder, &target)?;
         screen.queue.submit(vec![encoder.finish()]);

@@ -2,7 +2,7 @@ use bytemuck::{Pod, Zeroable};
 
 use crate::{
     dom, BoxLayout, BoxVertex, ColorTarget, Context, Location, Result, Size, State,
-    Style, Transform2D, Transforms, Widget, CLEAR_COLOR,
+    Style, Transform2D, Transforms,
 };
 
 pub struct Circle {
@@ -18,7 +18,6 @@ pub struct Circle {
 /// measurements are in pixels.
 #[derive(Copy, Clone, Debug)]
 pub struct Attributes {
-    pub center: Location,
     pub radius: f32,
     pub fill: bool,
 }
@@ -26,7 +25,6 @@ pub struct Attributes {
 impl Default for Attributes {
     fn default() -> Attributes {
         Attributes {
-            center: Location { x: 0.0, y: 0.0 },
             radius: 1.0,
             fill: false,
         }
@@ -34,17 +32,11 @@ impl Default for Attributes {
 }
 
 impl Transform2D for Attributes {
-    fn transform(&self, offset: Location, scale_factor: f32) -> Attributes {
-        let val = Attributes {
-            center: Location {
-                x: (self.center.x + offset.x) * scale_factor,
-                y: (self.center.y + offset.y) * scale_factor,
-            },
+    fn transform2d(&self, _offset: Location, scale_factor: f32) -> Attributes {
+        Attributes {
             radius: self.radius * scale_factor,
             ..*self
-        };
-        println!("{:?}", val);
-        val
+        }
     }
 }
 
@@ -56,18 +48,8 @@ struct UniformBuffer {
     fill: u32,
 }
 
-impl From<Attributes> for UniformBuffer {
-    fn from(val: Attributes) -> UniformBuffer {
-        UniformBuffer {
-            center: [val.center.x as f32, val.center.y as f32],
-            radius: val.radius as f32,
-            fill: if val.fill { 1 } else { 0 },
-        }
-    }
-}
-
 impl UniformBuffer {
-    const SIZE: usize = 4 + 4 + 8;
+    const SIZE: usize = 8 + 4 + 4;
 }
 
 impl Circle {
@@ -170,20 +152,22 @@ impl Circle {
             device.create_bind_group(&desc)
         };
 
-        let style = Style {
-            fg: wgpu::Color::WHITE,
-            bg: wgpu::Color::BLACK,
-            ..Style::default()
-        };
-
-        Circle {
-            state: State {
-                style: style.clone(),
-                computed_style: style,
+        let state = {
+            let mut state = State {
                 attrs,
                 computed_attrs: attrs,
                 ..State::default()
-            },
+            };
+            let diameter = state.as_computed_attrs().radius * 2.0;
+            let size = Size {
+                width: diameter,
+                height: diameter,
+            };
+            state.style.set_size(size);
+            state
+        };
+        Circle {
+            state,
             // wgpu items
             pipeline,
             bind_group,
@@ -193,18 +177,8 @@ impl Circle {
         }
     }
 
-    pub fn translate(&mut self, offset: Location) -> &mut Self {
-        self.state.translate(offset);
-        self
-    }
-
-    pub fn scale(&mut self, factor: f32) -> &mut Self {
-        self.state.scale(factor);
-        self
-    }
-
-    pub fn transform(&mut self) {
-        self.state.transform()
+    pub fn print(&self, prefix: &str) {
+        println!("{}node.Circle @ {}", prefix, self.state.box_layout);
     }
 }
 
@@ -221,24 +195,28 @@ impl Circle {
         None
     }
 
-    pub fn to_extent(&self) -> Option<Size> {
-        let radius = self.state.as_computed_attrs().radius;
+    pub fn to_extent(&self) -> Size {
+        let diameter = self.state.as_computed_attrs().radius * 2.0;
         let size = Size {
-            width: radius,
-            height: radius,
+            width: diameter,
+            height: diameter,
         };
-        Some(size)
+        size
     }
-}
 
-impl Widget for Circle {
-    fn render(
-        &self,
+    pub fn transform(&mut self, offset: Location, scale_factor: f32) {
+        self.state.transform(offset, scale_factor);
+    }
+
+    pub fn redraw(
+        &mut self,
         context: &Context,
         encoder: &mut wgpu::CommandEncoder,
-        target: &ColorTarget,
+        target: &mut ColorTarget,
     ) -> Result<()> {
-        let vertex_buffer = self.to_vertex_buffer(context.device, target.size);
+        // debug!("Settings view port for circle {:?}", target.view_port);
+
+        let vertex_buffer = self.to_vertex_buffer(&context.device);
         // overwrite the transform mvp buffer.
         {
             let content = context.transforms.to_bind_content();
@@ -253,7 +231,13 @@ impl Widget for Circle {
         }
         // overwrite the uniform buffer
         {
-            let ub: UniformBuffer = self.state.as_computed_attrs().clone().into();
+            let attrs = self.state.as_computed_attrs();
+            let blayt: &BoxLayout = self.state.as_ref();
+            let ub = UniformBuffer {
+                center: [blayt.x + attrs.radius, blayt.y + attrs.radius],
+                radius: attrs.radius,
+                fill: if attrs.fill { 1 } else { 0 },
+            };
             let content: [u8; UniformBuffer::SIZE] = bytemuck::cast(ub);
             context
                 .queue
@@ -267,7 +251,7 @@ impl Widget for Circle {
                     view: &target.view,
                     resolve_target: None,
                     ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(CLEAR_COLOR),
+                        load: wgpu::LoadOp::Load,
                         store: true,
                     },
                 }],
@@ -275,6 +259,7 @@ impl Widget for Circle {
             };
             encoder.begin_render_pass(&desc)
         };
+        target.view_port.set_viewport(&mut render_pass);
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_vertex_buffer(0, vertex_buffer.slice(..));
         render_pass.set_bind_group(0, &self.bind_group, &[]);
@@ -326,25 +311,30 @@ impl Circle {
         device.create_buffer_init(&desc)
     }
 
-    fn to_vertex_buffer(
-        &self,
-        device: &wgpu::Device,
-        size: wgpu::Extent3d,
-    ) -> wgpu::Buffer {
+    fn to_vertex_buffer(&self, device: &wgpu::Device) -> wgpu::Buffer {
         use wgpu::{util::DeviceExt, BufferUsages};
 
-        let cbox = {
-            let attrs = self.state.as_computed_attrs();
-            BoxLayout {
-                x: (attrs.center.x - attrs.radius) as f32,
-                y: (attrs.center.y - attrs.radius) as f32,
-                w: (attrs.radius * 2.0) as f32,
-                h: (attrs.radius * 2.0) as f32,
-            }
-        };
-
-        let box_vertices = cbox.to_vertices(size);
-        let contents: &[u8] = bytemuck::cast_slice(&box_vertices);
+        let vertices = [
+            BoxVertex {
+                position: [-1.0, 1.0, 0.0, 1.0],
+            },
+            BoxVertex {
+                position: [-1.0, -1.0, 0.0, 1.0],
+            },
+            BoxVertex {
+                position: [1.0, 1.0, 0.0, 1.0],
+            },
+            BoxVertex {
+                position: [1.0, 1.0, 0.0, 1.0],
+            },
+            BoxVertex {
+                position: [-1.0, -1.0, 0.0, 1.0],
+            },
+            BoxVertex {
+                position: [1.0, -1.0, 0.0, 1.0],
+            },
+        ];
+        let contents: &[u8] = bytemuck::cast_slice(&vertices);
         let desc = wgpu::util::BufferInitDescriptor {
             label: Some("dom/circle:vertex-buffer"),
             contents,

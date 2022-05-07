@@ -1,7 +1,9 @@
+use log::trace;
+
 pub mod circle;
 pub mod win;
 
-use crate::{BoxLayout, Error, Result, Size, Style};
+use crate::{BoxLayout, ColorTarget, Context, Error, Location, Result, Size, Style};
 
 macro_rules! dispatch {
     (call, $this:ident, $($toks:tt)*) => {
@@ -29,20 +31,32 @@ pub enum Node {
     Circle(circle::Circle),
 }
 
+impl From<win::Win> for Node {
+    fn from(val: win::Win) -> Node {
+        Node::Win(val)
+    }
+}
+
+impl From<circle::Circle> for Node {
+    fn from(val: circle::Circle) -> Node {
+        Node::Circle(val)
+    }
+}
+
 impl Node {
     fn to_flex_node(&self) -> stretch::node::Node {
         dispatch!(get_state, self, as_state().flex_node).unwrap()
     }
 
-    fn to_style(&self) -> Style {
-        dispatch!(get_state, self, as_state().style).clone()
+    fn to_computed_style(&self) -> Style {
+        dispatch!(get_state, self, as_state().computed_style).clone()
     }
 
     fn to_mut_children(&mut self) -> Option<&mut Vec<Node>> {
         dispatch!(call, self, to_mut_children())
     }
 
-    fn to_extent(&self) -> Option<Size> {
+    fn to_extent(&self) -> Size {
         dispatch!(call, self, to_extent())
     }
 
@@ -54,6 +68,33 @@ impl Node {
     fn set_box_layout(&mut self, box_layout: BoxLayout) {
         let p = dispatch!(set_state, self, as_mut_state().box_layout);
         *p = box_layout;
+    }
+
+    fn print(&self, prefix: &str) {
+        dispatch!(call, self, print(prefix))
+    }
+}
+
+impl Node {
+    fn transform(&mut self, offset: Location, scale_factor: f32) {
+        dispatch!(call, self, transform(offset, scale_factor))
+    }
+
+    fn redraw(
+        &mut self,
+        context: &Context,
+        encoder: &mut wgpu::CommandEncoder,
+        target: &mut ColorTarget,
+    ) -> Result<()> {
+        use std::mem;
+
+        let view_port = {
+            let view_port = dispatch!(get_state, self, as_state().to_viewport());
+            mem::replace(&mut target.view_port, view_port)
+        };
+        dispatch!(call, self, redraw(context, encoder, target))?;
+        let _view_port = mem::replace(&mut target.view_port, view_port);
+        Ok(())
     }
 }
 
@@ -71,15 +112,13 @@ impl Dom {
         }
     }
 
-    pub fn build_layout(&mut self) -> Result<()> {
-        build_layout(&mut self.flex, &mut self.root)
-    }
-
     pub fn compute_layout(
         &mut self,
         width: Option<f32>,
         height: Option<f32>,
     ) -> Result<()> {
+        build_layout(&mut self.flex, &mut self.root)?;
+
         let size = stretch::geometry::Size {
             width: match width {
                 Some(w) => stretch::number::Number::Defined(w),
@@ -94,12 +133,35 @@ impl Dom {
         err_at!(Invalid, self.flex.compute_layout(flex_node, size))?;
         gather_layout(&self.flex, &mut self.root)
     }
+
+    pub fn to_extent(&self) -> Size {
+        self.root.to_extent()
+    }
+
+    pub fn print(&self) {
+        self.root.print("")
+    }
 }
 
-pub fn build_layout(flex: &mut stretch::node::Stretch, node: &mut Node) -> Result<()> {
+impl Dom {
+    pub fn transform(&mut self, offset: Location, scale_factor: f32) {
+        self.root.transform(offset, scale_factor)
+    }
+
+    pub fn redraw(
+        &mut self,
+        context: &Context,
+        encoder: &mut wgpu::CommandEncoder,
+        target: &mut ColorTarget,
+    ) -> Result<()> {
+        self.root.redraw(context, encoder, target)
+    }
+}
+
+fn build_layout(flex: &mut stretch::node::Stretch, node: &mut Node) -> Result<()> {
     use stretch::geometry;
 
-    let flex_style = node.to_style().flex_style;
+    let flex_style = node.to_computed_style().flex_style;
     match node.to_mut_children() {
         Some(nodes) => {
             let mut children = vec![];
@@ -111,16 +173,16 @@ pub fn build_layout(flex: &mut stretch::node::Stretch, node: &mut Node) -> Resul
             node.set_flex_node(flex_node);
         }
         None => {
-            let size = match node.to_extent() {
-                Some(Size { width, height }) => geometry::Size { width, height },
-                None => geometry::Size {
-                    width: 0.0,
-                    height: 0.0,
-                },
-            };
+            let size: geometry::Size<f32> = node.to_extent().into();
             node.set_flex_node(err_at!(
                 Invalid,
-                flex.new_leaf(flex_style, Box::new(move |_| Ok(size)))
+                flex.new_leaf(
+                    flex_style,
+                    Box::new(move |x| {
+                        trace!("{:?}, {:?}", x, size);
+                        Ok(size)
+                    })
+                )
             )?);
         }
     }
@@ -128,7 +190,7 @@ pub fn build_layout(flex: &mut stretch::node::Stretch, node: &mut Node) -> Resul
     Ok(())
 }
 
-pub fn gather_layout(flex: &stretch::node::Stretch, node: &mut Node) -> Result<()> {
+fn gather_layout(flex: &stretch::node::Stretch, node: &mut Node) -> Result<()> {
     node.set_box_layout(
         err_at!(Invalid, flex.layout(node.to_flex_node()))?
             .clone()

@@ -10,19 +10,19 @@ use std::{path, time};
 
 use gpgpu::{
     dom::{self, circle, win, Dom},
-    niw, Config, Context, Location, Render, Screen, Size, Transforms,
+    niw, Config, Context, Location, Render, Screen, Size, Style, Transforms,
 };
 
 const SSAA: f32 = 1.0;
-const FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Rgba8Unorm;
+const FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Rgba8UnormSrgb;
 
 #[derive(StructOpt)]
 pub struct Opt {
     #[structopt(long = "radius", default_value = "200")]
     radius: f32,
 
-    #[structopt(long = "center", default_value = "0,0", use_delimiter = true)]
-    center: Vec<f32>,
+    #[structopt(long = "width", default_value = "1")]
+    width: f32,
 
     #[structopt(long = "fill")]
     fill: bool,
@@ -158,12 +158,15 @@ fn make_dom(opts: &Opt, render: &Render, format: wgpu::TextureFormat) -> Dom {
     let circles: Vec<dom::Node> = {
         let attrs = circle::Attributes {
             radius: opts.radius,
+            width: opts.width,
             fill: opts.fill,
             ..circle::Attributes::default()
         };
-        (0..5)
+        let device = render.as_device();
+        (0..1)
             .map(|_| {
-                dom::Node::from(circle::Circle::new(attrs, render.as_device(), format))
+                let style = Style::default();
+                dom::Node::from(circle::Circle::new(attrs, style, device, format))
             })
             .collect()
     };

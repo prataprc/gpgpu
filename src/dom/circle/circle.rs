@@ -19,6 +19,7 @@ pub struct Circle {
 #[derive(Copy, Clone, Debug)]
 pub struct Attributes {
     pub radius: f32,
+    pub width: f32,
     pub fill: bool,
 }
 
@@ -26,6 +27,7 @@ impl Default for Attributes {
     fn default() -> Attributes {
         Attributes {
             radius: 1.0,
+            width: 1.0,
             fill: false,
         }
     }
@@ -35,6 +37,7 @@ impl Transform2D for Attributes {
     fn transform2d(&self, _offset: Location, scale_factor: f32) -> Attributes {
         Attributes {
             radius: self.radius * scale_factor,
+            width: self.width * scale_factor,
             ..*self
         }
     }
@@ -45,16 +48,19 @@ impl Transform2D for Attributes {
 struct UniformBuffer {
     center: [f32; 2],
     radius: f32,
+    width: f32,
     fill: u32,
+    _padding: u32,
 }
 
 impl UniformBuffer {
-    const SIZE: usize = 8 + 4 + 4;
+    const SIZE: usize = 8 + 4 + 4 + 4 + 4;
 }
 
 impl Circle {
     pub fn new(
         attrs: Attributes,
+        style: Style,
         device: &wgpu::Device,
         target_format: wgpu::TextureFormat,
     ) -> Circle {
@@ -152,19 +158,10 @@ impl Circle {
             device.create_bind_group(&desc)
         };
 
-        let state = {
-            let mut state = State {
-                attrs,
-                computed_attrs: attrs,
-                ..State::default()
-            };
-            let diameter = state.as_computed_attrs().radius * 2.0;
-            let size = Size {
-                width: diameter,
-                height: diameter,
-            };
-            state.style.set_size(size);
-            state
+        let state = State {
+            attrs,
+            style,
+            ..State::default()
         };
         Circle {
             state,
@@ -206,6 +203,12 @@ impl Circle {
 
     pub fn transform(&mut self, offset: Location, scale_factor: f32) {
         self.state.transform(offset, scale_factor);
+        let diameter = self.state.as_computed_attrs().radius * 2.0;
+        let size = Size {
+            width: diameter,
+            height: diameter,
+        };
+        self.state.style.set_size(size);
     }
 
     pub fn redraw(
@@ -236,7 +239,9 @@ impl Circle {
             let ub = UniformBuffer {
                 center: [blayt.x + attrs.radius, blayt.y + attrs.radius],
                 radius: attrs.radius,
+                width: attrs.width,
                 fill: if attrs.fill { 1 } else { 0 },
+                _padding: Default::default(),
             };
             let content: [u8; UniformBuffer::SIZE] = bytemuck::cast(ub);
             context

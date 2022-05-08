@@ -13,6 +13,7 @@ struct Style {
 struct Attributes {
     center: vec2<f32>;
     radius: f32;
+    width: f32;
     fill: u32;
 };
 
@@ -38,42 +39,24 @@ fn vs_main(in: VertexInput) -> VertexOutput {
 
 [[stage(fragment)]]
 fn fs_main(in: VertexOutput) -> [[location(0)]] vec4<f32> {
+    let width = attrs.width / 2.0;
     let x: f32 = attrs.center.x - in.clip_position.x;
     let y: f32 = in.clip_position.y - attrs.center.y;
     let s: f32 = sqrt((x*x) + (y*y));
+    let d = abs((attrs.radius - width) - s);
 
     if (attrs.fill == u32(1)) {
-        if (round(s) == attrs.radius) {
-            if (s == attrs.radius) {
-                return style.fg;
-            } else if (ceil(s) == attrs.radius) {
-                var fg = style.fg * (1.0 - (attrs.radius - s));
-                fg.w = 1.0;
-                return fg;
-            } else { // (floor(s) == attrs.radius)
-                var fg = style.fg * (1.0 - (s - attrs.radius));
-                fg.w = 1.0;
-                return fg;
-            }
-        } else if (s < attrs.radius) {
+        if (d < width) {
+            return style.fg;
+        } else if (s < (attrs.radius - width)) {
             return style.fg;
         } else {
             return vec4<f32>(0.0, 0.0, 0.0, 0.0);
         }
     } else {
-        if (round(s) == attrs.radius) {
-            if (s == attrs.radius) {
-                return style.fg;
-            } else if (ceil(s) == attrs.radius) {
-                var fg = style.fg * (1.0 - (attrs.radius - s));
-                fg.w = 1.0;
-                return fg;
-            } else { // (floor(s) == attrs.radius)
-                var fg = style.fg * (1.0 - (s - attrs.radius));
-                fg.w = 1.0;
-                return fg;
-            }
-        } else if (s < attrs.radius) {
+        if (d < width) {
+            return style.fg;
+        } else if (s < (attrs.radius - width)) {
             return style.bg;
         } else {
             return vec4<f32>(0.0, 0.0, 0.0, 0.0);

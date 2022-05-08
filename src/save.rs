@@ -131,6 +131,7 @@ impl SaveFile {
     fn texel_size(format: wgpu::TextureFormat) -> u32 {
         match format {
             wgpu::TextureFormat::Rgba8Unorm => 4,
+            wgpu::TextureFormat::Rgba8Uint => 4,
             wgpu::TextureFormat::Rgba8UnormSrgb => 4,
             wgpu::TextureFormat::Bgra8UnormSrgb => 4,
             val => panic!("format {:?} can't be handled for widg/save", val),

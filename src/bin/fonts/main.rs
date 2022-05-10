@@ -63,7 +63,7 @@ pub enum SubCommand {
         #[structopt(short = "f")]
         f: Option<path::PathBuf>,
 
-        codepoint: u32,
+        code_point: u32,
     },
     Raster {
         #[structopt(short = "f")]
@@ -308,14 +308,14 @@ fn handle_unicode(opts: Opt) -> Result<()> {
 }
 
 fn handle_glyph(opts: Opt) -> Result<()> {
-    let (f, codepoint) = match &opts.subcmd {
+    let (f, code_point) = match &opts.subcmd {
         SubCommand::Glyph { f: None, .. } => {
             err_at!(Invalid, msg: "profile a font file")?
         }
         SubCommand::Glyph {
             f: Some(f),
-            codepoint,
-        } => (f.to_str().unwrap(), *codepoint),
+            code_point,
+        } => (f.to_str().unwrap(), *code_point),
         _ => unreachable!(),
     };
 
@@ -330,9 +330,13 @@ fn handle_glyph(opts: Opt) -> Result<()> {
     };
 
     let glyphs = ff.to_glyphs()?;
-    let glyph = match glyphs.iter().filter(|g| g.codepoint == codepoint).next() {
+    let glyph = match glyphs
+        .iter()
+        .filter(|g| g.code_point() == code_point)
+        .next()
+    {
         Some(glyph) => glyph,
-        None => err_at!(Invalid, msg: "glyph {} not found in {:?}", codepoint, f)?,
+        None => err_at!(Invalid, msg: "glyph {} not found in {:?}", code_point, f)?,
     };
 
     let rect = glyph.bounding_box();
@@ -353,7 +357,7 @@ fn handle_clean(_opts: Opt) -> Result<()> {
 //    let face = &faces[opts.face_index];
 //    let glyph = face
 //        .glyph_index(
-//            std::char::from_u32(opts.glyph.unwrap_or(48)).expect("invalid codepoint"),
+//            std::char::from_u32(opts.glyph.unwrap_or(48)).expect("invalid code_point"),
 //        )
 //        .expect("invalid glyph code");
 //

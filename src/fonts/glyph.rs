@@ -7,37 +7,40 @@ use std::{fmt, result};
 use crate::{
     fonts,
     util::{format_option, PrettyRow},
+    Error, Result,
 };
 
 pub struct Glyph<'a> {
     face: ttf_parser::Face<'a>,
-    subtable: ttf_parser::cmap::Subtable<'a>,
-    pub id: ttf_parser::GlyphId,
-    pub name: String,
-    pub codepoint: u32,
-    pub ch: char,
+    code_point: u32,
+    ch: char,
+    id: ttf_parser::GlyphId,
+    name: String,
 }
 
 impl<'a> Glyph<'a> {
-    pub fn new(
-        face: ttf_parser::Face<'a>,
-        codepoint: u32,
-        subtable: ttf_parser::cmap::Subtable<'a>,
-    ) -> Option<Glyph<'a>> {
-        let ch = char::from_u32(codepoint)?;
-        let id = face.glyph_index(ch)?;
-        let name = face.glyph_name(id)?.to_string();
+    pub fn new(face: ttf_parser::Face<'a>, code_point: u32) -> Result<Glyph<'a>> {
+        let ch = match char::from_u32(code_point) {
+            Some(ch) => ch,
+            None => err_at!(Invalid, msg: "no char for code_point {}", code_point)?,
+        };
+        let id = face.glyph_index(ch).unwrap_or(ttf_parser::GlyphId(0));
+        let name = face.glyph_name(id).unwrap_or("--").to_string();
         let val = Glyph {
             face,
-            subtable,
+            code_point,
+            ch,
             id,
             name,
-            codepoint,
-            ch,
         };
 
-        Some(val)
+        Ok(val)
     }
+
+    pub fn code_point(&self) -> u32 {
+        self.code_point
+    }
+
     pub fn unicode_block(&self) -> Option<unicode_blocks::UnicodeBlock> {
         unicode_blocks::find_unicode_block(self.ch)
     }
@@ -81,14 +84,14 @@ impl<'a> Glyph<'a> {
             Some(bb) if bb.x_min >= bb.x_max => {
                 warn!(
                     "Bounding box for {} is x_min:{} x_max:{}",
-                    self.codepoint, bb.x_min, bb.x_max
+                    self.code_point, bb.x_min, bb.x_max
                 );
                 false
             }
             Some(bb) if bb.y_min >= bb.y_max => {
                 warn!(
                     "Bounding box for {} is y_min:{} y_max:{}",
-                    self.codepoint, bb.y_min, bb.y_max
+                    self.code_point, bb.y_min, bb.y_max
                 );
                 false
             }
@@ -105,8 +108,8 @@ impl<'a> PrettyRow for Glyph<'a> {
     fn to_head() -> prettytable::Row {
         row![
             Fy =>
-            "Char", "Codepoint", "Block", "CJK", "HAdv", "VAdv", "HSB", "VSB", "YORG",
-            "BB", "Platform"
+            "Char", "Codepoint", "Name", "Block", "CJK", "HAdv", "VAdv",
+            "HSB", "VSB", "YORG", "BB",
         ]
     }
 
@@ -114,7 +117,8 @@ impl<'a> PrettyRow for Glyph<'a> {
         let bb = self.bounding_box().as_ref().map(|bb| rect_to_string(bb));
         row![
             self.ch.to_string(),
-            self.codepoint,
+            self.code_point,
+            self.name,
             format_option!(self.unicode_block().as_ref().map(|x| x.name())),
             self.cjk(),
             format_option!(self.hor_advance()),
@@ -123,7 +127,6 @@ impl<'a> PrettyRow for Glyph<'a> {
             format_option!(self.ver_side_bearing()),
             format_option!(self.y_origin()),
             format_option!(bb),
-            format!("{:?}", self.subtable.platform_id),
         ]
     }
 }

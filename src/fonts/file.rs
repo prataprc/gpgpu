@@ -94,25 +94,28 @@ impl FontFile {
     }
 
     pub fn to_glyphs(&self) -> Result<Vec<fonts::Glyph>> {
-        use ttf_parser::cmap;
-
         let face = self.to_face()?;
-        let subtables = (|| -> Option<Vec<cmap::Subtable>> {
-            let data = face.table_data(ttf_parser::Tag::from_bytes(b"cmap"))?;
-            Some(cmap::Table::parse(data)?.subtables.into_iter().collect())
-        })()
-        .unwrap_or(vec![]);
 
-        let mut glyphs = vec![];
-        subtables.iter().for_each(|subtable| {
-            subtable.codepoints(|code| {
-                let face = face.clone();
-                match fonts::Glyph::new(face, code, subtable.clone()) {
-                    Some(g) => glyphs.push(g),
-                    None => (),
-                }
-            })
-        });
+        let subtables = match face.tables().cmap {
+            Some(table) => table.subtables,
+            None => err_at!(Invalid, msg: "missing cmap tables")?,
+        };
+
+        let mut code_points: Vec<u32> = Vec::default();
+        for subtable in subtables {
+            subtable.codepoints(|code_point| code_points.push(code_point));
+        }
+        code_points.sort();
+        for (a, b) in code_points.iter().zip(code_points[1..].iter()) {
+            if *a == *b {
+                err_at!(Invalid, msg: "repeating code_point {}", *a)?
+            }
+        }
+
+        let mut glyphs: Vec<fonts::Glyph> = Vec::default();
+        for code_point in code_points.into_iter() {
+            glyphs.push(fonts::Glyph::new(face.clone(), code_point)?)
+        }
 
         Ok(glyphs)
     }

@@ -26,7 +26,7 @@ impl Default for Style {
 }
 
 impl Style {
-    pub fn transform2d(&self, offset: Location, scale_factor: f32) -> Style {
+    pub fn resize(&self, offset: Location, scale_factor: f32) -> Style {
         let factor = scale_factor;
         let flex_style = {
             let flex = self.flex_style;

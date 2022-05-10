@@ -1,4 +1,5 @@
 use bytemuck::{Pod, Zeroable};
+use cgmath::Point2;
 
 use std::{
     fmt,
@@ -8,13 +9,12 @@ use std::{
 
 use crate::Style;
 
-/// Two Dimensional transforms, translate, scale.
-pub trait Transform2D {
-    fn transform2d(&self, offset: Location, scale_factor: f32) -> Self;
+pub trait Resize {
+    fn resize(&self, offset: Location, scale_factor: f32) -> Self;
 }
 
-impl Transform2D for () {
-    fn transform2d(&self, _: Location, _: f32) -> Self {
+impl Resize for () {
+    fn resize(&self, _: Location, _: f32) -> Self {
         ()
     }
 }
@@ -130,12 +130,12 @@ impl<T> DerefMut for State<T> {
 }
 
 impl<T> State<T> {
-    pub fn transform(&mut self, offset: Location, scale_factor: f32)
+    pub fn resize(&mut self, offset: Location, scale_factor: f32)
     where
-        T: Transform2D + fmt::Debug,
+        T: Resize + fmt::Debug,
     {
-        self.computed_style = self.style.transform2d(offset, scale_factor);
-        self.computed_attrs = self.attrs.transform2d(offset, scale_factor);
+        self.computed_style = self.style.resize(offset, scale_factor);
+        self.computed_attrs = self.attrs.resize(offset, scale_factor);
     }
 
     pub fn as_computed_style(&self) -> &Style {
@@ -144,17 +144,6 @@ impl<T> State<T> {
 
     pub fn as_computed_attrs(&self) -> &T {
         &self.computed_attrs
-    }
-
-    pub fn to_viewport(&self) -> Viewport {
-        Viewport {
-            x: self.box_layout.x,
-            y: self.box_layout.y,
-            w: self.box_layout.w,
-            h: self.box_layout.h,
-            min_depth: 1.0,
-            max_depth: 1.0,
-        }
     }
 }
 
@@ -189,6 +178,65 @@ impl From<stretch::result::Layout> for BoxLayout {
     }
 }
 
+impl BoxLayout {
+    pub fn to_aspect_ratio(&self) -> AspectRatio {
+        if self.w > self.h {
+            let x = 1.0;
+            let y = self.h / self.w;
+            AspectRatio((x, y).into())
+        } else {
+            let x = self.w / self.h;
+            let y = 1.0;
+            AspectRatio((x, y).into())
+        }
+    }
+
+    pub fn to_ncc(&self, point: Point2<f32>) -> Point2<f32> {
+        let ar = self.to_aspect_ratio();
+        let x = (point.x / self.w) * ar.x;
+        let y = (point.y / self.h) * ar.y;
+        (x, y).into()
+    }
+
+    pub fn to_ndc(&self, point: Point2<f32>) -> Point2<f32> {
+        let ar = self.to_aspect_ratio();
+        let x = (point.x / self.w) / ar.x;
+        let y = (point.y / self.h) / ar.y;
+        (x, y).into()
+    }
+
+    pub fn to_viewport(&self) -> Viewport {
+        Viewport {
+            x: self.x,
+            y: self.y,
+            w: self.w,
+            h: self.h,
+            min_depth: 1.0,
+            max_depth: 1.0,
+        }
+    }
+
+    pub fn to_origin(&self) -> Point2<f32> {
+        (self.x, self.y).into()
+    }
+}
+
+pub struct AspectRatio(Point2<f32>);
+
+impl Deref for AspectRatio {
+    type Target = Point2<f32>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for AspectRatio {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Pod, Zeroable)]
 pub struct BoxVertex {
@@ -199,9 +247,7 @@ impl BoxVertex {
     const ATTRIBUTES: [wgpu::VertexAttribute; 1] = wgpu::vertex_attr_array![
         0 => Float32x4,
     ];
-}
 
-impl BoxVertex {
     pub fn to_vertex_buffer_layout<'a>() -> wgpu::VertexBufferLayout<'a> {
         use std::mem;
 

@@ -9,7 +9,7 @@ use winit::{
 use std::{path, time};
 
 use gpgpu::{
-    dom::{self, circle, win, Dom},
+    dom::{self, circle, win, Domesticate},
     niw, Config, Context, Location, Render, Screen, Size, Style, Transforms,
 };
 
@@ -34,7 +34,7 @@ pub struct Opt {
 struct State {
     render: Render,
     next_frame: time::Instant,
-    domr: Dom,
+    domr: dom::Dom,
 }
 
 impl AsMut<Render> for State {
@@ -136,7 +136,7 @@ fn on_win_scale_factor_changed(
     if let Event::WindowEvent { event, .. } = event {
         if let WindowEvent::ScaleFactorChanged { .. } = event {
             let scale_factor = state.render.to_scale_factor();
-            state.domr.transform(Location::default(), scale_factor);
+            state.domr.resize(Location::default(), scale_factor);
 
             let wgpu::Extent3d { width, height, .. } = state.render.to_extent3d();
             println!("width {} height {}", width, height);
@@ -151,7 +151,7 @@ fn on_win_scale_factor_changed(
     None
 }
 
-fn make_dom(opts: &Opt, render: &Render, format: wgpu::TextureFormat) -> Dom {
+fn make_dom(opts: &Opt, render: &Render, format: wgpu::TextureFormat) -> dom::Dom {
     let wgpu::Extent3d { width, height, .. } = render.to_extent3d();
     let (width, height) = (width as f32, height as f32);
 
@@ -175,6 +175,6 @@ fn make_dom(opts: &Opt, render: &Render, format: wgpu::TextureFormat) -> Dom {
         win::Win::new(size, circles)
     };
     win.set_size(width as f32, height as f32);
-    win.transform(Location::default(), render.to_scale_factor());
-    Dom::new(win)
+    win.resize(Location::default(), render.to_scale_factor());
+    dom::Dom::new(win)
 }

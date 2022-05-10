@@ -110,7 +110,7 @@ pub mod util;
 pub mod widg;
 
 pub use config::{Config, ConfigAdapter, ConfigWinit};
-pub use layout::{BoxLayout, BoxVertex, Location, Size, State, Transform2D, Viewport};
+pub use layout::{BoxLayout, BoxVertex, Location, Resize, Size, State, Viewport};
 pub use render::Render;
 pub use save::SaveFile;
 pub use screen::Screen;

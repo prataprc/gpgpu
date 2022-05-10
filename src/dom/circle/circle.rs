@@ -1,8 +1,9 @@
 use bytemuck::{Pod, Zeroable};
+use cgmath::Vector2;
 
 use crate::{
-    dom, BoxLayout, BoxVertex, ColorTarget, Context, Location, Result, Size, State,
-    Style, Transform2D, Transforms,
+    dom, BoxVertex, ColorTarget, Context, Location, Resize, Result, Size, State, Style,
+    Transforms, Viewport,
 };
 
 pub struct Circle {
@@ -33,8 +34,8 @@ impl Default for Attributes {
     }
 }
 
-impl Transform2D for Attributes {
-    fn transform2d(&self, _offset: Location, scale_factor: f32) -> Attributes {
+impl Resize for Attributes {
+    fn resize(&self, _offset: Location, scale_factor: f32) -> Attributes {
         Attributes {
             radius: self.radius * scale_factor,
             width: self.width * scale_factor,
@@ -179,20 +180,24 @@ impl Circle {
     }
 }
 
-impl Circle {
-    pub fn as_state(&self) -> &State<Attributes> {
+impl AsRef<State<Attributes>> for Circle {
+    fn as_ref(&self) -> &State<Attributes> {
         &self.state
     }
+}
 
-    pub fn as_mut_state(&mut self) -> &mut State<Attributes> {
+impl AsMut<State<Attributes>> for Circle {
+    fn as_mut(&mut self) -> &mut State<Attributes> {
         &mut self.state
     }
+}
 
-    pub fn to_mut_children(&mut self) -> Option<&mut Vec<dom::Node>> {
+impl dom::Domesticate for Circle {
+    fn to_mut_children(&mut self) -> Option<&mut Vec<dom::Node>> {
         None
     }
 
-    pub fn to_extent(&self) -> Size {
+    fn to_extent(&self) -> Size {
         let diameter = self.state.as_computed_attrs().radius * 2.0;
         let size = Size {
             width: diameter,
@@ -201,8 +206,8 @@ impl Circle {
         size
     }
 
-    pub fn transform(&mut self, offset: Location, scale_factor: f32) {
-        self.state.transform(offset, scale_factor);
+    fn resize(&mut self, offset: Location, scale_factor: f32) {
+        self.state.resize(offset, scale_factor);
         let diameter = self.state.as_computed_attrs().radius * 2.0;
         let size = Size {
             width: diameter,
@@ -211,7 +216,11 @@ impl Circle {
         self.state.style.set_size(size);
     }
 
-    pub fn redraw(
+    fn to_viewport(&self) -> Viewport {
+        self.state.box_layout.to_viewport()
+    }
+
+    fn redraw(
         &mut self,
         context: &Context,
         encoder: &mut wgpu::CommandEncoder,
@@ -235,9 +244,10 @@ impl Circle {
         // overwrite the uniform buffer
         {
             let attrs = self.state.as_computed_attrs();
-            let blayt: &BoxLayout = self.state.as_ref();
+            let center = self.state.box_layout.to_origin()
+                + Vector2::from((attrs.radius, attrs.radius));
             let ub = UniformBuffer {
-                center: [blayt.x + attrs.radius, blayt.y + attrs.radius],
+                center: center.into(),
                 radius: attrs.radius,
                 width: attrs.width,
                 fill: if attrs.fill { 1 } else { 0 },

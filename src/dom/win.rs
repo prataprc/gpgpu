@@ -1,4 +1,4 @@
-use crate::{dom, ColorTarget, Context, Location, Result, Size, State, Style};
+use crate::{dom, ColorTarget, Context, Location, Result, Size, State, Style, Viewport};
 
 pub struct Win {
     state: State<()>,
@@ -41,31 +41,39 @@ impl Win {
     }
 }
 
-impl Win {
-    pub fn as_state(&self) -> &State<()> {
+impl AsRef<State<()>> for Win {
+    fn as_ref(&self) -> &State<()> {
         &self.state
     }
+}
 
-    pub fn as_mut_state(&mut self) -> &mut State<()> {
+impl AsMut<State<()>> for Win {
+    fn as_mut(&mut self) -> &mut State<()> {
         &mut self.state
     }
+}
 
-    pub fn to_mut_children(&mut self) -> Option<&mut Vec<dom::Node>> {
+impl dom::Domesticate for Win {
+    fn to_mut_children(&mut self) -> Option<&mut Vec<dom::Node>> {
         Some(&mut self.children)
     }
 
-    pub fn to_extent(&self) -> Size {
+    fn to_extent(&self) -> Size {
         self.state.style.flex_style.size.into()
     }
 
-    pub fn transform(&mut self, offset: Location, scale_factor: f32) {
-        self.state.transform(offset, scale_factor);
+    fn resize(&mut self, offset: Location, scale_factor: f32) {
+        self.state.resize(offset, scale_factor);
         for child in self.children.iter_mut() {
-            child.transform(offset, scale_factor)
+            child.resize(offset, scale_factor)
         }
     }
 
-    pub fn redraw(
+    fn to_viewport(&self) -> Viewport {
+        self.state.box_layout.to_viewport()
+    }
+
+    fn redraw(
         &mut self,
         context: &Context,
         encoder: &mut wgpu::CommandEncoder,

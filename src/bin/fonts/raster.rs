@@ -17,9 +17,13 @@ const FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Rgba8UnormSrgb;
 struct State {
     font: fonts::FontFile,
     render: Render,
-    transforms: Transforms,
-    clear: clear::Clear,
     frames: util::FrameRate,
+}
+
+impl AsRef<Render> for State {
+    fn as_ref(&self) -> &Render {
+        &self.render
+    }
 }
 
 impl AsMut<Render> for State {
@@ -64,7 +68,7 @@ pub fn handle_raster(opts: Opt) -> Result<()> {
         _ => unreachable!(),
     };
 
-    let font = fonts::FontFile::new(loc, 0, 24.0)?;
+    let font = fonts::FontFile::new(loc)?;
 
     let name = "font-app".to_string();
     let mut config = gpgpu::Config::default();
@@ -124,16 +128,44 @@ fn on_redraw_requested(
 
 fn on_win_scale_factor_changed(
     _: &Window,
-    _state: &mut State,
+    state: &mut State,
     event: &mut Event<()>,
 ) -> Option<ControlFlow> {
-    match event {
-        Event::WindowEvent { event, .. } => match event {
-            WindowEvent::ScaleFactorChanged { .. } => (),
-            _ => unreachable!(),
-        },
-        _ => unreachable!(),
+    if let Event::WindowEvent { event, .. } = event {
+        if let WindowEvent::ScaleFactorChanged { .. } = event {
+            let scale_factor = state.render.to_scale_factor();
+            state.domr.resize(Location::default(), scale_factor);
+
+            let wgpu::Extent3d { width, height, .. } = state.render.to_extent3d();
+            println!("width {} height {}", width, height);
+            state
+                .domr
+                .compute_layout(Some(width as f32), Some(height as f32))
+                .unwrap();
+            state.domr.print();
+        }
     }
 
     None
 }
+
+//fn make_dom(opts: &Opt, render: &Render, format: wgpu::TextureFormat) -> dom::Dom {
+//    let circles: Vec<dom::Node> = {
+//        let attrs = circle::Attributes {
+//            radius: opts.radius,
+//            width: opts.width,
+//            fill: opts.fill,
+//            ..circle::Attributes::default()
+//        };
+//        let device = render.as_device();
+//        (0..1)
+//            .map(|_| {
+//                let style = Style::default();
+//                dom::Node::from(circle::Circle::new(attrs, style, device, format))
+//            })
+//            .collect()
+//    };
+//    let mut win = win::Win::new(circles);
+//    win.resize(Location::default(), render.to_scale_factor());
+//    dom::Dom::new(win)
+//}

@@ -14,8 +14,8 @@ use info::{
 
 #[derive(Clone, StructOpt)]
 pub struct Opt {
-    #[structopt(long = "no-color")]
-    no_color: bool,
+    #[structopt(long = "force-color")]
+    force_color: bool,
 
     #[structopt(long = "config")]
     config_loc: Option<path::PathBuf>,

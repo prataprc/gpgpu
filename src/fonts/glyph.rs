@@ -108,7 +108,7 @@ impl<'a> PrettyRow for Glyph<'a> {
     fn to_head() -> prettytable::Row {
         row![
             Fy =>
-            "Char", "Codepoint", "Name", "Block", "CJK", "HAdv", "VAdv",
+            "Char", "Codepoint", "Name", "Unicode-Block", "CJK", "HAdv", "VAdv",
             "HSB", "VSB", "YORG", "BB",
         ]
     }
@@ -116,7 +116,7 @@ impl<'a> PrettyRow for Glyph<'a> {
     fn to_row(&self) -> prettytable::Row {
         let bb = self.bounding_box().as_ref().map(|bb| rect_to_string(bb));
         row![
-            self.ch.to_string(),
+            format!("{:?}", self.ch),
             self.code_point,
             self.name,
             format_option!(self.unicode_block().as_ref().map(|x| x.name())),
@@ -217,7 +217,7 @@ impl fmt::Display for Outline {
     }
 }
 
-fn rect_to_string(rect: &ttf_parser::Rect) -> String {
+pub fn rect_to_string(rect: &ttf_parser::Rect) -> String {
     let ttf_parser::Rect {
         x_min,
         y_min,

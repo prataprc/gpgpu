@@ -18,12 +18,9 @@ pub const TABLE_NAMES: [&'static str; 32] = [
 
 pub struct FontFile {
     loc: path::PathBuf,
-    collection_index: u32,
-    scale: f32,
 
     data: Vec<u8>,
     hash: u64,
-    font: Option<fontdue::Font>,
 }
 
 impl Eq for FontFile {}
@@ -50,7 +47,7 @@ impl Ord for FontFile {
 }
 
 impl FontFile {
-    pub fn new<P>(loc: P, index: u32, scale: f32) -> Result<FontFile>
+    pub fn new<P>(loc: P) -> Result<FontFile>
     where
         P: AsRef<path::Path>,
     {
@@ -68,15 +65,7 @@ impl FontFile {
             hasher.finish()
         };
 
-        let val = FontFile {
-            loc,
-            collection_index: index,
-            scale,
-
-            data,
-            hash,
-            font: None,
-        };
+        let val = FontFile { loc, data, hash };
 
         Ok(val)
     }
@@ -106,11 +95,7 @@ impl FontFile {
             subtable.codepoints(|code_point| code_points.push(code_point));
         }
         code_points.sort();
-        for (a, b) in code_points.iter().zip(code_points[1..].iter()) {
-            if *a == *b {
-                err_at!(Invalid, msg: "repeating code_point {}", *a)?
-            }
-        }
+        code_points.dedup();
 
         let mut glyphs: Vec<fonts::Glyph> = Vec::default();
         for code_point in code_points.into_iter() {
@@ -132,37 +117,22 @@ impl FontFile {
         Ok(ss)
     }
 
-    pub fn parse(&mut self) -> Result<&mut Self> {
-        if let None = self.font.as_ref() {
-            let setts = fontdue::FontSettings {
-                collection_index: self.collection_index,
-                scale: self.scale,
-            };
-            self.font = Some(err_at!(
-                Invalid,
-                fontdue::Font::from_bytes(self.data.as_slice(), setts)
-            )?);
-        }
+    //pub fn rasterize_char(&self, ch: char) -> Result<()> {
+    //    use image::{ImageBuffer, ImageFormat, Luma};
 
-        Ok(self)
-    }
+    //    let font = match self.font.as_ref() {
+    //        Some(font) => font,
+    //        None => err_at!(Invalid, msg: "parse before calling raster")?,
+    //    };
+    //    let (metrics, data) = font.rasterize(ch, self.scale);
+    //    let img: ImageBuffer<Luma<u8>, Vec<u8>> = {
+    //        let (w, h) = (metrics.width as u32, metrics.height as u32);
+    //        ImageBuffer::from_vec(w, h, data).unwrap()
+    //    };
+    //    err_at!(Invalid, img.save_with_format("./xyz.bmp", ImageFormat::Bmp))?;
 
-    pub fn rasterize_char(&self, ch: char) -> Result<()> {
-        use image::{ImageBuffer, ImageFormat, Luma};
-
-        let font = match self.font.as_ref() {
-            Some(font) => font,
-            None => err_at!(Invalid, msg: "parse before calling raster")?,
-        };
-        let (metrics, data) = font.rasterize(ch, self.scale);
-        let img: ImageBuffer<Luma<u8>, Vec<u8>> = {
-            let (w, h) = (metrics.width as u32, metrics.height as u32);
-            ImageBuffer::from_vec(w, h, data).unwrap()
-        };
-        err_at!(Invalid, img.save_with_format("./xyz.bmp", ImageFormat::Bmp))?;
-
-        Ok(())
-    }
+    //    Ok(())
+    //}
 
     pub fn to_face_properties(&self) -> Result<FaceProperties> {
         let face = self.to_face()?;

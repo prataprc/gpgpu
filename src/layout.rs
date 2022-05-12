@@ -10,11 +10,23 @@ use std::{
 use crate::Style;
 
 pub trait Resize {
-    fn resize(&self, offset: Location, scale_factor: f32) -> Self;
+    fn resize(&mut self, size: Size);
+
+    fn scale_factor_changed(&mut self, scale_factor: f32);
+
+    fn computed(&self) -> Self;
 }
 
 impl Resize for () {
-    fn resize(&self, _: Location, _: f32) -> Self {
+    fn resize(&mut self, _: Size) {
+        ()
+    }
+
+    fn scale_factor_changed(&mut self, _: f32) {
+        ()
+    }
+
+    fn computed(&self) -> Self {
         ()
     }
 }
@@ -31,6 +43,15 @@ pub struct Location {
 pub struct Size {
     pub width: f32,
     pub height: f32,
+}
+
+impl From<winit::dpi::PhysicalSize<u32>> for Size {
+    fn from(val: winit::dpi::PhysicalSize<u32>) -> Size {
+        Size {
+            width: val.width as f32,
+            height: val.height as f32,
+        }
+    }
 }
 
 impl From<Size> for stretch::geometry::Size<stretch::style::Dimension> {
@@ -66,84 +87,64 @@ impl From<stretch::geometry::Size<stretch::style::Dimension>> for Size {
 }
 
 /// State common to widgets and doms.
-pub struct State<T> {
+pub struct State<A> {
     pub style: Style,
     pub computed_style: Style,
     pub flex_node: Option<stretch::node::Node>,
     pub box_layout: BoxLayout,
-    pub attrs: T,
-    pub computed_attrs: T,
+    pub attrs: A,
+    pub computed_attrs: A,
 }
 
-impl<T> Default for State<T>
+impl<A> Default for State<A>
 where
-    T: Default,
+    A: Default,
 {
-    fn default() -> State<T> {
+    fn default() -> State<A> {
         State {
             style: Style::default(),
             computed_style: Style::default(),
             flex_node: None,
             box_layout: BoxLayout::default(),
-            attrs: T::default(),
-            computed_attrs: T::default(),
+            attrs: A::default(),
+            computed_attrs: A::default(),
         }
     }
 }
 
-impl<T> AsRef<Style> for State<T> {
-    fn as_ref(&self) -> &Style {
-        &self.style
-    }
-}
-
-impl<T> AsMut<Style> for State<T> {
-    fn as_mut(&mut self) -> &mut Style {
-        &mut self.style
-    }
-}
-
-impl<T> AsRef<BoxLayout> for State<T> {
+impl<A> AsRef<BoxLayout> for State<A> {
     fn as_ref(&self) -> &BoxLayout {
         &self.box_layout
     }
 }
 
-impl<T> AsMut<BoxLayout> for State<T> {
+impl<A> AsMut<BoxLayout> for State<A> {
     fn as_mut(&mut self) -> &mut BoxLayout {
         &mut self.box_layout
     }
 }
 
-impl<T> Deref for State<T> {
-    type Target = T;
-
-    fn deref(&self) -> &T {
-        &self.attrs
-    }
-}
-
-impl<T> DerefMut for State<T> {
-    fn deref_mut(&mut self) -> &mut T {
-        &mut self.attrs
-    }
-}
-
-impl<T> State<T> {
-    pub fn resize(&mut self, offset: Location, scale_factor: f32)
+impl<A> State<A> {
+    pub fn resize(&mut self, size: Size)
     where
-        T: Resize + fmt::Debug,
+        A: Resize + fmt::Debug,
     {
-        self.computed_style = self.style.resize(offset, scale_factor);
-        self.computed_attrs = self.attrs.resize(offset, scale_factor);
+        self.style.resize(size);
+        self.computed_style = self.style.computed();
+
+        self.attrs.resize(size);
+        self.computed_attrs = self.attrs.computed();
     }
 
-    pub fn as_computed_style(&self) -> &Style {
-        &self.computed_style
-    }
+    pub fn scale_factor_changed(&mut self, scale_factor: f32)
+    where
+        A: Resize + fmt::Debug,
+    {
+        self.style.scale_factor_changed(scale_factor);
+        self.computed_style = self.style.computed();
 
-    pub fn as_computed_attrs(&self) -> &T {
-        &self.computed_attrs
+        self.attrs.scale_factor_changed(scale_factor);
+        self.computed_attrs = self.attrs.computed();
     }
 }
 

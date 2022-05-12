@@ -1,6 +1,6 @@
 use bytemuck::{Pod, Zeroable};
 
-use crate::{Location, Size};
+use crate::{Location, Resize, Size};
 
 pub const DEFAULT_FONT_SIZE: f32 = 15.0; // in pixels.
 
@@ -11,6 +11,7 @@ pub struct Style {
     pub flex_style: stretch::style::Style,
     pub fg: wgpu::Color,
     pub bg: wgpu::Color,
+    scale_factor: f32,
 }
 
 impl Default for Style {
@@ -21,17 +22,25 @@ impl Default for Style {
             bg: wgpu::Color::BLACK,
             border: Border::default(),
             flex_style: stretch::style::Style::default(),
+            scale_factor: crate::SCALE_FACTOR,
         }
     }
 }
 
-impl Style {
-    pub fn resize(&self, offset: Location, scale_factor: f32) -> Style {
-        let factor = scale_factor;
+impl Resize for Style {
+    fn resize(&mut self, _: Size) {
+        ()
+    }
+
+    fn scale_factor_changed(&mut self, scale_factor: f32) {
+        self.scale_factor = scale_factor;
+    }
+
+    fn computed(&self) -> Self {
+        let factor = self.scale_factor;
         let flex_style = {
             let flex = self.flex_style;
             stretch::style::Style {
-                position: scale_rect(translate_rect(flex.position, offset), factor),
                 margin: scale_rect(flex.margin, factor),
                 padding: scale_rect(flex.padding, factor),
                 border: scale_rect(flex.border, factor),
@@ -219,17 +228,18 @@ fn scale_rect(
     }
 }
 
-fn translate_rect(
-    rect: stretch::geometry::Rect<stretch::style::Dimension>,
-    offset: Location,
-) -> stretch::geometry::Rect<stretch::style::Dimension> {
-    stretch::geometry::Rect {
-        start: translate_dimension(rect.start, offset.x),
-        end: translate_dimension(rect.end, offset.x),
-        top: translate_dimension(rect.top, offset.y),
-        bottom: translate_dimension(rect.bottom, offset.y),
-    }
-}
+// TODO: remove this if not required.
+//fn translate_rect(
+//    rect: stretch::geometry::Rect<stretch::style::Dimension>,
+//    offset: Location,
+//) -> stretch::geometry::Rect<stretch::style::Dimension> {
+//    stretch::geometry::Rect {
+//        start: translate_dimension(rect.start, offset.x),
+//        end: translate_dimension(rect.end, offset.x),
+//        top: translate_dimension(rect.top, offset.y),
+//        bottom: translate_dimension(rect.bottom, offset.y),
+//    }
+//}
 
 fn scale_size(
     size: stretch::geometry::Size<stretch::style::Dimension>,
@@ -253,14 +263,15 @@ fn scale_dimension(
     }
 }
 
-fn translate_dimension(
-    dimen: stretch::style::Dimension,
-    offset: f32,
-) -> stretch::style::Dimension {
-    match dimen {
-        stretch::style::Dimension::Points(val) => {
-            stretch::style::Dimension::Points(val + offset)
-        }
-        val => val,
-    }
-}
+// TODO: remove this if not required.
+//fn translate_dimension(
+//    dimen: stretch::style::Dimension,
+//    offset: f32,
+//) -> stretch::style::Dimension {
+//    match dimen {
+//        stretch::style::Dimension::Points(val) => {
+//            stretch::style::Dimension::Points(val + offset)
+//        }
+//        val => val,
+//    }
+//}

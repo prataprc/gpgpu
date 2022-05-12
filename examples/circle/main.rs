@@ -9,8 +9,10 @@ use winit::{
 use std::{path, time};
 
 use gpgpu::{
-    dom::{self, circle, win, Domesticate},
-    niw, Config, Context, Location, Render, Screen, Size, Style, Transforms,
+    dom::{self, shape, win, Domesticate},
+    niw,
+    primv::circle,
+    Config, Context, Render, Screen, Transforms,
 };
 
 const SSAA: f32 = 1.0;
@@ -113,6 +115,7 @@ fn main() {
     };
 
     swin.on_win_scale_factor_changed(Box::new(on_win_scale_factor_changed))
+        .on_win_resized(Box::new(on_win_resized))
         .on_redraw_requested(Box::new(on_redraw_requested));
 
     info!("Press Esc to exit");
@@ -128,6 +131,29 @@ fn on_redraw_requested(
     None
 }
 
+fn on_win_resized(
+    _: &Window,
+    state: &mut State,
+    event: &mut Event<()>,
+) -> Option<ControlFlow> {
+    if let Event::WindowEvent { event, .. } = event {
+        if let WindowEvent::Resized(size) = event {
+            state.domr.resize((*size).into());
+
+            let wgpu::Extent3d { width, height, .. } = state.render.to_extent3d();
+            info!("width {} height {}", width, height);
+
+            state
+                .domr
+                .compute_layout(Some(width as f32), Some(height as f32))
+                .unwrap();
+            state.domr.print(); // TODO: remove this
+        }
+    }
+
+    None
+}
+
 fn on_win_scale_factor_changed(
     _: &Window,
     state: &mut State,
@@ -135,16 +161,19 @@ fn on_win_scale_factor_changed(
 ) -> Option<ControlFlow> {
     if let Event::WindowEvent { event, .. } = event {
         if let WindowEvent::ScaleFactorChanged { .. } = event {
-            let scale_factor = state.render.to_scale_factor();
-            state.domr.resize(Location::default(), scale_factor);
+            state
+                .domr
+                .scale_factor_changed(state.render.to_scale_factor());
 
             let wgpu::Extent3d { width, height, .. } = state.render.to_extent3d();
-            println!("width {} height {}", width, height);
+            info!("width {} height {}", width, height);
+
             state
                 .domr
                 .compute_layout(Some(width as f32), Some(height as f32))
                 .unwrap();
-            state.domr.print();
+
+            state.domr.print(); // TODO: remove this
         }
     }
 
@@ -152,10 +181,7 @@ fn on_win_scale_factor_changed(
 }
 
 fn make_dom(opts: &Opt, render: &Render, format: wgpu::TextureFormat) -> dom::Dom {
-    let wgpu::Extent3d { width, height, .. } = render.to_extent3d();
-    let (width, height) = (width as f32, height as f32);
-
-    let circles: Vec<dom::Node> = {
+    let shape: dom::Node = {
         let attrs = circle::Attributes {
             radius: opts.radius,
             width: opts.width,
@@ -163,18 +189,9 @@ fn make_dom(opts: &Opt, render: &Render, format: wgpu::TextureFormat) -> dom::Do
             ..circle::Attributes::default()
         };
         let device = render.as_device();
-        (0..1)
-            .map(|_| {
-                let style = Style::default();
-                dom::Node::from(circle::Circle::new(attrs, style, device, format))
-            })
-            .collect()
+        shape::Shape::new_circle(circle::Circle::new(attrs, device, format)).into()
     };
-    let mut win = {
-        let size = Size { width, height };
-        win::Win::new(size, circles)
-    };
-    win.set_size(width as f32, height as f32);
-    win.resize(Location::default(), render.to_scale_factor());
+    let mut win = win::Win::new(vec![shape]);
+    win.scale_factor_changed(render.to_scale_factor());
     dom::Dom::new(win)
 }

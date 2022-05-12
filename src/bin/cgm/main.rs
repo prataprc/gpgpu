@@ -13,8 +13,8 @@ mod info;
 
 #[derive(Clone, StructOpt)]
 pub struct Opt {
-    #[structopt(long = "no-color")]
-    no_color: bool,
+    #[structopt(long = "force-color")]
+    force_color: bool,
 
     #[structopt(subcommand)]
     subcmd: SubCommand,
@@ -243,12 +243,12 @@ fn handle_perspective(opts: &Opt) -> Result<()> {
 
 fn handle_angle(opts: &Opt) -> Result<()> {
     let rows = vec![info::AngleProperty::new_deg()];
-    util::make_table(&rows).print_tty(!opts.no_color);
+    util::make_table(&rows).print_tty(!opts.force_color);
 
     let rows: Vec<info::TrigAngle> = (0..12)
         .map(|i| info::TrigAngle::new_deg(Deg(30.0 * (i as f32))).into())
         .collect();
-    util::make_table(&rows).print_tty(!opts.no_color);
+    util::make_table(&rows).print_tty(!opts.force_color);
 
     Ok(())
 }

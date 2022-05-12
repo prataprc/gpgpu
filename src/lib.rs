@@ -106,6 +106,7 @@ pub mod dom;
 pub mod fonts;
 pub mod niw;
 pub mod pretty;
+pub mod primv;
 pub mod util;
 pub mod widg;
 
@@ -124,6 +125,8 @@ pub const CLEAR_COLOR: wgpu::Color = wgpu::Color {
     b: 0.0,
     a: 1.0,
 };
+
+const SCALE_FACTOR: f32 = 1.0;
 
 pub trait Widget {
     fn render(

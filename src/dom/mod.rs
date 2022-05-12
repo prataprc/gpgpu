@@ -1,20 +1,20 @@
 use log::trace;
 
-pub mod circle;
 // pub mod line;
+// pub mod div;
+pub mod shape;
 pub mod win;
 
 use crate::{
-    BoxLayout, ColorTarget, Context, Error, Location, Result, Size, State, Style,
-    Viewport,
+    BoxLayout, ColorTarget, Context, Error, Result, Size, State, Style, Viewport,
 };
 
 macro_rules! dispatch {
     (call, $this:ident, $($toks:tt)*) => {
         match $this {
             Node::Win(val) => val.$($toks)*,
-            Node::Circle(val) => val.$($toks)*,
-            // Node::Line(val) => val.$($toks)*,
+            Node::Shape(val) => val.$($toks)*,
+            //Node::Div(val) => val.$($toks)*,
         }
     };
     (get_state, $this:ident, $($toks:tt)*) => {
@@ -23,11 +23,14 @@ macro_rules! dispatch {
                 let state: &State<_> = val.as_ref();
                 &state.$($toks)*
             },
-            Node::Circle(val) => {
+            Node::Shape(val) => {
                 let state: &State<_> = val.as_ref();
                 &state.$($toks)*
             },
-            // Node::Line(val) => val.$($toks)*,
+            //Node::Div(val) => {
+            //    let state: &State<_> = val.as_ref();
+            //    &state.$($toks)*
+            //},
         }
     };
     (set_state, $this:ident, $($toks:tt)*) => {
@@ -36,11 +39,14 @@ macro_rules! dispatch {
                 let state: &mut State<_> = val.as_mut();
                 &mut state.$($toks)*
             }
-            Node::Circle(val) => {
+            Node::Shape(val) => {
                 let state: &mut State<_> = val.as_mut();
                 &mut state.$($toks)*
             }
-            // Node::Line(val) => &mut val.$($toks)*,
+            //Node::Div(val) => {
+            //    let state: &mut State<_> = val.as_mut();
+            //    &mut state.$($toks)*
+            //}
         }
     };
 }
@@ -50,7 +56,9 @@ pub trait Domesticate {
 
     fn to_extent(&self) -> Size;
 
-    fn resize(&mut self, offset: Location, scale_factor: f32);
+    fn resize(&mut self, size: Size);
+
+    fn scale_factor_changed(&mut self, scale_factor: f32);
 
     fn to_viewport(&self) -> Viewport;
 
@@ -64,8 +72,8 @@ pub trait Domesticate {
 
 pub enum Node {
     Win(win::Win),
-    Circle(circle::Circle),
-    // Line(line:Line),
+    Shape(shape::Shape),
+    // Div(div::Div),
 }
 
 impl From<win::Win> for Node {
@@ -74,15 +82,15 @@ impl From<win::Win> for Node {
     }
 }
 
-impl From<circle::Circle> for Node {
-    fn from(val: circle::Circle) -> Node {
-        Node::Circle(val)
+impl From<shape::Shape> for Node {
+    fn from(val: shape::Shape) -> Node {
+        Node::Shape(val)
     }
 }
 
-//impl From<line::Line> for Node {
-//    fn from(val: line::Line) -> Node {
-//        Node::Line(val)
+//impl From<div::Div> for Node {
+//    fn from(val: div::Div) -> Node {
+//        Node::Div(val)
 //    }
 //}
 
@@ -119,8 +127,12 @@ impl Domesticate for Node {
         dispatch!(call, self, to_extent())
     }
 
-    fn resize(&mut self, offset: Location, scale_factor: f32) {
-        dispatch!(call, self, resize(offset, scale_factor))
+    fn resize(&mut self, size: Size) {
+        dispatch!(call, self, resize(size))
+    }
+
+    fn scale_factor_changed(&mut self, scale_factor: f32) {
+        dispatch!(call, self, scale_factor_changed(scale_factor))
     }
 
     fn to_viewport(&self) -> Viewport {
@@ -150,8 +162,12 @@ pub struct Dom {
 }
 
 impl Dom {
-    pub fn resize(&mut self, offset: Location, scale_factor: f32) {
-        self.root.resize(offset, scale_factor)
+    pub fn resize(&mut self, size: Size) {
+        self.root.resize(size)
+    }
+
+    pub fn scale_factor_changed(&mut self, scale_factor: f32) {
+        self.root.scale_factor_changed(scale_factor)
     }
 
     pub fn redraw(

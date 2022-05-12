@@ -6,13 +6,13 @@ use std::{fs, path};
 use gpgpu::{err_at, fonts, util, Error, Result};
 
 mod info;
-mod raster;
+// mod raster;
 
 #[derive(StructOpt)]
 #[structopt(name = "fonts", version = "0.0.1")]
 pub struct Opt {
-    #[structopt(long = "no-color")]
-    no_color: bool,
+    #[structopt(long = "force-color")]
+    force_color: bool,
 
     #[structopt(subcommand)]
     subcmd: SubCommand,
@@ -89,7 +89,7 @@ fn main() {
         SubCommand::List { .. } => handle_list(opts),
         SubCommand::Unicode => handle_unicode(opts),
         SubCommand::Glyph { .. } => handle_glyph(opts),
-        SubCommand::Raster { .. } => raster::handle_raster(opts),
+        SubCommand::Raster { .. } => todo!(), // raster::handle_raster(opts),
         SubCommand::Clean => handle_clean(opts),
     };
 
@@ -140,7 +140,7 @@ fn handle_build(opts: Opt) -> Result<()> {
                         [path::PathBuf::from(parent), de.file_name().into()]
                             .iter()
                             .collect();
-                    match fonts::FontFile::new(&loc, 0, 1.0) {
+                    match fonts::FontFile::new(&loc) {
                         Ok(f) => state.push(f),
                         Err(e) => error!("invalid font-file {:?} : {}", loc, e),
                     };
@@ -234,7 +234,7 @@ fn handle_list(opts: Opt) -> Result<()> {
     let mut face_props: Vec<fonts::FaceProperties> = iter.collect();
     face_props.sort();
 
-    util::make_table(&face_props).print_tty(!opts.no_color);
+    util::make_table(&face_props).print_tty(!opts.force_color);
 
     Ok(())
 }
@@ -276,7 +276,7 @@ fn handle_list_file(opts: Opt) -> Result<()> {
     let faceprops = face_properties(&fontfiles);
 
     let param_faces = info::list_param_faces(&faceprops);
-    util::make_table(&param_faces).print_tty(!opts.no_color);
+    util::make_table(&param_faces).print_tty(!opts.force_color);
 
     Ok(())
 }
@@ -294,7 +294,7 @@ fn handle_list_glyphs(opts: Opt) -> Result<()> {
 
     for ff in fontfiles.iter() {
         let glyphs = ff.to_glyphs()?;
-        util::make_table(&glyphs).print_tty(!opts.no_color);
+        util::make_table(&glyphs).print_tty(!opts.force_color);
     }
 
     Ok(())
@@ -302,16 +302,14 @@ fn handle_list_glyphs(opts: Opt) -> Result<()> {
 
 fn handle_unicode(opts: Opt) -> Result<()> {
     let blocks = fonts::UNICODE_BLOCKS;
-    util::make_table(&blocks).print_tty(!opts.no_color);
+    util::make_table(&blocks).print_tty(!opts.force_color);
 
     Ok(())
 }
 
 fn handle_glyph(opts: Opt) -> Result<()> {
     let (f, code_point) = match &opts.subcmd {
-        SubCommand::Glyph { f: None, .. } => {
-            err_at!(Invalid, msg: "profile a font file")?
-        }
+        SubCommand::Glyph { f: None, .. } => err_at!(Invalid, msg: "specify font file")?,
         SubCommand::Glyph {
             f: Some(f),
             code_point,
@@ -340,9 +338,13 @@ fn handle_glyph(opts: Opt) -> Result<()> {
     };
 
     let rect = glyph.bounding_box();
-    let outline = glyph.to_outline().unwrap();
-    println!("BoundingBox : {:?}", rect);
-    println!("Outline     : \n{}", outline);
+    match glyph.to_outline() {
+        Some(outline) => {
+            println!("BoundingBox : {}", fonts::rect_to_string(&rect.unwrap()));
+            println!("Outline     : \n{}", outline);
+        }
+        None => println!("No outline for {:?}", code_point),
+    }
 
     Ok(())
 }
@@ -437,7 +439,7 @@ fn read_cached_fonts() -> Result<Vec<fonts::FontFile>> {
                 return None;
             }
         };
-        match fonts::FontFile::new(&loc, 0, 12.0) {
+        match fonts::FontFile::new(&loc) {
             Ok(f) if !is_ascii_hexdigit_name(&loc) => Some(f),
             Ok(_) => {
                 debug!("skipping file {:?}", loc);

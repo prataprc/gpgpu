@@ -1,16 +1,11 @@
-// Vertex shader
-
 struct Transforms {
     model: mat4x4<f32>;
     mvp: mat4x4<f32>;
 };
 
-struct Style {
+struct Attributes {
     fg: vec4<f32>;
     bg: vec4<f32>;
-};
-
-struct Attributes {
     center: vec2<f32>;
     radius: f32;
     width: f32;
@@ -27,8 +22,7 @@ struct VertexOutput {
 };
 
 [[binding(0), group(0)]] var<uniform> transforms: Transforms;
-[[binding(1), group(0)]] var<uniform> style: Style;
-[[binding(2), group(0)]] var<uniform> attrs: Attributes;
+[[binding(1), group(0)]] var<uniform> attrs: Attributes;
 
 [[stage(vertex)]]
 fn vs_main(in: VertexInput) -> VertexOutput {
@@ -47,17 +41,17 @@ fn fs_main(in: VertexOutput) -> [[location(0)]] vec4<f32> {
 
     if (attrs.fill == u32(1)) {
         if (d < width) {
-            return style.fg;
+            return attrs.fg;
         } else if (s < (attrs.radius - width)) {
-            return style.fg;
+            return attrs.fg;
         } else {
             return vec4<f32>(0.0, 0.0, 0.0, 0.0);
         }
     } else {
         if (d < width) {
-            return style.fg;
+            return attrs.fg;
         } else if (s < (attrs.radius - width)) {
-            return style.bg;
+            return attrs.bg;
         } else {
             return vec4<f32>(0.0, 0.0, 0.0, 0.0);
         }

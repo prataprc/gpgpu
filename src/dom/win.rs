@@ -1,44 +1,8 @@
-use crate::{dom, ColorTarget, Context, Location, Result, Size, State, Style, Viewport};
+use crate::{dom, ColorTarget, Context, Result, Size, State, Style, Viewport};
 
 pub struct Win {
     state: State<()>,
     children: Vec<dom::Node>,
-}
-
-impl Win {
-    pub fn new(size: Size, children: Vec<dom::Node>) -> Self {
-        let mut style = Style::default();
-        style.flex_style.size = Size {
-            width: size.width,
-            height: size.height,
-        }
-        .into();
-        Win {
-            state: State {
-                style,
-                ..State::default()
-            },
-            children,
-        }
-    }
-
-    pub fn set_size(&mut self, width: f32, height: f32) -> &mut Self {
-        use stretch::{geometry::Size, style::Dimension};
-
-        self.state.style.flex_style.size = Size {
-            width: Dimension::Points(width),
-            height: Dimension::Points(height),
-        };
-        self
-    }
-
-    pub fn print(&self, prefix: &str) {
-        println!("{}node.Win @ {}", prefix, self.state.box_layout);
-        let prefix = "".to_string() + prefix + "  ";
-        for child in self.children.iter() {
-            child.print(&prefix)
-        }
-    }
 }
 
 impl AsRef<State<()>> for Win {
@@ -62,10 +26,17 @@ impl dom::Domesticate for Win {
         self.state.style.flex_style.size.into()
     }
 
-    fn resize(&mut self, offset: Location, scale_factor: f32) {
-        self.state.resize(offset, scale_factor);
+    fn resize(&mut self, size: Size) {
+        self.state.resize(size);
         for child in self.children.iter_mut() {
-            child.resize(offset, scale_factor)
+            child.resize(size)
+        }
+    }
+
+    fn scale_factor_changed(&mut self, scale_factor: f32) {
+        self.state.scale_factor_changed(scale_factor);
+        for child in self.children.iter_mut() {
+            child.scale_factor_changed(scale_factor)
         }
     }
 
@@ -84,5 +55,32 @@ impl dom::Domesticate for Win {
         }
 
         Ok(())
+    }
+}
+
+impl Win {
+    pub fn new(children: Vec<dom::Node>) -> Self {
+        use stretch::{geometry::Size, style::Dimension};
+
+        let mut style = Style::default();
+        style.flex_style.size = Size {
+            width: Dimension::Percent(1.0),
+            height: Dimension::Percent(1.0),
+        };
+        Win {
+            state: State {
+                style,
+                ..State::default()
+            },
+            children,
+        }
+    }
+
+    pub fn print(&self, prefix: &str) {
+        println!("{}node.Win @ {}", prefix, self.state.box_layout);
+        let prefix = "".to_string() + prefix + "  ";
+        for child in self.children.iter() {
+            child.print(&prefix)
+        }
     }
 }

@@ -44,7 +44,7 @@ pub fn info_global_report(opts: &Opt) -> Result<()> {
     #[cfg(target_os = "macos")]
     gr.metal.as_ref().map(|hr| extend_hub_report(hr));
 
-    util::make_table(&srs).print_tty(!opts.no_color);
+    util::make_table(&srs).print_tty(!opts.force_color);
     Ok(())
 }
 
@@ -103,25 +103,25 @@ pub fn info_window(
         Some(n) if modes => {
             // show video modes for monitor index `n`
             let modes = monitors[n].video_modes().collect::<Vec<VideoMode>>();
-            util::make_table(&modes).print_tty(!opts.no_color);
+            util::make_table(&modes).print_tty(!opts.force_color);
         }
         None if modes => match window.primary_monitor() {
             Some(primary) => {
                 // show video modes for primary monitor.
                 let modes = primary.video_modes().collect::<Vec<VideoMode>>();
-                util::make_table(&modes).print_tty(!opts.no_color);
+                util::make_table(&modes).print_tty(!opts.force_color);
             }
             None => println!("{}", "No primary monitor".red()),
         },
         _ => {
             match window.primary_monitor() {
                 Some(primary) => {
-                    util::make_table(&vec![primary]).print_tty(!opts.no_color);
+                    util::make_table(&vec![primary]).print_tty(!opts.force_color);
                 }
                 None => println!("{}", "No primary monitor".red()),
             }
             println!();
-            util::make_table(&monitors).print_tty(!opts.no_color);
+            util::make_table(&monitors).print_tty(!opts.force_color);
         }
     }
 
@@ -134,7 +134,7 @@ pub fn info_adapters(opts: &Opt) -> Result<()> {
         instance.enumerate_adapters(wgpu::Backends::all()).collect();
 
     let infos: Vec<wgpu::AdapterInfo> = adapters.iter().map(|a| a.get_info()).collect();
-    util::make_table(&infos).print_tty(opts.no_color);
+    util::make_table(&infos).print_tty(opts.force_color);
 
     Ok(())
 }
@@ -170,7 +170,7 @@ pub fn info_features(opts: &Opt) -> Result<()> {
         }
     };
 
-    table.print_tty(opts.no_color);
+    table.print_tty(opts.force_color);
 
     Ok(())
 }
@@ -206,14 +206,14 @@ pub fn info_limits(opts: &Opt) -> Result<()> {
         }
     };
 
-    table.print_tty(opts.no_color);
+    table.print_tty(opts.force_color);
 
     Ok(())
 }
 
 pub fn info_texture_formats(opts: &Opt) -> Result<()> {
     let info = gpgpu::pretty::texture_formats_info();
-    util::make_table(&info).print_tty(opts.no_color);
+    util::make_table(&info).print_tty(opts.force_color);
 
     Ok(())
 }

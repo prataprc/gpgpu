@@ -58,7 +58,7 @@ impl Render {
     }
 
     pub fn new(screen: Screen, color_format: wgpu::TextureFormat) -> Render {
-        Render::new_super_sampled(screen, 1.0, color_format)
+        Render::new_super_sampled(screen, crate::SCALE_FACTOR, color_format)
     }
 
     pub fn save_bmp<P>(&mut self, loc: P, format: wgpu::TextureFormat) -> &mut Self

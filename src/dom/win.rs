@@ -22,10 +22,6 @@ impl dom::Domesticate for Win {
         Some(&mut self.children)
     }
 
-    fn to_extent(&self) -> Size {
-        self.state.style.flex_style.size.into()
-    }
-
     fn resize(&mut self, size: Size) {
         self.state.resize(size);
         for child in self.children.iter_mut() {

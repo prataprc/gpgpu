@@ -26,12 +26,6 @@ impl dom::Domesticate for Shape {
         None
     }
 
-    fn to_extent(&self) -> Size {
-        match &self.inner {
-            Inner::Circle(val) => val.to_extent(),
-        }
-    }
-
     fn resize(&mut self, size: Size) {
         self.state.resize(size);
         match &mut self.inner {

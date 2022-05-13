@@ -1,18 +1,18 @@
-use crate::{dom, ColorTarget, Context, Location, Result, Size, State, Style, Viewport};
+use crate::{dom, ColorTarget, Context, Result, Size, State, Viewport};
 
 pub struct Div {
-    state: State<(), ()>,
+    state: State<()>,
     children: Vec<dom::Node>,
 }
 
-impl AsRef<State<(), ()>> for Div {
-    fn as_ref(&self) -> &State<(), ()> {
+impl AsRef<State<()>> for Div {
+    fn as_ref(&self) -> &State<()> {
         &self.state
     }
 }
 
-impl AsMut<State<(), ()>> for Div {
-    fn as_mut(&mut self) -> &mut State<(), ()> {
+impl AsMut<State<()>> for Div {
+    fn as_mut(&mut self) -> &mut State<()> {
         &mut self.state
     }
 }
@@ -22,14 +22,17 @@ impl dom::Domesticate for Div {
         Some(&mut self.children)
     }
 
-    fn to_extent(&self) -> Size {
-        self.state.style.flex_style.size.into()
+    fn resize(&mut self, size: Size) {
+        self.state.resize(size);
+        for child in self.children.iter_mut() {
+            child.resize(size)
+        }
     }
 
-    fn resize(&mut self, offset: Location, scale_factor: f32) {
-        self.state.resize(offset, scale_factor);
+    fn scale_factor_changed(&mut self, scale_factor: f32) {
+        self.state.scale_factor_changed(scale_factor);
         for child in self.children.iter_mut() {
-            child.resize(offset, scale_factor)
+            child.scale_factor_changed(scale_factor)
         }
     }
 
@@ -63,7 +66,7 @@ impl Div {
         width: stretch::style::Dimension,
         height: stretch::style::Dimension,
     ) -> &mut Self {
-        use stretch::{geometry::Size, style::Dimension};
+        use stretch::geometry::Size;
 
         self.state.style.flex_style.size = Size { width, height };
         self

@@ -86,6 +86,20 @@ impl From<stretch::geometry::Size<stretch::style::Dimension>> for Size {
     }
 }
 
+impl From<stretch::geometry::Size<stretch::number::Number>> for Size {
+    fn from(val: stretch::geometry::Size<stretch::number::Number>) -> Size {
+        let width = match val.width {
+            stretch::number::Number::Defined(w) => w,
+            _ => 0.0,
+        };
+        let height = match val.width {
+            stretch::number::Number::Defined(h) => h,
+            _ => 0.0,
+        };
+        Size { width, height }
+    }
+}
+
 /// State common to widgets and doms.
 pub struct State<A> {
     pub style: Style,

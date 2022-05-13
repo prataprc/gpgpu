@@ -1,7 +1,5 @@
-use log::trace;
-
 // pub mod line;
-// pub mod div;
+pub mod div;
 pub mod shape;
 pub mod win;
 
@@ -14,7 +12,7 @@ macro_rules! dispatch {
         match $this {
             Node::Win(val) => val.$($toks)*,
             Node::Shape(val) => val.$($toks)*,
-            //Node::Div(val) => val.$($toks)*,
+            Node::Div(val) => val.$($toks)*,
         }
     };
     (get_state, $this:ident, $($toks:tt)*) => {
@@ -27,10 +25,10 @@ macro_rules! dispatch {
                 let state: &State<_> = val.as_ref();
                 &state.$($toks)*
             },
-            //Node::Div(val) => {
-            //    let state: &State<_> = val.as_ref();
-            //    &state.$($toks)*
-            //},
+            Node::Div(val) => {
+                let state: &State<_> = val.as_ref();
+                &state.$($toks)*
+            },
         }
     };
     (set_state, $this:ident, $($toks:tt)*) => {
@@ -43,18 +41,16 @@ macro_rules! dispatch {
                 let state: &mut State<_> = val.as_mut();
                 &mut state.$($toks)*
             }
-            //Node::Div(val) => {
-            //    let state: &mut State<_> = val.as_mut();
-            //    &mut state.$($toks)*
-            //}
+            Node::Div(val) => {
+                let state: &mut State<_> = val.as_mut();
+                &mut state.$($toks)*
+            }
         }
     };
 }
 
 pub trait Domesticate {
     fn to_mut_children(&mut self) -> Option<&mut Vec<Node>>;
-
-    fn to_extent(&self) -> Size;
 
     fn resize(&mut self, size: Size);
 
@@ -73,7 +69,7 @@ pub trait Domesticate {
 pub enum Node {
     Win(win::Win),
     Shape(shape::Shape),
-    // Div(div::Div),
+    Div(div::Div),
 }
 
 impl From<win::Win> for Node {
@@ -88,11 +84,11 @@ impl From<shape::Shape> for Node {
     }
 }
 
-//impl From<div::Div> for Node {
-//    fn from(val: div::Div) -> Node {
-//        Node::Div(val)
-//    }
-//}
+impl From<div::Div> for Node {
+    fn from(val: div::Div) -> Node {
+        Node::Div(val)
+    }
+}
 
 impl Node {
     fn as_computed_style(&self) -> &Style {
@@ -121,10 +117,6 @@ impl Node {
 impl Domesticate for Node {
     fn to_mut_children(&mut self) -> Option<&mut Vec<Node>> {
         dispatch!(call, self, to_mut_children())
-    }
-
-    fn to_extent(&self) -> Size {
-        dispatch!(call, self, to_extent())
     }
 
     fn resize(&mut self, size: Size) {
@@ -215,8 +207,6 @@ impl Dom {
 }
 
 fn build_layout(flex: &mut stretch::node::Stretch, node: &mut Node) -> Result<()> {
-    use stretch::geometry;
-
     let flex_style = node.as_computed_style().flex_style;
     match node.to_mut_children() {
         Some(nodes) => {
@@ -229,14 +219,13 @@ fn build_layout(flex: &mut stretch::node::Stretch, node: &mut Node) -> Result<()
             node.set_flex_node(flex_node);
         }
         None => {
-            let size: geometry::Size<f32> = node.to_extent().into();
             node.set_flex_node(err_at!(
                 Invalid,
                 flex.new_leaf(
                     flex_style,
                     Box::new(move |x| {
-                        trace!("{:?}, {:?}", x, size);
-                        Ok(size)
+                        let size: Size = x.into();
+                        Ok(size.into())
                     })
                 )
             )?);

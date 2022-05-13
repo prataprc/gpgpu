@@ -8,7 +8,7 @@ use std::{
 };
 
 use crate::{
-    widg::load, ColorTarget, Context, Error, Result, SaveFile, Screen, Transforms,
+    primv::load, ColorTarget, Context, Error, Result, SaveFile, Screen, Transforms,
     Viewport, Widget,
 };
 

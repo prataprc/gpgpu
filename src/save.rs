@@ -134,7 +134,7 @@ impl SaveFile {
             wgpu::TextureFormat::Rgba8Uint => 4,
             wgpu::TextureFormat::Rgba8UnormSrgb => 4,
             wgpu::TextureFormat::Bgra8UnormSrgb => 4,
-            val => panic!("format {:?} can't be handled for widg/save", val),
+            val => panic!("format {:?} can't be handled for save", val),
         }
     }
 }

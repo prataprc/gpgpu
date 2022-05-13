@@ -3,7 +3,7 @@ use cgmath::{Matrix4, Point3, Vector4};
 
 use std::{fmt, path, result};
 
-use crate::{ColorTarget, Context, Error, Result, Style, Transforms, Widget};
+use crate::{ColorTarget, Context, Error, Result, Style, Transforms};
 
 pub struct Wireframe {
     state: State,
@@ -68,7 +68,7 @@ impl Wireframe {
         let bind_group_layout = {
             let entry = Transforms::to_bind_group_layout_entry(0);
             let desc = wgpu::BindGroupLayoutDescriptor {
-                label: Some("widg/wireframe:bind-group-layout"),
+                label: Some("primv/wireframe:bind-group-layout"),
                 entries: &[entry],
             };
             device.create_bind_group_layout(&desc)
@@ -76,7 +76,7 @@ impl Wireframe {
 
         let pipeline_layout = {
             let desc = wgpu::PipelineLayoutDescriptor {
-                label: Some("widg/wireframe:pipeline-layout"),
+                label: Some("primv/wireframe:pipeline-layout"),
                 bind_group_layouts: &[&bind_group_layout],
                 push_constant_ranges: &[],
             };
@@ -86,7 +86,7 @@ impl Wireframe {
         let module = {
             let text = include_str!("wireframe.wgsl");
             let desc = wgpu::ShaderModuleDescriptor {
-                label: Some("widg/wireframe:shader"),
+                label: Some("primv/wireframe:shader"),
                 source: wgpu::ShaderSource::Wgsl(text.into()),
             };
             device.create_shader_module(&desc)
@@ -126,7 +126,7 @@ impl Wireframe {
 
         let pipeline = {
             let desc = wgpu::RenderPipelineDescriptor {
-                label: Some("widg/wireframe:pipeline"),
+                label: Some("primv/wireframe:pipeline"),
                 layout: Some(&pipeline_layout),
                 vertex,
                 primitive: primitive_state,
@@ -142,7 +142,7 @@ impl Wireframe {
 
         let bind_group = {
             let desc = wgpu::BindGroupDescriptor {
-                label: Some("widg/wireframe:bind-group"),
+                label: Some("primv/wireframe:bind-group"),
                 layout: &bind_group_layout,
                 entries: &[wgpu::BindGroupEntry {
                     binding: 0,
@@ -164,12 +164,12 @@ impl Wireframe {
     }
 }
 
-impl Widget for Wireframe {
-    fn render(
-        &self,
+impl Wireframe {
+    pub fn redraw(
+        &mut self,
         context: &Context,
         encoder: &mut wgpu::CommandEncoder,
-        target: &ColorTarget,
+        target: &mut ColorTarget,
     ) -> Result<()> {
         let num_vertices = self.num_vertices() as u32;
         let vertex_buffer = self.to_vertex_buffer(context.device);
@@ -183,7 +183,7 @@ impl Widget for Wireframe {
 
         let mut render_pass = {
             let desc = wgpu::RenderPassDescriptor {
-                label: Some("widg/wireframe:render-pass"),
+                label: Some("primv/wireframe:render-pass"),
                 color_attachments: &[wgpu::RenderPassColorAttachment {
                     view: &target.view,
                     resolve_target: None,
@@ -224,7 +224,7 @@ impl Wireframe {
             Primitive::Lines { vertices } => {
                 let contents: &[u8] = bytemuck::cast_slice(vertices);
                 let desc = wgpu::util::BufferInitDescriptor {
-                    label: Some("widg/wireframe:vertex-buffer"),
+                    label: Some("primv/wireframe:vertex-buffer"),
                     contents,
                     usage: wgpu::BufferUsages::VERTEX,
                 };

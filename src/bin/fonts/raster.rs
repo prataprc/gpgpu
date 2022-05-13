@@ -6,8 +6,7 @@ use winit::{
 };
 
 use gpgpu::{
-    fonts, niw, util, widg::clear, Config, Context, Render, Result, Screen, Transforms,
-    Widget,
+    fonts, niw, primv::clear, util, Config, Context, Render, Result, Screen, Transforms,
 };
 
 use crate::Opt;

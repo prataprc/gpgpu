@@ -9,7 +9,7 @@ use std::{
 
 use crate::{
     primv::load, ColorTarget, Context, Error, Result, SaveFile, Screen, Transforms,
-    Viewport, Widget,
+    Viewport,
 };
 
 /// Rendering thread
@@ -263,13 +263,13 @@ fn render_loop(screen: Arc<Screen>, rx: mpsc::Receiver<Request>) -> Result<()> {
             device: &screen.device,
             queue: &screen.queue,
         };
-        let target = ColorTarget {
+        let mut target = ColorTarget {
             format: surface_format,
             view: surface_view,
             // TODO let is be same as other dom elements, should we ?
             view_port: Viewport::default(),
         };
-        load.render(&context, &mut encoder, &target)?;
+        load.redraw(&context, &mut encoder, &mut target)?;
         screen.queue.submit(vec![encoder.finish()]);
 
         //debug!("###########################");

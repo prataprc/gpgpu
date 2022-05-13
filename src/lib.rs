@@ -108,7 +108,6 @@ pub mod niw;
 pub mod pretty;
 pub mod primv;
 pub mod util;
-pub mod widg;
 
 pub use config::{Config, ConfigAdapter, ConfigWinit};
 pub use layout::{BoxLayout, BoxVertex, Location, Resize, Size, State, Viewport};
@@ -127,15 +126,6 @@ pub const CLEAR_COLOR: wgpu::Color = wgpu::Color {
 };
 
 const SCALE_FACTOR: f32 = 1.0;
-
-pub trait Widget {
-    fn render(
-        &self,
-        _: &Context,
-        _: &mut wgpu::CommandEncoder,
-        _: &ColorTarget,
-    ) -> Result<()>;
-}
 
 pub struct Context<'a> {
     pub transforms: &'a Transforms,

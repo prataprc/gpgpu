@@ -10,8 +10,7 @@ use winit::{
 use std::{fs, path, time};
 
 use gpgpu::{
-    niw, widg::wireframe, Config, Context, Perspective, Render, Screen, Transforms,
-    Widget,
+    niw, primv::wireframe, Config, Context, Perspective, Render, Screen, Transforms,
 };
 
 const SSAA: f32 = 1.0;
@@ -56,7 +55,7 @@ impl State {
             return;
         }
 
-        let target = self.render.to_color_target();
+        let mut target = self.render.to_color_target();
 
         let mut transforms = self.transforms;
         transforms
@@ -81,7 +80,7 @@ impl State {
             queue: &screen.queue,
         };
         self.wireframe
-            .render(&context, &mut encoder, &target)
+            .redraw(&context, &mut encoder, &mut target)
             .unwrap();
 
         self.render.submit(encoder).unwrap();

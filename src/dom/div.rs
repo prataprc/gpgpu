@@ -53,6 +53,7 @@ impl dom::Domesticate for Div {
         Ok(())
     }
 }
+
 impl Div {
     pub fn new(children: Vec<dom::Node>) -> Self {
         Div {

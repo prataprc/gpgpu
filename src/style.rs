@@ -28,12 +28,10 @@ impl Default for Style {
 }
 
 impl Resize for Style {
-    fn resize(&mut self, _: Size) {
-        ()
-    }
-
-    fn scale_factor_changed(&mut self, scale_factor: f32) {
-        self.scale_factor = scale_factor;
+    fn resize(&mut self, _: Size, scale_factor: Option<f32>) {
+        if let Some(scale_factor) = scale_factor {
+            self.scale_factor = scale_factor;
+        }
     }
 
     fn computed(&self) -> Self {

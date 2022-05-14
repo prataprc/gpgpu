@@ -138,7 +138,7 @@ fn on_win_resized(
 ) -> Option<ControlFlow> {
     if let Event::WindowEvent { event, .. } = event {
         if let WindowEvent::Resized(size) = event {
-            state.domr.resize((*size).into());
+            state.domr.resize((*size).into(), None);
 
             let wgpu::Extent3d { width, height, .. } = state.render.to_extent3d();
             info!("width {} height {}", width, height);
@@ -161,9 +161,10 @@ fn on_win_scale_factor_changed(
 ) -> Option<ControlFlow> {
     if let Event::WindowEvent { event, .. } = event {
         if let WindowEvent::ScaleFactorChanged { .. } = event {
-            state
-                .domr
-                .scale_factor_changed(state.render.to_scale_factor());
+            state.domr.resize(
+                state.render.to_extent3d().into(),
+                Some(state.render.to_scale_factor()),
+            );
 
             let wgpu::Extent3d { width, height, .. } = state.render.to_extent3d();
             info!("width {} height {}", width, height);
@@ -192,6 +193,6 @@ fn make_dom(opts: &Opt, render: &Render, format: wgpu::TextureFormat) -> dom::Do
         shape::Shape::new_circle(circle::Circle::new(attrs, device, format)).into()
     };
     let mut win = win::Win::new(vec![shape]);
-    win.scale_factor_changed(render.to_scale_factor());
+    win.resize(render.to_extent3d().into(), Some(render.to_scale_factor()));
     dom::Dom::new(win)
 }

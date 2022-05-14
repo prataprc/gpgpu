@@ -26,20 +26,11 @@ impl dom::Domesticate for Shape {
         None
     }
 
-    fn resize(&mut self, size: Size) {
-        self.state.resize(size);
+    fn resize(&mut self, size: Size, scale_factor: Option<f32>) {
+        self.state.resize(size, scale_factor);
         match &mut self.inner {
             Inner::Circle(val) => {
-                val.resize(size);
-            }
-        }
-    }
-
-    fn scale_factor_changed(&mut self, scale_factor: f32) {
-        self.state.scale_factor_changed(scale_factor);
-        match &mut self.inner {
-            Inner::Circle(val) => {
-                val.scale_factor_changed(scale_factor);
+                val.resize(size, scale_factor);
             }
         }
     }
@@ -62,7 +53,7 @@ impl dom::Domesticate for Shape {
 impl Shape {
     pub fn new_circle(val: primv::circle::Circle) -> Self {
         let mut state = State::<()>::default();
-        state.style.flex_style.size = val.to_extent().into();
+        state.style.flex_style.size = val.to_size().into();
         Shape {
             state,
             inner: Inner::Circle(val),

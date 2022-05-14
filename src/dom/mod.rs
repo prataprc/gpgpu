@@ -52,9 +52,7 @@ macro_rules! dispatch {
 pub trait Domesticate {
     fn to_mut_children(&mut self) -> Option<&mut Vec<Node>>;
 
-    fn resize(&mut self, size: Size);
-
-    fn scale_factor_changed(&mut self, scale_factor: f32);
+    fn resize(&mut self, size: Size, scale_factor: Option<f32>);
 
     fn to_viewport(&self) -> Viewport;
 
@@ -119,12 +117,8 @@ impl Domesticate for Node {
         dispatch!(call, self, to_mut_children())
     }
 
-    fn resize(&mut self, size: Size) {
-        dispatch!(call, self, resize(size))
-    }
-
-    fn scale_factor_changed(&mut self, scale_factor: f32) {
-        dispatch!(call, self, scale_factor_changed(scale_factor))
+    fn resize(&mut self, size: Size, scale_factor: Option<f32>) {
+        dispatch!(call, self, resize(size, scale_factor))
     }
 
     fn to_viewport(&self) -> Viewport {
@@ -154,12 +148,8 @@ pub struct Dom {
 }
 
 impl Dom {
-    pub fn resize(&mut self, size: Size) {
-        self.root.resize(size)
-    }
-
-    pub fn scale_factor_changed(&mut self, scale_factor: f32) {
-        self.root.scale_factor_changed(scale_factor)
+    pub fn resize(&mut self, size: Size, scale_factor: Option<f32>) {
+        self.root.resize(size, scale_factor)
     }
 
     pub fn redraw(

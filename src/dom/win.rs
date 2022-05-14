@@ -22,17 +22,10 @@ impl dom::Domesticate for Win {
         Some(&mut self.children)
     }
 
-    fn resize(&mut self, size: Size) {
-        self.state.resize(size);
+    fn resize(&mut self, size: Size, scale_factor: Option<f32>) {
+        self.state.resize(size, scale_factor);
         for child in self.children.iter_mut() {
-            child.resize(size)
-        }
-    }
-
-    fn scale_factor_changed(&mut self, scale_factor: f32) {
-        self.state.scale_factor_changed(scale_factor);
-        for child in self.children.iter_mut() {
-            child.scale_factor_changed(scale_factor)
+            child.resize(size, scale_factor)
         }
     }
 

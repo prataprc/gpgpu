@@ -10,19 +10,13 @@ use std::{
 use crate::Style;
 
 pub trait Resize {
-    fn resize(&mut self, size: Size);
-
-    fn scale_factor_changed(&mut self, scale_factor: f32);
+    fn resize(&mut self, size: Size, scale_factor: Option<f32>);
 
     fn computed(&self) -> Self;
 }
 
 impl Resize for () {
-    fn resize(&mut self, _: Size) {
-        ()
-    }
-
-    fn scale_factor_changed(&mut self, _: f32) {
+    fn resize(&mut self, _: Size, _scale_factor: Option<f32>) {
         ()
     }
 
@@ -43,6 +37,16 @@ pub struct Location {
 pub struct Size {
     pub width: f32,
     pub height: f32,
+}
+
+impl From<wgpu::Extent3d> for Size {
+    fn from(val: wgpu::Extent3d) -> Size {
+        let wgpu::Extent3d { width, height, .. } = val;
+        Size {
+            width: width as f32,
+            height: height as f32,
+        }
+    }
 }
 
 impl From<winit::dpi::PhysicalSize<u32>> for Size {
@@ -139,25 +143,14 @@ impl<A> AsMut<BoxLayout> for State<A> {
 }
 
 impl<A> State<A> {
-    pub fn resize(&mut self, size: Size)
+    pub fn resize(&mut self, size: Size, scale_factor: Option<f32>)
     where
         A: Resize + fmt::Debug,
     {
-        self.style.resize(size);
+        self.style.resize(size, scale_factor);
         self.computed_style = self.style.computed();
 
-        self.attrs.resize(size);
-        self.computed_attrs = self.attrs.computed();
-    }
-
-    pub fn scale_factor_changed(&mut self, scale_factor: f32)
-    where
-        A: Resize + fmt::Debug,
-    {
-        self.style.scale_factor_changed(scale_factor);
-        self.computed_style = self.style.computed();
-
-        self.attrs.scale_factor_changed(scale_factor);
+        self.attrs.resize(size, scale_factor);
         self.computed_attrs = self.attrs.computed();
     }
 }

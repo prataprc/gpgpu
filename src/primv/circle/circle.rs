@@ -181,7 +181,7 @@ impl Circle {
 }
 
 impl Circle {
-    pub fn to_extent(&self) -> Size {
+    pub fn to_size(&self) -> Size {
         let diameter = self.computed_attrs.radius * 2.0;
         Size {
             width: diameter,
@@ -189,13 +189,11 @@ impl Circle {
         }
     }
 
-    pub fn resize(&mut self, _size: Size) -> &mut Self {
-        self
-    }
-
-    pub fn scale_factor_changed(&mut self, scale_factor: f32) -> &mut Self {
-        self.scale_factor = scale_factor;
-        self.computed_attrs = self.attrs.computed(self.scale_factor);
+    pub fn resize(&mut self, _size: Size, scale_factor: Option<f32>) -> &mut Self {
+        if let Some(scale_factor) = scale_factor {
+            self.scale_factor = scale_factor;
+            self.computed_attrs = self.attrs.computed(self.scale_factor);
+        }
         self
     }
 

@@ -111,6 +111,7 @@ pub fn handle_raster(opts: Opt) -> Result<()> {
 
     swin.on_win_scale_factor_changed(Box::new(on_win_scale_factor_changed))
         .on_redraw_requested(Box::new(on_redraw_requested));
+    // TODO on_win_resized
 
     info!("Press Esc to exit");
     swin.run(state);
@@ -132,8 +133,9 @@ fn on_win_scale_factor_changed(
 ) -> Option<ControlFlow> {
     if let Event::WindowEvent { event, .. } = event {
         if let WindowEvent::ScaleFactorChanged { .. } = event {
-            let scale_factor = state.render.to_scale_factor();
-            state.domr.resize(Location::default(), scale_factor);
+            state.domr.resize(
+                state.render.to_extent3d().into(), Some(state.render.to_scale_factor()
+            );
 
             let wgpu::Extent3d { width, height, .. } = state.render.to_extent3d();
             println!("width {} height {}", width, height);

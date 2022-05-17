@@ -1,4 +1,4 @@
-use crate::{dom, primv, ColorTarget, Context, Result, Size, State, Viewport};
+use crate::{dom, primv, ColorTarget, Context, Extent, Result, State, Viewport};
 
 pub struct Shape {
     state: State<()>,
@@ -26,17 +26,17 @@ impl dom::Domesticate for Shape {
         None
     }
 
-    fn resize(&mut self, size: Size, scale_factor: Option<f32>) {
-        self.state.resize(size, scale_factor);
+    fn resize(&mut self, extent: Extent, scale_factor: Option<f32>) {
+        self.state.resize(extent, scale_factor);
         match &mut self.inner {
             Inner::Circle(val) => {
-                val.resize(size, scale_factor);
+                val.resize(extent, scale_factor);
             }
         }
     }
 
     fn to_viewport(&self) -> Viewport {
-        self.state.box_layout.to_viewport()
+        self.state.rect.into()
     }
 
     fn redraw(
@@ -50,28 +50,19 @@ impl dom::Domesticate for Shape {
         }
     }
 }
+
 impl Shape {
     pub fn new_circle(val: primv::circle::Circle) -> Self {
         let mut state = State::<()>::default();
-        state.style.flex_style.size = val.to_size().into();
+        state.style.flex_style.size = val.to_extent().into();
         Shape {
             state,
             inner: Inner::Circle(val),
         }
     }
 
-    pub fn set_position(
-        &mut self,
-        typ: stretch::style::PositionType,
-        position: stretch::geometry::Rect<stretch::style::Dimension>,
-    ) -> &mut Self {
-        self.state.style.flex_style.position_type = typ;
-        self.state.style.flex_style.position = position;
-        self
-    }
-
     pub fn print(&self, prefix: &str) {
-        println!("{}dom.Shape @ {}", prefix, self.state.box_layout);
+        println!("{}dom.Shape @ {}", prefix, self.state.rect);
         let prefix = "".to_string() + prefix + "  ";
         match &self.inner {
             Inner::Circle(val) => val.print(&prefix),

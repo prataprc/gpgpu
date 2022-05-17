@@ -1,7 +1,7 @@
 use bytemuck::{Pod, Zeroable};
 use cgmath::Point2;
 
-use crate::{BoxVertex, ColorTarget, Context, Result, Size, Transforms};
+use crate::{BoxVertex, ColorTarget, Context, Extent, Result, Transforms};
 
 pub struct Circle {
     scale_factor: f32, // default is crate::SCALE_FACTOR
@@ -181,15 +181,15 @@ impl Circle {
 }
 
 impl Circle {
-    pub fn to_size(&self) -> Size {
+    pub fn to_extent(&self) -> Extent {
         let diameter = self.computed_attrs.radius * 2.0;
-        Size {
+        Extent {
             width: diameter,
             height: diameter,
         }
     }
 
-    pub fn resize(&mut self, _size: Size, scale_factor: Option<f32>) -> &mut Self {
+    pub fn resize(&mut self, _: Extent, scale_factor: Option<f32>) -> &mut Self {
         if let Some(scale_factor) = scale_factor {
             self.scale_factor = scale_factor;
             self.computed_attrs = self.attrs.computed(self.scale_factor);

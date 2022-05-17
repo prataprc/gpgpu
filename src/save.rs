@@ -12,7 +12,7 @@ enum Type {
 pub struct SaveFile {
     loc: path::PathBuf,
     typ: Type,
-    size: wgpu::Extent3d,
+    extent: wgpu::Extent3d,
     format: wgpu::TextureFormat,
     buffer: wgpu::Buffer,
     unpadded_bytes_per_row: u32,
@@ -24,10 +24,10 @@ impl SaveFile {
     pub fn new_gif(
         loc: path::PathBuf,
         device: &wgpu::Device,
-        size: wgpu::Extent3d,
+        extent: wgpu::Extent3d,
         format: wgpu::TextureFormat,
     ) -> SaveFile {
-        let mut val = Self::new_bmp(loc, device, size, format);
+        let mut val = Self::new_bmp(loc, device, extent, format);
         val.typ = Type::Gif;
         val.frames = Vec::with_capacity(8);
         val
@@ -36,17 +36,17 @@ impl SaveFile {
     pub fn new_bmp(
         loc: path::PathBuf,
         device: &wgpu::Device,
-        size: wgpu::Extent3d,
+        extent: wgpu::Extent3d,
         format: wgpu::TextureFormat,
     ) -> SaveFile {
         use wgpu::BufferUsages;
 
         let texel_size = Self::texel_size(format);
         let align = wgpu::COPY_BYTES_PER_ROW_ALIGNMENT;
-        let unpadded_bytes_per_row = texel_size * size.width;
+        let unpadded_bytes_per_row = texel_size * extent.width;
         let padding = (align - (unpadded_bytes_per_row % align)) % align;
         let padded_bytes_per_row = unpadded_bytes_per_row + padding;
-        let size_bytes = padded_bytes_per_row * size.height;
+        let size_bytes = padded_bytes_per_row * extent.height;
 
         let desc = wgpu::BufferDescriptor {
             label: Some("save-buffer"),
@@ -59,7 +59,7 @@ impl SaveFile {
         SaveFile {
             loc,
             typ: Type::Bmp,
-            size,
+            extent,
             format,
             buffer,
             unpadded_bytes_per_row,
@@ -68,11 +68,11 @@ impl SaveFile {
         }
     }
 
-    pub fn resize(&self, device: &wgpu::Device, size: wgpu::Extent3d) -> SaveFile {
+    pub fn resize(&self, device: &wgpu::Device, extent: wgpu::Extent3d) -> SaveFile {
         let loc = self.loc.clone();
         match self.typ {
-            Type::Bmp => SaveFile::new_bmp(loc, device, size, self.format),
-            Type::Gif => SaveFile::new_gif(loc, device, size, self.format),
+            Type::Bmp => SaveFile::new_bmp(loc, device, extent, self.format),
+            Type::Gif => SaveFile::new_gif(loc, device, extent, self.format),
         }
     }
 
@@ -90,10 +90,10 @@ impl SaveFile {
             layout: wgpu::ImageDataLayout {
                 offset: 0,
                 bytes_per_row: NonZeroU32::new(self.padded_bytes_per_row),
-                rows_per_image: NonZeroU32::new(self.size.height),
+                rows_per_image: NonZeroU32::new(self.extent.height),
             },
         };
-        encoder.copy_texture_to_buffer(src, dst, self.size);
+        encoder.copy_texture_to_buffer(src, dst, self.extent);
 
         Ok(())
     }
@@ -107,7 +107,7 @@ impl SaveFile {
 
         let data = {
             let texel_size = Self::texel_size(self.format);
-            let size = texel_size * self.size.width * self.size.height;
+            let size = texel_size * self.extent.width * self.extent.height;
 
             let mut data = Vec::with_capacity(size as usize);
             let padded_data = slice.get_mapped_range().to_vec();
@@ -152,8 +152,8 @@ impl SaveFile {
             Some(frame) => {
                 let imgbuf: image::ImageBuffer<image::Rgba<u8>, Vec<u8>> =
                     image::ImageBuffer::from_vec(
-                        self.size.width,
-                        self.size.height,
+                        self.extent.width,
+                        self.extent.height,
                         frame,
                     )
                     .unwrap();
@@ -172,7 +172,7 @@ impl SaveFile {
     fn save_to_gif(&mut self) {
         use gif::{Encoder, Frame, Repeat};
 
-        let wgpu::Extent3d { width, height, .. } = self.size.clone();
+        let wgpu::Extent3d { width, height, .. } = self.extent.clone();
         let (width, height) = (width as u16, height as u16);
 
         let mut image = match std::fs::File::create(&self.loc) {

@@ -1,4 +1,4 @@
-use crate::{dom, ColorTarget, Context, Result, Size, State, Viewport};
+use crate::{dom, ColorTarget, Context, Extent, Result, State, Viewport};
 
 pub struct Div {
     state: State<()>,
@@ -22,15 +22,15 @@ impl dom::Domesticate for Div {
         Some(&mut self.children)
     }
 
-    fn resize(&mut self, size: Size, scale_factor: Option<f32>) {
-        self.state.resize(size, scale_factor);
+    fn resize(&mut self, extent: Extent, scale_factor: Option<f32>) {
+        self.state.resize(extent, scale_factor);
         for child in self.children.iter_mut() {
-            child.resize(size, scale_factor)
+            child.resize(extent, scale_factor)
         }
     }
 
     fn to_viewport(&self) -> Viewport {
-        self.state.box_layout.to_viewport()
+        self.state.rect.into()
     }
 
     fn redraw(
@@ -55,29 +55,8 @@ impl Div {
         }
     }
 
-    pub fn set_size(
-        &mut self,
-        width: stretch::style::Dimension,
-        height: stretch::style::Dimension,
-    ) -> &mut Self {
-        use stretch::geometry::Size;
-
-        self.state.style.flex_style.size = Size { width, height };
-        self
-    }
-
-    pub fn set_position(
-        &mut self,
-        typ: stretch::style::PositionType,
-        position: stretch::geometry::Rect<stretch::style::Dimension>,
-    ) -> &mut Self {
-        self.state.style.flex_style.position_type = typ;
-        self.state.style.flex_style.position = position;
-        self
-    }
-
     pub fn print(&self, prefix: &str) {
-        println!("{}dom.Div @ {}", prefix, self.state.box_layout);
+        println!("{}dom.Div @ {}", prefix, self.state.rect);
         let prefix = "".to_string() + prefix + "  ";
         for child in self.children.iter() {
             child.print(&prefix)

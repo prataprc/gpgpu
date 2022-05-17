@@ -6,7 +6,8 @@ use winit::{
 };
 
 use gpgpu::{
-    fonts, niw, primv::clear, util, Config, Context, Render, Result, Screen, Transforms,
+    dom::{self, Domesticate},
+    err_at, fonts, niw, util, Config, Context, Error, Render, Result, Screen, Transforms,
 };
 
 use crate::Opt;
@@ -17,6 +18,7 @@ struct State {
     font: fonts::FontFile,
     render: Render,
     frames: util::FrameRate,
+    domr: dom::Dom,
 }
 
 impl AsRef<Render> for State {
@@ -46,28 +48,20 @@ impl State {
             screen.device.create_command_encoder(&desc)
         };
         let context = Context {
-            transforms: &self.transforms,
+            transforms: &Transforms::empty(),
             device: &screen.device,
             queue: &screen.queue,
         };
         let target = self.render.to_color_target();
-        self.clear.render(&context, &mut encoder, &target).unwrap();
 
-        self.render.submit(encoder).unwrap();
+        //self.render.submit(encoder).unwrap();
 
         self.frames.next_frame_after(10_000 /*micros*/);
     }
 }
 
 pub fn handle_raster(opts: Opt) -> Result<()> {
-    use crate::SubCommand;
-
-    let (loc, _ch) = match opts.subcmd.clone() {
-        SubCommand::Raster { loc, ch } => (loc, ch),
-        _ => unreachable!(),
-    };
-
-    let font = fonts::FontFile::new(loc)?;
+    let loc = opts.loc.clone().unwrap();
 
     let name = "font-app".to_string();
     let mut config = gpgpu::Config::default();
@@ -87,6 +81,8 @@ pub fn handle_raster(opts: Opt) -> Result<()> {
         niw::SingleWindow::<State, ()>::from_config(wattrs).unwrap()
     };
 
+    let font = fonts::FontFile::new(loc)?;
+
     let state = {
         let screen = pollster::block_on(Screen::new(
             name.clone(),
@@ -97,21 +93,20 @@ pub fn handle_raster(opts: Opt) -> Result<()> {
 
         let mut render = Render::new(screen, FORMAT);
 
-        let clear = clear::Clear::new(wgpu::Color::WHITE);
+        let domr = make_dom(&opts, &render, FORMAT)?;
 
         render.start();
         State {
             font,
             render,
-            transforms: Transforms::empty(),
-            clear,
             frames: util::FrameRate::new(),
+            domr,
         }
     };
 
     swin.on_win_scale_factor_changed(Box::new(on_win_scale_factor_changed))
+        .on_win_resized(Box::new(on_win_resized))
         .on_redraw_requested(Box::new(on_redraw_requested));
-    // TODO on_win_resized
 
     info!("Press Esc to exit");
     swin.run(state);
@@ -126,6 +121,24 @@ fn on_redraw_requested(
     None
 }
 
+fn on_win_resized(
+    _: &Window,
+    state: &mut State,
+    event: &mut Event<()>,
+) -> Option<ControlFlow> {
+    if let Event::WindowEvent { event, .. } = event {
+        if let WindowEvent::Resized(size) = event {
+            state.domr.resize((*size).into(), None);
+
+            let extent = state.render.to_extent3d();
+            info!("win_resize: extent:{}", extent);
+
+            state.domr.compute_layout(extent).unwrap();
+        }
+    }
+
+    None
+}
 fn on_win_scale_factor_changed(
     _: &Window,
     state: &mut State,
@@ -134,39 +147,42 @@ fn on_win_scale_factor_changed(
     if let Event::WindowEvent { event, .. } = event {
         if let WindowEvent::ScaleFactorChanged { .. } = event {
             state.domr.resize(
-                state.render.to_extent3d().into(), Some(state.render.to_scale_factor()
+                state.render.to_extent3d().into(),
+                Some(state.render.to_scale_factor()),
             );
 
-            let wgpu::Extent3d { width, height, .. } = state.render.to_extent3d();
-            println!("width {} height {}", width, height);
-            state
-                .domr
-                .compute_layout(Some(width as f32), Some(height as f32))
-                .unwrap();
-            state.domr.print();
+            let extent = state.render.to_extent3d();
+            println!("win_scale_factor_changed, extent:{}", extent);
+
+            state.domr.compute_layout(extent).unwrap();
         }
     }
 
     None
 }
 
-//fn make_dom(opts: &Opt, render: &Render, format: wgpu::TextureFormat) -> dom::Dom {
-//    let circles: Vec<dom::Node> = {
-//        let attrs = circle::Attributes {
-//            radius: opts.radius,
-//            width: opts.width,
-//            fill: opts.fill,
-//            ..circle::Attributes::default()
-//        };
-//        let device = render.as_device();
-//        (0..1)
-//            .map(|_| {
-//                let style = Style::default();
-//                dom::Node::from(circle::Circle::new(attrs, style, device, format))
-//            })
-//            .collect()
-//    };
-//    let mut win = win::Win::new(circles);
-//    win.resize(Location::default(), render.to_scale_factor());
-//    dom::Dom::new(win)
-//}
+fn make_dom(
+    opts: &Opt,
+    render: &Render,
+    format: wgpu::TextureFormat,
+) -> Result<dom::Dom> {
+    use crate::SubCommand;
+
+    let code_point = match opts.subcmd.clone() {
+        SubCommand::Raster { code_point } => code_point,
+        _ => unreachable!(),
+    };
+
+    let font = fonts::FontFile::new(opts.loc.as_ref().unwrap())?;
+    let index = font.to_glyphs()?;
+    let g = index
+        .get(&code_point)
+        .ok_or(err_at!(Invalid, error: "code_point {}", code_point))?
+        .clone();
+
+    let children = vec![dom::Node::from(dom::glyph::GlyphBox::new(g))];
+    let mut win = dom::win::Win::new(children);
+    win.resize(render.to_extent3d().into(), Some(render.to_scale_factor()));
+
+    Ok(dom::Dom::new(win))
+}

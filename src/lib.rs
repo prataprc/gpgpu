@@ -22,6 +22,10 @@ use std::{error, fmt, result};
 /// ```
 #[macro_export]
 macro_rules! err_at {
+    ($v:ident, error: $($arg:expr),+) => {{
+        let prefix = format!("{}:{}", file!(), line!());
+        Error::$v(prefix, format!($($arg),+))
+    }};
     ($v:ident, msg: $($arg:expr),+) => {{
         let prefix = format!("{}:{}", file!(), line!());
         Err(Error::$v(prefix, format!($($arg),+)))
@@ -110,11 +114,11 @@ pub mod primv;
 pub mod util;
 
 pub use config::{Config, ConfigAdapter, ConfigWinit};
-pub use layout::{BoxLayout, BoxVertex, Location, Resize, Size, State, Viewport};
+pub use layout::{BoxVertex, Extent, GlyphRect, Origin, Rect, Resize, State, Viewport};
 pub use render::Render;
 pub use save::SaveFile;
 pub use screen::Screen;
-pub use style::{to_rgba8unorm_color, Border, Style, StyleBorder, DEFAULT_FONT_SIZE};
+pub use style::{to_rgba8unorm_color, Border, Style, StyleBorder};
 pub use transforms::{Camera, Ortho, Perspective, Transforms};
 pub use util::*;
 
@@ -125,7 +129,9 @@ pub const CLEAR_COLOR: wgpu::Color = wgpu::Color {
     a: 1.0,
 };
 
-const SCALE_FACTOR: f32 = 1.0;
+pub const SCALE_FACTOR: f32 = 1.0;
+
+pub const DEFAULT_FONT_SIZE: f32 = 15.0; // in pixels.
 
 pub struct Context<'a> {
     pub transforms: &'a Transforms,

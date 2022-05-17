@@ -6,13 +6,19 @@ use std::{fs, path};
 use gpgpu::{err_at, fonts, util, Error, Result};
 
 mod info;
-// mod raster;
+mod raster;
 
 #[derive(StructOpt)]
 #[structopt(name = "fonts", version = "0.0.1")]
 pub struct Opt {
     #[structopt(long = "force-color")]
     force_color: bool,
+
+    #[structopt(short = "loc")]
+    loc: Option<path::PathBuf>,
+
+    #[structopt(short = "f")]
+    f: Option<path::PathBuf>,
 
     #[structopt(subcommand)]
     subcmd: SubCommand,
@@ -52,25 +58,17 @@ pub enum SubCommand {
         #[structopt(long = "block")]
         block: Option<String>,
 
-        #[structopt(short = "f")]
-        f: Option<path::PathBuf>,
-
         #[structopt(long = "glyphs")]
         glyphs: bool,
     },
     Unicode,
     Glyph {
-        #[structopt(short = "f")]
-        f: Option<path::PathBuf>,
-
         code_point: u32,
     },
     Raster {
-        #[structopt(short = "f")]
-        loc: path::PathBuf,
-
-        ch: char,
+        code_point: u32,
     },
+    Validate,
     Clean,
 }
 
@@ -85,11 +83,13 @@ fn main() {
         SubCommand::Build { .. } => handle_build(opts),
         SubCommand::List { tables: true, .. } => handle_list_tables(opts),
         SubCommand::List { glyphs: true, .. } => handle_list_glyphs(opts),
-        SubCommand::List { f: Some(_), .. } => handle_list_file(opts),
+        SubCommand::List { .. } if opts.f.is_some() => handle_list_files(opts),
         SubCommand::List { .. } => handle_list(opts),
         SubCommand::Unicode => handle_unicode(opts),
-        SubCommand::Glyph { .. } => handle_glyph(opts),
-        SubCommand::Raster { .. } => todo!(), // raster::handle_raster(opts),
+        SubCommand::Glyph { .. } if opts.f.is_some() => handle_glyph(opts),
+        SubCommand::Glyph { .. } => err_at!(Invalid, msg: "specify font file"),
+        SubCommand::Raster { .. } => raster::handle_raster(opts),
+        SubCommand::Validate { .. } => handle_validate(opts),
         SubCommand::Clean => handle_clean(opts),
     };
 
@@ -141,7 +141,7 @@ fn handle_build(opts: Opt) -> Result<()> {
                             .iter()
                             .collect();
                     match fonts::FontFile::new(&loc) {
-                        Ok(f) => state.push(f),
+                        Ok(ff) => state.push(ff),
                         Err(e) => error!("invalid font-file {:?} : {}", loc, e),
                     };
                 }
@@ -155,12 +155,12 @@ fn handle_build(opts: Opt) -> Result<()> {
     files.sort();
     files.dedup();
 
-    let map = BTreeMap::from_iter(files.into_iter().map(|f| (f.to_hash(), f)));
-    let files: Vec<fonts::FontFile> = map.into_iter().map(|(_, f)| f).collect();
+    let map = BTreeMap::from_iter(files.into_iter().map(|ff| (ff.to_hash(), ff)));
+    let files: Vec<fonts::FontFile> = map.into_iter().map(|(_, ff)| ff).collect();
 
     if print {
-        for f in files.iter() {
-            println!("{:?}", f.to_loc())
+        for ff in files.iter() {
+            println!("{:?}", ff.to_loc())
         }
     }
 
@@ -169,7 +169,7 @@ fn handle_build(opts: Opt) -> Result<()> {
     let cache_fontfiles = util::gpgpu_cached_file("fontfiles").unwrap();
     let data: Vec<String> = files
         .iter()
-        .map(|f| format!("{}", f.to_loc().unwrap().to_str().unwrap()))
+        .map(|ff| format!("{}", ff.to_loc().to_str().unwrap()))
         .collect();
 
     err_at!(
@@ -263,37 +263,34 @@ fn handle_list_tables(_opts: Opt) -> Result<()> {
     Ok(())
 }
 
-fn handle_list_file(opts: Opt) -> Result<()> {
-    let f = match &opts.subcmd {
-        SubCommand::List { f: Some(f), .. } => f.to_str().unwrap(),
-        _ => unreachable!(),
-    };
-
+fn handle_list_files(opts: Opt) -> Result<()> {
+    let f = opts.f.unwrap().to_str().unwrap().to_string();
     let fontfiles: Vec<fonts::FontFile> = read_cached_fonts()?
         .into_iter()
-        .filter(|ff| ff.to_loc().unwrap().to_str().unwrap().contains(f))
+        .filter(|ff| ff.to_loc().to_str().unwrap().contains(&f))
         .collect();
     let faceprops = face_properties(&fontfiles);
 
-    let param_faces = info::list_param_faces(&faceprops);
-    util::make_table(&param_faces).print_tty(!opts.force_color);
+    if faceprops.len() == 1 {
+        let param_faces = info::list_param_faces(&faceprops);
+        util::make_table(&param_faces).print_tty(!opts.force_color);
+    } else {
+        util::make_table(&faceprops).print_tty(!opts.force_color);
+    }
 
     Ok(())
 }
 
 fn handle_list_glyphs(opts: Opt) -> Result<()> {
-    let f = match &opts.subcmd {
-        SubCommand::List { f: Some(f), .. } => f.to_str().unwrap(),
-        _ => err_at!(Invalid, msg: "povide a font file to list glyphs")?,
-    };
+    let f = opts.f.unwrap().to_str().unwrap().to_string();
 
     let fontfiles: Vec<fonts::FontFile> = read_cached_fonts()?
         .into_iter()
-        .filter(|ff| ff.to_loc().unwrap().to_str().unwrap().contains(f))
+        .filter(|ff| ff.to_loc().to_str().unwrap().contains(&f))
         .collect();
 
     for ff in fontfiles.iter() {
-        let glyphs = ff.to_glyphs()?;
+        let glyphs: Vec<fonts::Glyph> = ff.to_glyphs()?.into_values().collect();
         util::make_table(&glyphs).print_tty(!opts.force_color);
     }
 
@@ -308,18 +305,15 @@ fn handle_unicode(opts: Opt) -> Result<()> {
 }
 
 fn handle_glyph(opts: Opt) -> Result<()> {
-    let (f, code_point) = match &opts.subcmd {
-        SubCommand::Glyph { f: None, .. } => err_at!(Invalid, msg: "specify font file")?,
-        SubCommand::Glyph {
-            f: Some(f),
-            code_point,
-        } => (f.to_str().unwrap(), *code_point),
+    let f = opts.f.unwrap().to_str().unwrap().to_string();
+    let code_point = match &opts.subcmd {
+        SubCommand::Glyph { code_point } => *code_point,
         _ => unreachable!(),
     };
 
     let fontfiles: Vec<fonts::FontFile> = read_cached_fonts()?
         .into_iter()
-        .filter(|ff| ff.to_loc().unwrap().to_str().unwrap().contains(f))
+        .filter(|ff| ff.to_loc().to_str().unwrap().contains(&f))
         .collect();
 
     let ff = match fontfiles.first() {
@@ -328,11 +322,7 @@ fn handle_glyph(opts: Opt) -> Result<()> {
     };
 
     let glyphs = ff.to_glyphs()?;
-    let glyph = match glyphs
-        .iter()
-        .filter(|g| g.code_point() == code_point)
-        .next()
-    {
+    let glyph = match glyphs.get(&code_point) {
         Some(glyph) => glyph,
         None => err_at!(Invalid, msg: "glyph {} not found in {:?}", code_point, f)?,
     };
@@ -340,10 +330,20 @@ fn handle_glyph(opts: Opt) -> Result<()> {
     let rect = glyph.bounding_box();
     match glyph.to_outline() {
         Some(outline) => {
-            println!("BoundingBox : {}", fonts::rect_to_string(&rect.unwrap()));
+            println!("BoundingBox : {:?}", rect);
             println!("Outline     : \n{}", outline);
         }
         None => println!("No outline for {:?}", code_point),
+    }
+
+    Ok(())
+}
+
+fn handle_validate(opts: Opt) -> Result<()> {
+    let fontfiles: Vec<fonts::FontFile> = read_cached_fonts()?;
+
+    for ff in fontfiles.iter() {
+        ff.validate()?;
     }
 
     Ok(())
@@ -412,7 +412,7 @@ where
     P: AsRef<path::Path>,
 {
     let loc: &path::Path = loc.as_ref();
-    let f = || -> Option<bool> {
+    let check = || -> Option<bool> {
         Some(
             path::PathBuf::from(loc)
                 .file_stem()?
@@ -421,7 +421,7 @@ where
                 .all(|ch| ch.is_ascii_hexdigit()),
         )
     };
-    matches!(f(), Some(true))
+    matches!(check(), Some(true))
 }
 
 fn read_cached_fonts() -> Result<Vec<fonts::FontFile>> {
@@ -440,7 +440,7 @@ fn read_cached_fonts() -> Result<Vec<fonts::FontFile>> {
             }
         };
         match fonts::FontFile::new(&loc) {
-            Ok(f) if !is_ascii_hexdigit_name(&loc) => Some(f),
+            Ok(ff) if !is_ascii_hexdigit_name(&loc) => Some(ff),
             Ok(_) => {
                 debug!("skipping file {:?}", loc);
                 None
@@ -458,10 +458,10 @@ fn read_cached_fonts() -> Result<Vec<fonts::FontFile>> {
 fn face_properties(fontfiles: &[fonts::FontFile]) -> Vec<fonts::FaceProperties> {
     fontfiles
         .iter()
-        .filter_map(|f| match f.to_face_properties() {
+        .filter_map(|ff| match ff.to_face_properties() {
             Ok(p) => Some(p),
             Err(err) => {
-                error!("invalid font-file {:?}: {}", f.to_loc(), err);
+                error!("invalid font-file {:?}: {}", ff.to_loc(), err);
                 None
             }
         })

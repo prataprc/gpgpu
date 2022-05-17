@@ -1,11 +1,8 @@
-// pub mod line;
 pub mod div;
 pub mod shape;
 pub mod win;
 
-use crate::{
-    BoxLayout, ColorTarget, Context, Error, Result, Size, State, Style, Viewport,
-};
+use crate::{ColorTarget, Context, Error, Extent, Rect, Result, State, Style, Viewport};
 
 macro_rules! dispatch {
     (call, $this:ident, $($toks:tt)*) => {
@@ -52,7 +49,7 @@ macro_rules! dispatch {
 pub trait Domesticate {
     fn to_mut_children(&mut self) -> Option<&mut Vec<Node>>;
 
-    fn resize(&mut self, size: Size, scale_factor: Option<f32>);
+    fn resize(&mut self, extent: Extent, scale_factor: Option<f32>);
 
     fn to_viewport(&self) -> Viewport;
 
@@ -102,9 +99,9 @@ impl Node {
         *p = Some(flex_node);
     }
 
-    fn set_box_layout(&mut self, box_layout: BoxLayout) {
-        let p = dispatch!(set_state, self, box_layout);
-        *p = box_layout;
+    fn set_box_layout(&mut self, rect: Rect) {
+        let p = dispatch!(set_state, self, rect);
+        *p = rect;
     }
 
     fn print(&self, prefix: &str) {
@@ -117,8 +114,8 @@ impl Domesticate for Node {
         dispatch!(call, self, to_mut_children())
     }
 
-    fn resize(&mut self, size: Size, scale_factor: Option<f32>) {
-        dispatch!(call, self, resize(size, scale_factor))
+    fn resize(&mut self, extent: Extent, scale_factor: Option<f32>) {
+        dispatch!(call, self, resize(extent, scale_factor))
     }
 
     fn to_viewport(&self) -> Viewport {
@@ -148,8 +145,8 @@ pub struct Dom {
 }
 
 impl Dom {
-    pub fn resize(&mut self, size: Size, scale_factor: Option<f32>) {
-        self.root.resize(size, scale_factor)
+    pub fn resize(&mut self, extent: Extent, scale_factor: Option<f32>) {
+        self.root.resize(extent, scale_factor)
     }
 
     pub fn redraw(
@@ -168,23 +165,15 @@ impl Dom {
         Dom { root: root }
     }
 
-    pub fn compute_layout(
-        &mut self,
-        width: Option<f32>,
-        height: Option<f32>,
-    ) -> Result<()> {
+    pub fn compute_layout(&mut self, extent: Extent) -> Result<()> {
         let mut flex = stretch::node::Stretch::new();
         build_layout(&mut flex, &mut self.root)?;
 
+        let Extent { width, height } = extent;
+
         let size = stretch::geometry::Size {
-            width: match width {
-                Some(w) => stretch::number::Number::Defined(w),
-                None => stretch::number::Number::Undefined,
-            },
-            height: match height {
-                Some(h) => stretch::number::Number::Defined(h),
-                None => stretch::number::Number::Undefined,
-            },
+            width: stretch::number::Number::Defined(width as f32),
+            height: stretch::number::Number::Defined(height as f32),
         };
         let flex_node = self.root.to_flex_node();
         err_at!(Invalid, flex.compute_layout(flex_node, size))?;
@@ -214,8 +203,15 @@ fn build_layout(flex: &mut stretch::node::Stretch, node: &mut Node) -> Result<()
                 flex.new_leaf(
                     flex_style,
                     Box::new(move |x| {
-                        let size: Size = x.into();
-                        Ok(size.into())
+                        let width = match x.width {
+                            stretch::number::Number::Defined(n) => n,
+                            _ => 0.0, // TODO is this okay
+                        };
+                        let height = match x.height {
+                            stretch::number::Number::Defined(n) => n,
+                            _ => 0.0, // TODO is this okay
+                        };
+                        Ok(stretch::geometry::Size { width, height })
                     })
                 )
             )?);

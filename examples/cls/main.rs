@@ -47,8 +47,8 @@ impl State {
         target.view_port = Viewport {
             x: self.position[0],
             y: self.position[1],
-            w: self.size[0],
-            h: self.size[1],
+            width: self.size[0],
+            height: self.size[1],
             ..Viewport::default()
         };
 

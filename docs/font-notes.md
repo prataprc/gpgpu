@@ -1,3 +1,16 @@
+* Font metrics
+  * Line height, includes internal-leading and Line-Gap and =Em
+  * Descender, excludes Line-Gap
+  * Base-line = Line-Height - Descender
+  * Internal leading
+  * Line-Gap or External leading
+  * Ascender, includes internal-leading
+  * Origin, Horizontal-Advancement
+  * Point size, excludes internal-leading and external-leading
+  * X-height
+  * Cap-height
+  * Bounding Rectangle
+
 Notes on fonts, layout, rasterization and rendering.
 
 * font-type, sort, compositors, impress onto paper.

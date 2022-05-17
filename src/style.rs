@@ -1,16 +1,14 @@
 use bytemuck::{Pod, Zeroable};
 
-use crate::{Location, Resize, Size};
-
-pub const DEFAULT_FONT_SIZE: f32 = 15.0; // in pixels.
+use crate::{Extent, Rect, Resize, DEFAULT_FONT_SIZE};
 
 #[derive(Copy, Clone, Debug)]
 pub struct Style {
     pub font_size: stretch::number::Number, // in pixels
-    pub border: Border,
-    pub flex_style: stretch::style::Style,
     pub fg: wgpu::Color,
     pub bg: wgpu::Color,
+    pub border: Border,
+    pub flex_style: stretch::style::Style,
     scale_factor: f32,
 }
 
@@ -28,7 +26,7 @@ impl Default for Style {
 }
 
 impl Resize for Style {
-    fn resize(&mut self, _: Size, scale_factor: Option<f32>) {
+    fn resize(&mut self, _: Extent, scale_factor: Option<f32>) {
         if let Some(scale_factor) = scale_factor {
             self.scale_factor = scale_factor;
         }
@@ -79,42 +77,37 @@ impl Style {
         self
     }
 
-    pub fn set_size(&mut self, size: Size) -> &mut Self {
-        self.flex_style.size = size.into();
+    pub fn set_size(
+        &mut self,
+        size: stretch::geometry::Size<stretch::style::Dimension>,
+    ) -> &mut Self {
+        self.flex_style.size = size;
         self
     }
 
-    pub fn set_absolute_position(&mut self, loc: Location, size: Size) -> &mut Self {
-        use stretch::{
-            geometry::Rect,
-            style::{Dimension, PositionType},
-        };
+    pub fn set_absolute_position(&mut self, rect: Rect) -> &mut Self {
+        use stretch::style::PositionType;
 
         self.flex_style.position_type = PositionType::Absolute;
-        self.flex_style.position = Rect {
-            start: Dimension::Points(loc.x),
-            end: Dimension::Points(loc.x + size.width),
-            top: Dimension::Points(loc.y),
-            bottom: Dimension::Points(loc.y + size.height),
-        };
+        self.flex_style.position = rect.into();
         self
     }
 
-    pub fn set_relative_position(&mut self, loc: Location, size: Size) -> &mut Self {
-        use stretch::{
-            geometry::Rect,
-            style::{Dimension, PositionType},
-        };
+    pub fn set_relative_position(&mut self, rect: Rect) -> &mut Self {
+        use stretch::style::PositionType;
 
         self.flex_style.position_type = PositionType::Relative;
-        self.flex_style.position = Rect {
-            start: Dimension::Points(loc.x),
-            end: Dimension::Points(loc.x + size.width),
-            top: Dimension::Points(loc.y),
-            bottom: Dimension::Points(loc.y + size.height),
-        };
+        self.flex_style.position = rect.into();
         self
     }
+}
+
+#[derive(Copy, Clone, Debug)]
+pub struct Border {
+    pub style: StyleBorder,
+    pub width: stretch::geometry::Rect<stretch::style::Dimension>,
+    pub color: wgpu::Color,
+    pub radius: stretch::geometry::Rect<stretch::style::Dimension>,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -137,14 +130,6 @@ impl Default for StyleBorder {
     fn default() -> StyleBorder {
         StyleBorder::None
     }
-}
-
-#[derive(Copy, Clone, Debug)]
-pub struct Border {
-    pub style: StyleBorder,
-    pub width: stretch::geometry::Rect<stretch::style::Dimension>,
-    pub color: wgpu::Color,
-    pub radius: stretch::geometry::Rect<stretch::style::Dimension>,
 }
 
 impl Default for Border {
@@ -226,19 +211,6 @@ fn scale_rect(
     }
 }
 
-// TODO: remove this if not required.
-//fn translate_rect(
-//    rect: stretch::geometry::Rect<stretch::style::Dimension>,
-//    offset: Location,
-//) -> stretch::geometry::Rect<stretch::style::Dimension> {
-//    stretch::geometry::Rect {
-//        start: translate_dimension(rect.start, offset.x),
-//        end: translate_dimension(rect.end, offset.x),
-//        top: translate_dimension(rect.top, offset.y),
-//        bottom: translate_dimension(rect.bottom, offset.y),
-//    }
-//}
-
 fn scale_size(
     size: stretch::geometry::Size<stretch::style::Dimension>,
     factor: f32,
@@ -260,16 +232,3 @@ fn scale_dimension(
         val => val,
     }
 }
-
-// TODO: remove this if not required.
-//fn translate_dimension(
-//    dimen: stretch::style::Dimension,
-//    offset: f32,
-//) -> stretch::style::Dimension {
-//    match dimen {
-//        stretch::style::Dimension::Points(val) => {
-//            stretch::style::Dimension::Points(val + offset)
-//        }
-//        val => val,
-//    }
-//}

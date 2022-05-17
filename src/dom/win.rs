@@ -1,4 +1,4 @@
-use crate::{dom, ColorTarget, Context, Result, Size, State, Style, Viewport};
+use crate::{dom, ColorTarget, Context, Extent, Result, State, Style, Viewport};
 
 pub struct Win {
     state: State<()>,
@@ -22,15 +22,15 @@ impl dom::Domesticate for Win {
         Some(&mut self.children)
     }
 
-    fn resize(&mut self, size: Size, scale_factor: Option<f32>) {
-        self.state.resize(size, scale_factor);
+    fn resize(&mut self, extent: Extent, scale_factor: Option<f32>) {
+        self.state.resize(extent, scale_factor);
         for child in self.children.iter_mut() {
-            child.resize(size, scale_factor)
+            child.resize(extent, scale_factor)
         }
     }
 
     fn to_viewport(&self) -> Viewport {
-        self.state.box_layout.to_viewport()
+        self.state.rect.into()
     }
 
     fn redraw(
@@ -66,7 +66,7 @@ impl Win {
     }
 
     pub fn print(&self, prefix: &str) {
-        println!("{}node.Win @ {}", prefix, self.state.box_layout);
+        println!("{}node.Win @ {}", prefix, self.state.rect);
         let prefix = "".to_string() + prefix + "  ";
         for child in self.children.iter() {
             child.print(&prefix)

@@ -1,12 +1,13 @@
 use colored::Colorize;
+use log::error;
 use prettytable::{cell, row};
 
-use std::{cmp, fs, path};
+use std::{cmp, collections::BTreeMap, fs, path};
 
 use crate::{
     fonts,
     util::{format_bool, format_option, PrettyRow},
-    Error, Result,
+    Error, GlyphRect, Result,
 };
 
 pub const TABLE_NAMES: [&'static str; 32] = [
@@ -70,8 +71,12 @@ impl FontFile {
         Ok(val)
     }
 
-    pub fn to_loc(&self) -> Option<path::PathBuf> {
-        Some(self.loc.clone())
+    pub fn to_loc(&self) -> path::PathBuf {
+        self.loc.clone()
+    }
+
+    pub fn to_file_name(&self) -> Option<path::PathBuf> {
+        self.loc.file_name().as_ref().map(path::PathBuf::from)
     }
 
     pub fn to_face(&self) -> Result<ttf_parser::Face> {
@@ -82,7 +87,7 @@ impl FontFile {
         self.hash
     }
 
-    pub fn to_glyphs(&self) -> Result<Vec<fonts::Glyph>> {
+    pub fn to_glyphs(&self) -> Result<BTreeMap<u32, fonts::Glyph>> {
         let face = self.to_face()?;
 
         let subtables = match face.tables().cmap {
@@ -97,9 +102,10 @@ impl FontFile {
         code_points.sort();
         code_points.dedup();
 
-        let mut glyphs: Vec<fonts::Glyph> = Vec::default();
+        let mut glyphs: BTreeMap<u32, fonts::Glyph> = BTreeMap::new();
         for code_point in code_points.into_iter() {
-            glyphs.push(fonts::Glyph::new(face.clone(), code_point)?)
+            let g = fonts::Glyph::new(face.clone(), code_point)?;
+            glyphs.insert(code_point, g);
         }
 
         Ok(glyphs)
@@ -108,7 +114,7 @@ impl FontFile {
     pub fn to_unicode_blocks(&self) -> Result<Vec<unicode_blocks::UnicodeBlock>> {
         let mut ss: Vec<unicode_blocks::UnicodeBlock> = self
             .to_glyphs()?
-            .iter()
+            .into_values()
             .filter_map(|g| Some(g.unicode_block()?))
             .collect();
         ss.sort();
@@ -116,23 +122,6 @@ impl FontFile {
 
         Ok(ss)
     }
-
-    //pub fn rasterize_char(&self, ch: char) -> Result<()> {
-    //    use image::{ImageBuffer, ImageFormat, Luma};
-
-    //    let font = match self.font.as_ref() {
-    //        Some(font) => font,
-    //        None => err_at!(Invalid, msg: "parse before calling raster")?,
-    //    };
-    //    let (metrics, data) = font.rasterize(ch, self.scale);
-    //    let img: ImageBuffer<Luma<u8>, Vec<u8>> = {
-    //        let (w, h) = (metrics.width as u32, metrics.height as u32);
-    //        ImageBuffer::from_vec(w, h, data).unwrap()
-    //    };
-    //    err_at!(Invalid, img.save_with_format("./xyz.bmp", ImageFormat::Bmp))?;
-
-    //    Ok(())
-    //}
 
     pub fn to_face_properties(&self) -> Result<FaceProperties> {
         let face = self.to_face()?;
@@ -148,14 +137,14 @@ impl FontFile {
             name,
             tables: self.to_table_names()?,
             glyph_count: face.number_of_glyphs(),
-            global_bounding_box: face.global_bounding_box(),
+            global_bounding_box: face.global_bounding_box().into(),
             regular: face.is_regular(),
             italic: face.is_italic(),
             bold: face.is_bold(),
             oblique: face.is_oblique(),
             monospaced: face.is_monospaced(),
             variable: face.is_variable(),
-            units_per_em: face.units_per_em(),
+            units_per_em: face.units_per_em() as f32,
             x_height: face.x_height(),
             capital_height: face.capital_height(),
             underline_metrics: face.underline_metrics(),
@@ -180,6 +169,30 @@ impl FontFile {
         };
 
         Ok(val)
+    }
+
+    pub fn validate(&self) -> Result<bool> {
+        let mut res = true;
+        let face = self.to_face()?;
+        let loc = self.to_loc();
+
+        let (height, ascent, descent) =
+            (face.height(), face.ascender(), face.descender());
+
+        if descent >= 0 {
+            error!("{:?} descender >= 0 descender:{}", loc, descent);
+            res = true
+        }
+
+        if (ascent - descent) != height {
+            error!(
+                "{:?} height:{} != ascender:{} - descender:{}",
+                loc, height, ascent, descent,
+            );
+            res = false;
+        }
+
+        Ok(res)
     }
 }
 
@@ -286,14 +299,14 @@ pub struct FaceProperties<'a> {
     pub name: Option<String>,
     pub tables: Vec<&'static str>,
     pub glyph_count: u16,
-    pub global_bounding_box: ttf_parser::Rect,
+    pub global_bounding_box: GlyphRect,
     pub regular: bool,
     pub italic: bool,
     pub bold: bool,
     pub oblique: bool,
     pub monospaced: bool,
     pub variable: bool,
-    pub units_per_em: u16,
+    pub units_per_em: f32,
     pub x_height: Option<i16>,
     pub capital_height: Option<i16>,
     pub underline_metrics: Option<ttf_parser::LineMetrics>,
@@ -361,7 +374,7 @@ impl<'a> PrettyRow for FaceProperties<'a> {
             format_option!(self.name),
             self.glyph_count,
             format_flags(self),
-            rect_to_string(&self.global_bounding_box),
+            format!("{:?}", self.global_bounding_box),
             self.units_per_em,
             self.ascender,
             self.descender,
@@ -385,7 +398,7 @@ impl<'a> FaceProperties<'a> {
             "name" => name,
             "tables" => "-".to_string(),
             "glyph_count" => self.glyph_count.to_string(),
-            "global_bounding_box" => rect_to_string(&self.global_bounding_box),
+            "global_bounding_box" => format!("{:?}", self.global_bounding_box),
             "regular" => format_bool!(self.regular).to_string(),
             "italic" => format_bool!(self.italic).to_string(),
             "bold" => format_bool!(self.bold).to_string(),
@@ -542,16 +555,6 @@ fn style_to_string(s: &ttf_parser::os2::Style) -> String {
         Oblique => "oblique",
     }
     .to_string()
-}
-
-fn rect_to_string(rect: &ttf_parser::Rect) -> String {
-    let ttf_parser::Rect {
-        x_min,
-        y_min,
-        x_max,
-        y_max,
-    } = rect;
-    format!("({},{})->({},{})", x_min, y_min, x_max, y_max)
 }
 
 fn lmetrics_to_string(val: ttf_parser::LineMetrics) -> String {

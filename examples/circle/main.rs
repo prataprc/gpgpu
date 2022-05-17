@@ -101,9 +101,7 @@ fn main() {
 
     let state = {
         let mut domr = make_dom(&opts, &render, FORMAT);
-        let wgpu::Extent3d { width, height, .. } = render.to_extent3d();
-        domr.compute_layout(Some(width as f32), Some(height as f32))
-            .unwrap();
+        domr.compute_layout(render.to_extent3d().into()).unwrap();
         domr.print();
 
         render.start();
@@ -140,13 +138,10 @@ fn on_win_resized(
         if let WindowEvent::Resized(size) = event {
             state.domr.resize((*size).into(), None);
 
-            let wgpu::Extent3d { width, height, .. } = state.render.to_extent3d();
-            info!("width {} height {}", width, height);
+            let extent = state.render.to_extent3d();
+            info!("win_resized: extent:{:?}", extent);
 
-            state
-                .domr
-                .compute_layout(Some(width as f32), Some(height as f32))
-                .unwrap();
+            state.domr.compute_layout(extent.into()).unwrap();
             state.domr.print(); // TODO: remove this
         }
     }
@@ -166,13 +161,10 @@ fn on_win_scale_factor_changed(
                 Some(state.render.to_scale_factor()),
             );
 
-            let wgpu::Extent3d { width, height, .. } = state.render.to_extent3d();
-            info!("width {} height {}", width, height);
+            let extent = state.render.to_extent3d();
+            info!("win_scale_factor_changed extent:{:?}", extent);
 
-            state
-                .domr
-                .compute_layout(Some(width as f32), Some(height as f32))
-                .unwrap();
+            state.domr.compute_layout(extent.into()).unwrap();
 
             state.domr.print(); // TODO: remove this
         }

@@ -72,7 +72,7 @@ impl Render {
         self.save_file = Some(SaveFile::new_bmp(
             loc,
             &self.screen.device,
-            self.to_extent3d(),
+            self.to_extent3d().into(),
             format,
         ));
         self
@@ -89,7 +89,7 @@ impl Render {
         self.save_file = Some(SaveFile::new_gif(
             loc,
             &self.screen.device,
-            self.to_extent3d(),
+            self.to_extent3d().into(),
             format,
         ));
         self
@@ -128,7 +128,7 @@ impl Render {
             Arc::new(texture)
         };
         self.save_file = match &self.save_file {
-            Some(sf) => Some(sf.resize(&self.screen.device, size)),
+            Some(sf) => Some(sf.resize(&self.screen.device, size.into())),
             None => None,
         };
     }

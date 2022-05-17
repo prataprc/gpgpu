@@ -7,15 +7,21 @@ use std::{fmt, result};
 use crate::{
     fonts,
     util::{format_option, PrettyRow},
-    Error, Result,
+    Error, GlyphRect, Result,
 };
 
+#[derive(Clone)]
 pub struct Glyph<'a> {
     face: ttf_parser::Face<'a>,
     code_point: u32,
     ch: char,
     id: ttf_parser::GlyphId,
     name: String,
+    // metrics
+    units_per_em: f32, // in points
+    hor_advance: f32,
+    ver_advance: f32,
+    bb: GlyphRect,
 }
 
 impl<'a> Glyph<'a> {
@@ -26,21 +32,63 @@ impl<'a> Glyph<'a> {
         };
         let id = face.glyph_index(ch).unwrap_or(ttf_parser::GlyphId(0));
         let name = face.glyph_name(id).unwrap_or("--").to_string();
+        let bb = face.glyph_bounding_box(id).unwrap();
+        let units_per_em = face.units_per_em() as f32;
+        let hor_advance = face.glyph_hor_side_bearing(id).unwrap() as f32;
+        let ver_advance = face.glyph_hor_side_bearing(id).unwrap() as f32;
+
         let val = Glyph {
             face,
             code_point,
             ch,
             id,
             name,
+            // metrics
+            units_per_em,
+            hor_advance,
+            ver_advance,
+            bb: bb.into(),
         };
 
         Ok(val)
     }
 
-    pub fn code_point(&self) -> u32 {
+    pub fn scale(&self, units_per_em: f32) -> Glyph {
+        let factor = self.units_per_em / units_per_em;
+        Glyph {
+            face: self.face.clone(),
+            code_point: self.code_point,
+            ch: self.ch,
+            id: self.id,
+            name: self.name.clone(),
+            // metrics
+            units_per_em: units_per_em,
+            hor_advance: self.hor_advance * factor,
+            ver_advance: self.ver_advance * factor,
+            bb: self.bb.scale(factor),
+        }
+    }
+}
+
+impl<'a> Glyph<'a> {
+    pub fn to_code_point(&self) -> u32 {
         self.code_point
     }
 
+    pub fn to_char(&self) -> char {
+        self.ch
+    }
+
+    pub fn to_id(&self) -> ttf_parser::GlyphId {
+        self.id
+    }
+
+    pub fn to_name(&self) -> String {
+        self.name.clone()
+    }
+}
+
+impl<'a> Glyph<'a> {
     pub fn unicode_block(&self) -> Option<unicode_blocks::UnicodeBlock> {
         unicode_blocks::find_unicode_block(self.ch)
     }
@@ -49,16 +97,16 @@ impl<'a> Glyph<'a> {
         unicode_blocks::is_cjk(self.ch)
     }
 
-    pub fn bounding_box(&self) -> Option<ttf_parser::Rect> {
-        self.face.glyph_bounding_box(self.id)
+    pub fn bounding_box(&self) -> GlyphRect {
+        self.bb
     }
 
-    pub fn hor_advance(&self) -> Option<u16> {
-        self.face.glyph_hor_advance(self.id)
+    pub fn hor_advance(&self) -> f32 {
+        self.hor_advance
     }
 
-    pub fn ver_advance(&self) -> Option<u16> {
-        self.face.glyph_ver_advance(self.id)
+    pub fn ver_advance(&self) -> f32 {
+        self.ver_advance
     }
 
     pub fn hor_side_bearing(&self) -> Option<i16> {
@@ -81,21 +129,21 @@ impl<'a> Glyph<'a> {
 
     pub fn check_limits(&self) -> bool {
         match self.bounding_box() {
-            Some(bb) if bb.x_min >= bb.x_max => {
+            bb if bb.x_min >= bb.x_max => {
                 warn!(
                     "Bounding box for {} is x_min:{} x_max:{}",
                     self.code_point, bb.x_min, bb.x_max
                 );
                 false
             }
-            Some(bb) if bb.y_min >= bb.y_max => {
+            bb if bb.y_min >= bb.y_max => {
                 warn!(
                     "Bounding box for {} is y_min:{} y_max:{}",
                     self.code_point, bb.y_min, bb.y_max
                 );
                 false
             }
-            Some(_) | None => true,
+            _ => true,
         }
     }
 }
@@ -114,19 +162,18 @@ impl<'a> PrettyRow for Glyph<'a> {
     }
 
     fn to_row(&self) -> prettytable::Row {
-        let bb = self.bounding_box().as_ref().map(|bb| rect_to_string(bb));
         row![
             format!("{:?}", self.ch),
             self.code_point,
             self.name,
             format_option!(self.unicode_block().as_ref().map(|x| x.name())),
             self.cjk(),
-            format_option!(self.hor_advance()),
-            format_option!(self.ver_advance()),
+            self.hor_advance(),
+            self.ver_advance(),
             format_option!(self.hor_side_bearing()),
             format_option!(self.ver_side_bearing()),
             format_option!(self.y_origin()),
-            format_option!(bb),
+            format!("{:?}", self.bounding_box()),
         ]
     }
 }
@@ -140,6 +187,23 @@ enum Segment {
     Line(f32, f32),                           // (x, y)
     Quad((f32, f32), (f32, f32)),             // (x1, y1), (x, y)
     Curv((f32, f32), (f32, f32), (f32, f32)), // (x1, y1), (x2, y2), (x, y)
+}
+
+impl Segment {
+    fn scale(&self, factor: f32) -> Segment {
+        match self {
+            Segment::Move(a, b) => Segment::Move(a * factor, b * factor),
+            Segment::Line(a, b) => Segment::Line(a * factor, b * factor),
+            Segment::Quad((a, b), (x, y)) => {
+                Segment::Quad((a * factor, b * factor), (x * factor, y * factor))
+            }
+            Segment::Curv((a, b), (x, y), (p, q)) => Segment::Curv(
+                (a * factor, b * factor),
+                (x * factor, y * factor),
+                (p * factor, q * factor),
+            ),
+        }
+    }
 }
 
 impl Default for Outline {
@@ -217,12 +281,10 @@ impl fmt::Display for Outline {
     }
 }
 
-pub fn rect_to_string(rect: &ttf_parser::Rect) -> String {
-    let ttf_parser::Rect {
-        x_min,
-        y_min,
-        x_max,
-        y_max,
-    } = rect;
-    format!("({},{})->({},{})", x_min, y_min, x_max, y_max)
+impl Outline {
+    pub fn scale(&self, factor: f32) -> Outline {
+        Outline {
+            segments: self.segments.iter().map(|s| s.scale(factor)).collect(),
+        }
+    }
 }

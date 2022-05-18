@@ -10,7 +10,7 @@ use std::{
 use crate::Style;
 
 // Resize
-// Extent, Origin, Rect, State, AspectRatio, BoxVertex, Viewport, GlyphRect
+// Dimension, Extent, Origin, Rect, State, AspectRatio, BoxVertex, Viewport, GlyphRect
 
 pub trait Resize {
     fn resize(&mut self, extent: Extent, scale_factor: Option<f32>);
@@ -25,6 +25,35 @@ impl Resize for () {
 
     fn computed(&self) -> Self {
         ()
+    }
+}
+
+pub enum Dimension {
+    Undefined,
+    Auto,
+    Points(f32),
+    Percent(f32),
+}
+
+impl From<stretch::style::Dimension> for Dimension {
+    fn from(val: stretch::style::Dimension) -> Dimension {
+        match val {
+            stretch::style::Dimension::Undefined => Dimension::Undefined,
+            stretch::style::Dimension::Auto => Dimension::Auto,
+            stretch::style::Dimension::Points(val) => Dimension::Points(val),
+            stretch::style::Dimension::Percent(val) => Dimension::Percent(val),
+        }
+    }
+}
+
+impl From<Dimension> for stretch::style::Dimension {
+    fn from(val: Dimension) -> stretch::style::Dimension {
+        match val {
+            Dimension::Undefined => stretch::style::Dimension::Undefined,
+            Dimension::Auto => stretch::style::Dimension::Auto,
+            Dimension::Points(val) => stretch::style::Dimension::Points(val),
+            Dimension::Percent(val) => stretch::style::Dimension::Percent(val),
+        }
     }
 }
 

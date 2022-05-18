@@ -77,11 +77,8 @@ impl Style {
         self
     }
 
-    pub fn set_size(
-        &mut self,
-        size: stretch::geometry::Size<stretch::style::Dimension>,
-    ) -> &mut Self {
-        self.flex_style.size = size;
+    pub fn set_extent(&mut self, extent: Extent) -> &mut Self {
+        self.flex_style.size = extent.into();
         self
     }
 

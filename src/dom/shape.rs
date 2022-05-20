@@ -7,6 +7,7 @@ pub struct Shape {
 
 enum Inner {
     Circle(primv::circle::Circle),
+    GlyphBox(primv::glyph::GlyphBox),
 }
 
 impl AsRef<State<()>> for Shape {
@@ -32,6 +33,9 @@ impl dom::Domesticate for Shape {
             Inner::Circle(val) => {
                 val.resize(extent, scale_factor);
             }
+            Inner::GlyphBox(val) => {
+                val.resize(extent, scale_factor);
+            }
         }
     }
 
@@ -47,6 +51,7 @@ impl dom::Domesticate for Shape {
     ) -> Result<()> {
         match &mut self.inner {
             Inner::Circle(val) => val.redraw(context, encoder, target),
+            Inner::GlyphBox(val) => val.redraw(context, encoder, target),
         }
     }
 }
@@ -61,11 +66,21 @@ impl Shape {
         }
     }
 
+    pub fn new_glyph_box(val: primv::glyph::GlyphBox) -> Self {
+        let mut state = State::<()>::default();
+        state.style.flex_style.size = val.to_extent().into();
+        Shape {
+            state,
+            inner: Inner::GlyphBox(val),
+        }
+    }
+
     pub fn print(&self, prefix: &str) {
         println!("{}dom.Shape @ {}", prefix, self.state.rect);
         let prefix = "".to_string() + prefix + "  ";
         match &self.inner {
             Inner::Circle(val) => val.print(&prefix),
+            Inner::GlyphBox(val) => val.print(&prefix),
         }
     }
 }

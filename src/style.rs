@@ -9,7 +9,6 @@ pub struct Style {
     pub bg: wgpu::Color,
     pub border: Border,
     pub flex_style: stretch::style::Style,
-    scale_factor: f32,
 }
 
 impl Default for Style {
@@ -20,38 +19,35 @@ impl Default for Style {
             bg: wgpu::Color::BLACK,
             border: Border::default(),
             flex_style: stretch::style::Style::default(),
-            scale_factor: crate::SCALE_FACTOR,
         }
     }
 }
 
 impl Resize for Style {
-    fn resize(&mut self, _: Extent, scale_factor: Option<f32>) {
-        if let Some(scale_factor) = scale_factor {
-            self.scale_factor = scale_factor;
-        }
-    }
-
-    fn computed(&self) -> Self {
-        let factor = self.scale_factor;
-        let flex_style = {
-            let flex = self.flex_style;
-            stretch::style::Style {
-                margin: scale_rect(flex.margin, factor),
-                padding: scale_rect(flex.padding, factor),
-                border: scale_rect(flex.border, factor),
-                flex_basis: scale_dimension(flex.flex_basis, factor),
-                size: scale_size(flex.size, factor),
-                min_size: scale_size(flex.min_size, factor),
-                max_size: scale_size(flex.max_size, factor),
-                ..self.flex_style
+    fn resize(&self, _: Extent, scale_factor: Option<f32>) -> Style {
+        match scale_factor {
+            Some(factor) => {
+                let flex_style = {
+                    let flex = self.flex_style;
+                    stretch::style::Style {
+                        margin: scale_rect(flex.margin, factor),
+                        padding: scale_rect(flex.padding, factor),
+                        border: scale_rect(flex.border, factor),
+                        flex_basis: scale_dimension(flex.flex_basis, factor),
+                        size: scale_size(flex.size, factor),
+                        min_size: scale_size(flex.min_size, factor),
+                        max_size: scale_size(flex.max_size, factor),
+                        ..self.flex_style
+                    }
+                };
+                Style {
+                    font_size: self.font_size * factor,
+                    border: self.border.scale(factor),
+                    flex_style,
+                    ..*self
+                }
             }
-        };
-        Style {
-            font_size: self.font_size * factor,
-            border: self.border.scale(factor),
-            flex_style,
-            ..*self
+            None => self.clone(),
         }
     }
 }

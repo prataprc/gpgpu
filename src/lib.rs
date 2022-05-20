@@ -114,7 +114,7 @@ pub mod primv;
 pub mod util;
 
 pub use config::{Config, ConfigAdapter, ConfigWinit};
-pub use layout::{BoxVertex, Extent, GlyphRect, Origin, Rect, Resize, State, Viewport};
+pub use layout::{BoxVertex, Extent, Origin, Rect, Resize, State, Viewport};
 pub use render::Render;
 pub use save::SaveFile;
 pub use screen::Screen;
@@ -129,7 +129,7 @@ pub const CLEAR_COLOR: wgpu::Color = wgpu::Color {
     a: 1.0,
 };
 
-pub const SCALE_FACTOR: f32 = 1.0;
+pub const DEFAULT_SCALE_FACTOR: f32 = 1.0;
 
 pub const DEFAULT_FONT_SIZE: f32 = 15.0; // in pixels.
 

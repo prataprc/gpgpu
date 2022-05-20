@@ -161,7 +161,7 @@ impl Circle {
         };
 
         Circle {
-            scale_factor: crate::SCALE_FACTOR,
+            scale_factor: crate::DEFAULT_SCALE_FACTOR,
             attrs,
             computed_attrs: attrs,
             // wgpu items
@@ -194,12 +194,6 @@ impl Circle {
             self.scale_factor = scale_factor;
             self.computed_attrs = self.attrs.computed(self.scale_factor);
         }
-        self
-    }
-
-    pub fn set_position(&mut self, origin: Point2<f32>) -> &mut Self {
-        self.attrs.origin = origin;
-        self.computed_attrs = self.attrs.computed(self.scale_factor);
         self
     }
 
@@ -333,6 +327,7 @@ impl Circle {
             label: Some("primv/circle:bind-group-layout"),
             entries: &[
                 Transforms::to_bind_group_layout_entry(0),
+                // uniform-buffer
                 wgpu::BindGroupLayoutEntry {
                     binding: 1,
                     visibility: ShaderStages::VERTEX | ShaderStages::FRAGMENT,

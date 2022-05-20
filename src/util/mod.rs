@@ -238,7 +238,8 @@ impl FrameRate {
     }
 
     pub fn next_frame_after(&mut self, micros: u64) {
-        self.next_frame = time::Instant::now() + time::Duration::from_micros(micros)
+        self.next_frame = time::Instant::now() + time::Duration::from_micros(micros);
+        self.n_frames += 1;
     }
 
     pub fn total(&self) -> u64 {

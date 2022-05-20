@@ -13,17 +13,11 @@ use crate::Style;
 // Dimension, Extent, Origin, Rect, State, AspectRatio, BoxVertex, Viewport, GlyphRect
 
 pub trait Resize {
-    fn resize(&mut self, extent: Extent, scale_factor: Option<f32>);
-
-    fn computed(&self) -> Self;
+    fn resize(&self, extent: Extent, scale_factor: Option<f32>) -> Self;
 }
 
 impl Resize for () {
-    fn resize(&mut self, _: Extent, _scale_factor: Option<f32>) {
-        ()
-    }
-
-    fn computed(&self) -> Self {
+    fn resize(&self, _: Extent, _scale_factor: Option<f32>) -> Self {
         ()
     }
 }
@@ -246,11 +240,8 @@ impl<A> State<A> {
     where
         A: Resize + fmt::Debug,
     {
-        self.style.resize(extent, scale_factor);
-        self.computed_style = self.style.computed();
-
-        self.attrs.resize(extent, scale_factor);
-        self.computed_attrs = self.attrs.computed();
+        self.computed_style = self.style.resize(extent, scale_factor);
+        self.computed_attrs = self.attrs.resize(extent, scale_factor);
     }
 }
 
@@ -320,45 +311,5 @@ impl Viewport {
             self.min_depth,
             self.max_depth,
         );
-    }
-}
-
-#[derive(Copy, Clone)]
-pub struct GlyphRect {
-    pub x_min: f32,
-    pub y_min: f32,
-    pub x_max: f32,
-    pub y_max: f32,
-}
-
-impl From<ttf_parser::Rect> for GlyphRect {
-    fn from(val: ttf_parser::Rect) -> GlyphRect {
-        GlyphRect {
-            x_min: val.x_min as f32,
-            y_min: val.y_min as f32,
-            x_max: val.x_max as f32,
-            y_max: val.y_max as f32,
-        }
-    }
-}
-
-impl GlyphRect {
-    pub fn scale(&self, factor: f32) -> GlyphRect {
-        GlyphRect {
-            x_min: self.x_min * factor,
-            y_min: self.y_min * factor,
-            x_max: self.x_max * factor,
-            y_max: self.y_max * factor,
-        }
-    }
-}
-
-impl fmt::Debug for GlyphRect {
-    fn fmt(&self, f: &mut fmt::Formatter) -> result::Result<(), fmt::Error> {
-        write!(
-            f,
-            "({},{})->({},{})",
-            self.x_min, self.y_min, self.x_max, self.y_max
-        )
     }
 }

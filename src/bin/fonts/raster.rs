@@ -7,7 +7,8 @@ use winit::{
 
 use gpgpu::{
     dom::{self, Domesticate},
-    err_at, fonts, niw, util, Config, Context, Error, Render, Result, Screen, Transforms,
+    err_at, fonts, niw, primv, util, Config, Context, Error, Render, Result, Screen,
+    Transforms,
 };
 
 use crate::Opt;
@@ -131,9 +132,9 @@ fn on_win_resized(
             state.domr.resize((*size).into(), None);
 
             let extent = state.render.to_extent3d();
-            info!("win_resize: extent:{}", extent);
+            info!("win_resize: extent:{:?}", extent);
 
-            state.domr.compute_layout(extent).unwrap();
+            state.domr.compute_layout(extent.into()).unwrap();
         }
     }
 
@@ -152,9 +153,11 @@ fn on_win_scale_factor_changed(
             );
 
             let extent = state.render.to_extent3d();
-            println!("win_scale_factor_changed, extent:{}", extent);
+            println!("win_scale_factor_changed, extent:{:?}", extent);
 
-            state.domr.compute_layout(extent).unwrap();
+            state.domr.compute_layout(extent.into()).unwrap();
+
+            state.domr.print();
         }
     }
 
@@ -173,15 +176,27 @@ fn make_dom(
         _ => unreachable!(),
     };
 
-    let font = fonts::FontFile::new(opts.loc.as_ref().unwrap())?;
-    let index = font.to_glyphs()?;
-    let g = index
-        .get(&code_point)
-        .ok_or(err_at!(Invalid, error: "code_point {}", code_point))?
-        .clone();
+    let gb = {
+        let ff = fonts::FontFile::new(opts.loc.as_ref().unwrap())?;
+        let g = ff
+            .to_glyphs()?
+            .get(&code_point)
+            .cloned()
+            .ok_or(err_at!(Invalid, error: "code_point {}", code_point))?;
 
-    let children = vec![dom::Node::from(dom::glyph::GlyphBox::new(g))];
-    let mut win = dom::win::Win::new(children);
+        let attrs = primv::glyph::Attributes {
+            height: (render.to_extent3d().height as f32) * 0.9,
+            ..primv::glyph::Attributes::default()
+        };
+
+        primv::glyph::GlyphBox::new(g, attrs)
+    };
+
+    let shape = dom::shape::Shape::new_glyph_box(gb);
+    let mut win = {
+        let children = vec![dom::Node::from(shape)];
+        dom::win::Win::new(children)
+    };
     win.resize(render.to_extent3d().into(), Some(render.to_scale_factor()));
 
     Ok(dom::Dom::new(win))

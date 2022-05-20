@@ -58,7 +58,7 @@ impl Render {
     }
 
     pub fn new(screen: Screen, color_format: wgpu::TextureFormat) -> Render {
-        Render::new_super_sampled(screen, crate::SCALE_FACTOR, color_format)
+        Render::new_super_sampled(screen, crate::DEFAULT_SCALE_FACTOR, color_format)
     }
 
     pub fn save_bmp<P>(&mut self, loc: P, format: wgpu::TextureFormat) -> &mut Self
@@ -224,6 +224,7 @@ fn render_loop(screen: Arc<Screen>, rx: mpsc::Receiver<Request>) -> Result<()> {
         let (mut frame, disconnected) = 'inner: loop {
             let (frames, disconnected) = get_frames(&rx);
             trace!("frames:{} disconnected:{}", frames.len(), disconnected);
+
             match frames.into_iter().rev().next() {
                 Some(frame) => break (frame, disconnected),
                 None if disconnected => break 'outer,
@@ -272,11 +273,6 @@ fn render_loop(screen: Arc<Screen>, rx: mpsc::Receiver<Request>) -> Result<()> {
         load.redraw(&context, &mut encoder, &mut target)?;
         screen.queue.submit(vec![encoder.finish()]);
 
-        //debug!("###########################");
-        //let wait_queue = async { screen.queue.on_submitted_work_done().await };
-        //pollster::block_on(wait_queue);
-        //debug!("...........................");
-
         for tx in resp_txs.drain(..) {
             err_at!(IPCError, tx.send(true))?
         }
@@ -298,6 +294,7 @@ struct Frame {
 
 fn get_frames(rx: &mpsc::Receiver<Request>) -> (Vec<Frame>, bool) {
     let mut frames = vec![];
+
     loop {
         match rx.try_recv() {
             Ok(msg) => match msg {

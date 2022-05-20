@@ -7,7 +7,7 @@ use std::{fmt, result};
 use crate::{
     fonts,
     util::{format_option, PrettyRow},
-    Error, GlyphRect, Result,
+    Error, Extent, Resize, Result,
 };
 
 #[derive(Clone)]
@@ -17,11 +17,6 @@ pub struct Glyph<'a> {
     ch: char,
     id: ttf_parser::GlyphId,
     name: String,
-    // metrics
-    units_per_em: f32, // in points
-    hor_advance: f32,
-    ver_advance: f32,
-    bb: GlyphRect,
 }
 
 impl<'a> Glyph<'a> {
@@ -32,10 +27,6 @@ impl<'a> Glyph<'a> {
         };
         let id = face.glyph_index(ch).unwrap_or(ttf_parser::GlyphId(0));
         let name = face.glyph_name(id).unwrap_or("--").to_string();
-        let bb = face.glyph_bounding_box(id).unwrap();
-        let units_per_em = face.units_per_em() as f32;
-        let hor_advance = face.glyph_hor_side_bearing(id).unwrap() as f32;
-        let ver_advance = face.glyph_hor_side_bearing(id).unwrap() as f32;
 
         let val = Glyph {
             face,
@@ -43,30 +34,9 @@ impl<'a> Glyph<'a> {
             ch,
             id,
             name,
-            // metrics
-            units_per_em,
-            hor_advance,
-            ver_advance,
-            bb: bb.into(),
         };
 
         Ok(val)
-    }
-
-    pub fn scale(&self, units_per_em: f32) -> Glyph {
-        let factor = self.units_per_em / units_per_em;
-        Glyph {
-            face: self.face.clone(),
-            code_point: self.code_point,
-            ch: self.ch,
-            id: self.id,
-            name: self.name.clone(),
-            // metrics
-            units_per_em: units_per_em,
-            hor_advance: self.hor_advance * factor,
-            ver_advance: self.ver_advance * factor,
-            bb: self.bb.scale(factor),
-        }
     }
 }
 
@@ -97,16 +67,20 @@ impl<'a> Glyph<'a> {
         unicode_blocks::is_cjk(self.ch)
     }
 
-    pub fn bounding_box(&self) -> GlyphRect {
-        self.bb
+    pub fn units_per_em(&self) -> u16 {
+        self.face.units_per_em()
     }
 
-    pub fn hor_advance(&self) -> f32 {
-        self.hor_advance
+    pub fn bounding_box(&self) -> Option<ttf_parser::Rect> {
+        self.face.glyph_bounding_box(self.id)
     }
 
-    pub fn ver_advance(&self) -> f32 {
-        self.ver_advance
+    pub fn hor_advance(&self) -> Option<i16> {
+        self.face.glyph_hor_side_bearing(self.id)
+    }
+
+    pub fn ver_advance(&self) -> Option<i16> {
+        self.face.glyph_ver_side_bearing(self.id)
     }
 
     pub fn hor_side_bearing(&self) -> Option<i16> {
@@ -129,14 +103,14 @@ impl<'a> Glyph<'a> {
 
     pub fn check_limits(&self) -> bool {
         match self.bounding_box() {
-            bb if bb.x_min >= bb.x_max => {
+            Some(bb) if bb.x_min >= bb.x_max => {
                 warn!(
                     "Bounding box for {} is x_min:{} x_max:{}",
                     self.code_point, bb.x_min, bb.x_max
                 );
                 false
             }
-            bb if bb.y_min >= bb.y_max => {
+            Some(bb) if bb.y_min >= bb.y_max => {
                 warn!(
                     "Bounding box for {} is y_min:{} y_max:{}",
                     self.code_point, bb.y_min, bb.y_max
@@ -168,8 +142,12 @@ impl<'a> PrettyRow for Glyph<'a> {
             self.name,
             format_option!(self.unicode_block().as_ref().map(|x| x.name())),
             self.cjk(),
-            self.hor_advance(),
-            self.ver_advance(),
+            self.hor_advance()
+                .map(|x| x.to_string())
+                .unwrap_or("-".to_string()),
+            self.ver_advance()
+                .map(|x| x.to_string())
+                .unwrap_or("-".to_string()),
             format_option!(self.hor_side_bearing()),
             format_option!(self.ver_side_bearing()),
             format_option!(self.y_origin()),
@@ -285,6 +263,101 @@ impl Outline {
     pub fn scale(&self, factor: f32) -> Outline {
         Outline {
             segments: self.segments.iter().map(|s| s.scale(factor)).collect(),
+        }
+    }
+}
+
+#[derive(Copy, Clone)]
+pub struct GlyphRect {
+    pub x_min: f32,
+    pub y_min: f32,
+    pub x_max: f32,
+    pub y_max: f32,
+}
+
+impl Default for GlyphRect {
+    fn default() -> GlyphRect {
+        GlyphRect {
+            x_min: 0.0,
+            y_min: 0.0,
+            x_max: 0.0,
+            y_max: 0.0,
+        }
+    }
+}
+
+impl fmt::Debug for GlyphRect {
+    fn fmt(&self, f: &mut fmt::Formatter) -> result::Result<(), fmt::Error> {
+        write!(
+            f,
+            "({},{})->({},{})",
+            self.x_min, self.y_min, self.x_max, self.y_max
+        )
+    }
+}
+
+impl From<ttf_parser::Rect> for GlyphRect {
+    fn from(val: ttf_parser::Rect) -> GlyphRect {
+        GlyphRect {
+            x_min: val.x_min as f32,
+            y_min: val.y_min as f32,
+            x_max: val.x_max as f32,
+            y_max: val.y_max as f32,
+        }
+    }
+}
+
+impl Resize for GlyphRect {
+    fn resize(&self, _: Extent, scale_factor: Option<f32>) -> GlyphRect {
+        match scale_factor {
+            Some(scale_factor) => GlyphRect {
+                x_min: self.x_min * scale_factor,
+                y_min: self.y_min * scale_factor,
+                x_max: self.x_max * scale_factor,
+                y_max: self.y_max * scale_factor,
+            },
+            None => self.clone(),
+        }
+    }
+}
+
+impl GlyphRect {
+    pub fn scale(&self, factor: f32) -> GlyphRect {
+        GlyphRect {
+            x_min: self.x_min * factor,
+            y_min: self.y_min * factor,
+            x_max: self.x_max * factor,
+            y_max: self.y_max * factor,
+        }
+    }
+
+    pub fn to_width(&self) -> f32 {
+        self.x_max - self.x_min
+    }
+
+    pub fn to_height(&self) -> f32 {
+        self.y_max - self.y_min
+    }
+}
+
+#[derive(Copy, Clone, Debug)]
+pub struct GlyphMetrics {
+    pub units_per_em: f32, // in points
+    pub bounding_box: fonts::GlyphRect,
+    pub hor_advance: f32,
+    pub hor_side_bearing: f32,
+}
+
+impl Resize for GlyphMetrics {
+    fn resize(&self, extent: Extent, scale_factor: Option<f32>) -> GlyphMetrics {
+        match scale_factor {
+            Some(scale_factor) => GlyphMetrics {
+                units_per_em: self.units_per_em * scale_factor,
+                bounding_box: self.bounding_box.resize(extent, Some(scale_factor)),
+                hor_advance: self.units_per_em * scale_factor,
+                hor_side_bearing: self.units_per_em * scale_factor,
+            },
+            None => self.clone(),
         }
     }
 }

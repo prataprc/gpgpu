@@ -6,7 +6,7 @@ use std::{any::type_name, fmt, path, result};
 use gpgpu::{
     err_at,
     util::{self, PrettyPrint},
-    Error, Result,
+    Error, Result, DEFAULT_SCALE_FACTOR,
 };
 
 mod info;
@@ -92,13 +92,13 @@ fn handle_scale(opts: &Opt) -> Result<()> {
     if let Some(ratio) = ratio {
         transform.scale_by(*ratio)
     } else if let Some([x]) = xyz.as_deref() {
-        transform.scale_xyz_by(*x, 1.0, 1.0)
+        transform.scale_xyz_by(*x, DEFAULT_SCALE_FACTOR, DEFAULT_SCALE_FACTOR)
     } else if let Some([x, y]) = xyz.as_deref() {
-        transform.scale_xyz_by(*x, *y, 1.0)
+        transform.scale_xyz_by(*x, *y, DEFAULT_SCALE_FACTOR)
     } else if let Some([x, y, z]) = xyz.as_deref() {
         transform.scale_xyz_by(*x, *y, *z)
     } else {
-        transform.scale_by(1.0)
+        transform.scale_by(DEFAULT_SCALE_FACTOR)
     };
 
     match loc {

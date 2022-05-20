@@ -7,7 +7,7 @@ use std::{cmp, collections::BTreeMap, fs, path};
 use crate::{
     fonts,
     util::{format_bool, format_option, PrettyRow},
-    Error, GlyphRect, Result,
+    Error, Result,
 };
 
 pub const TABLE_NAMES: [&'static str; 32] = [
@@ -299,7 +299,7 @@ pub struct FaceProperties<'a> {
     pub name: Option<String>,
     pub tables: Vec<&'static str>,
     pub glyph_count: u16,
-    pub global_bounding_box: GlyphRect,
+    pub global_bounding_box: fonts::GlyphRect,
     pub regular: bool,
     pub italic: bool,
     pub bold: bool,

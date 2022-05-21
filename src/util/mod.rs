@@ -117,9 +117,7 @@ where
 }
 
 pub fn html_to_color(s: &str) -> Result<wgpu::Color> {
-    // println!("{}", s);
     let c = tint::Color::from_hex(s);
-    // println!("{:?}", c);
     let val = wgpu::Color {
         r: c.red,
         g: c.green,

@@ -9,13 +9,13 @@ use winit::{
 use gpgpu::{
     err_at,
     util::{self, PrettyRow},
-    Config, Error, Result,
+    Config, Error, Result, util,
 };
 
 use crate::Opt;
 
 pub fn info_global_report(opts: &Opt) -> Result<()> {
-    let inst = wgpu::Instance::new(gpgpu::backend().into());
+    let inst = wgpu::Instance::new(util::wgpu_backend().into());
     let gr = inst.generate_report();
     let mut srs: Vec<gpgpu::pretty::StorageReport> = vec![("surfaces", gr.surfaces).into()];
 
@@ -49,7 +49,7 @@ pub fn info_global_report(opts: &Opt) -> Result<()> {
 }
 
 pub fn info_queue(_opts: &Opt) -> Result<()> {
-    let inst = wgpu::Instance::new(gpgpu::backend().into());
+    let inst = wgpu::Instance::new(util::wgpu_backend().into());
     let adapters: Vec<wgpu::Adapter> =
         inst.enumerate_adapters(wgpu::Backends::all()).collect();
 

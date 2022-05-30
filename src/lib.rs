@@ -120,7 +120,6 @@ pub use save::SaveFile;
 pub use screen::Screen;
 pub use style::{to_rgba8unorm_color, Border, Style, StyleBorder};
 pub use transforms::{Camera, Ortho, Perspective, Transforms};
-pub use util::*;
 
 pub const CLEAR_COLOR: wgpu::Color = wgpu::Color {
     r: 0.0,

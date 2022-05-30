@@ -1,16 +1,16 @@
 use wgpu::Backend;
 
 #[cfg(target_os = "macos")]
-pub fn backend() -> Backend {
+pub fn wgpu_backend() -> Backend {
     Backend::Metal
 }
 
 #[cfg(target_os = "linux")]
-pub fn backend() -> Backend {
+pub fn wgpu_backend() -> Backend {
     Backend::Vulkan
 }
 
-pub fn backend_to_string(backend: Backend) -> String {
+pub fn wgpu_backend_to_string(backend: Backend) -> String {
     let s = match backend {
         Backend::Empty => "empty",
         Backend::Vulkan => "vulkan",

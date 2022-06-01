@@ -173,20 +173,14 @@ impl Circle {
     }
 
     pub fn print(&self, prefix: &str) {
-        println!(
-            "{}primv::Circle({},{})",
-            prefix, self.attrs.radius, self.attrs.width
-        );
+        println!("{}primv::Circle({},{})", prefix, self.attrs.radius, self.attrs.width);
     }
 }
 
 impl Circle {
     pub fn to_extent(&self) -> Extent {
         let diameter = self.computed_attrs.radius * 2.0;
-        Extent {
-            width: diameter,
-            height: diameter,
-        }
+        Extent { width: diameter, height: diameter }
     }
 
     pub fn resize(&mut self, _: Extent, scale_factor: Option<f32>) -> &mut Self {
@@ -209,9 +203,7 @@ impl Circle {
         // overwrite the transform mvp buffer.
         {
             let content = context.transforms.to_bind_content();
-            context
-                .queue
-                .write_buffer(&self.transform_buffer, 0, &content);
+            context.queue.write_buffer(&self.transform_buffer, 0, &content);
         }
         // overwrite the uniform buffer
         {
@@ -229,9 +221,7 @@ impl Circle {
                 _padding: Default::default(),
             };
             let content: [u8; UniformBuffer::SIZE] = bytemuck::cast(ub);
-            context
-                .queue
-                .write_buffer(&self.uniform_buffer, 0, &content.to_vec());
+            context.queue.write_buffer(&self.uniform_buffer, 0, &content.to_vec());
         }
 
         let mut render_pass = {
@@ -240,10 +230,7 @@ impl Circle {
                 color_attachments: &[wgpu::RenderPassColorAttachment {
                     view: &target.view,
                     resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Load,
-                        store: true,
-                    },
+                    ops: wgpu::Operations { load: wgpu::LoadOp::Load, store: true },
                 }],
                 depth_stencil_attachment: None,
             };
@@ -292,24 +279,12 @@ impl Circle {
         use wgpu::{util::DeviceExt, BufferUsages};
 
         let vertices = [
-            BoxVertex {
-                position: [-1.0, 1.0, 0.0, 1.0],
-            },
-            BoxVertex {
-                position: [-1.0, -1.0, 0.0, 1.0],
-            },
-            BoxVertex {
-                position: [1.0, 1.0, 0.0, 1.0],
-            },
-            BoxVertex {
-                position: [1.0, 1.0, 0.0, 1.0],
-            },
-            BoxVertex {
-                position: [-1.0, -1.0, 0.0, 1.0],
-            },
-            BoxVertex {
-                position: [1.0, -1.0, 0.0, 1.0],
-            },
+            BoxVertex { position: [-1.0, 1.0, 0.0, 1.0] },
+            BoxVertex { position: [-1.0, -1.0, 0.0, 1.0] },
+            BoxVertex { position: [1.0, 1.0, 0.0, 1.0] },
+            BoxVertex { position: [1.0, 1.0, 0.0, 1.0] },
+            BoxVertex { position: [-1.0, -1.0, 0.0, 1.0] },
+            BoxVertex { position: [1.0, -1.0, 0.0, 1.0] },
         ];
         let contents: &[u8] = bytemuck::cast_slice(&vertices);
         let desc = wgpu::util::BufferInitDescriptor {

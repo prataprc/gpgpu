@@ -167,15 +167,10 @@ fn handle_build(opts: Opt) -> Result<()> {
     println!("found {} files, unique {} files", total_found, files.len());
 
     let cache_fontfiles = util::gpgpu_cached_file("fontfiles").unwrap();
-    let data: Vec<String> = files
-        .iter()
-        .map(|ff| format!("{}", ff.to_loc().to_str().unwrap()))
-        .collect();
+    let data: Vec<String> =
+        files.iter().map(|ff| format!("{}", ff.to_loc().to_str().unwrap())).collect();
 
-    err_at!(
-        IOError,
-        fs::write(&cache_fontfiles, data.join("\n").as_bytes())
-    )?;
+    err_at!(IOError, fs::write(&cache_fontfiles, data.join("\n").as_bytes()))?;
 
     Ok(())
 }

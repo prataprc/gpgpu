@@ -253,9 +253,8 @@ fn render_loop(screen: Arc<Screen>, rx: mpsc::Receiver<Request>) -> Result<()> {
             screen.device.create_command_encoder(&desc)
         };
         {
-            let frame_view = frame
-                .frame
-                .create_view(&wgpu::TextureViewDescriptor::default());
+            let frame_view =
+                frame.frame.create_view(&wgpu::TextureViewDescriptor::default());
             load.set_source(frame_view)
         };
 
@@ -299,10 +298,7 @@ fn get_frames(rx: &mpsc::Receiver<Request>) -> (Vec<Frame>, bool) {
         match rx.try_recv() {
             Ok(msg) => match msg {
                 Request::Frame { frame, resp_tx } => {
-                    let f = Frame {
-                        frame,
-                        resp_txs: vec![resp_tx],
-                    };
+                    let f = Frame { frame, resp_txs: vec![resp_tx] };
                     frames.push(f);
                 }
             },

@@ -77,11 +77,7 @@ impl Load {
             device.create_render_pipeline(&desc)
         };
 
-        let val = Load {
-            source: None,
-            bind_group_layout,
-            pipeline,
-        };
+        let val = Load { source: None, bind_group_layout, pipeline };
 
         Ok(val)
     }
@@ -140,10 +136,7 @@ impl Load {
                 color_attachments: &[wgpu::RenderPassColorAttachment {
                     view: &target.view,
                     resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Load,
-                        store: true,
-                    },
+                    ops: wgpu::Operations { load: wgpu::LoadOp::Load, store: true },
                 }],
                 depth_stencil_attachment: None,
             };

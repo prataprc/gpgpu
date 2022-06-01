@@ -59,19 +59,13 @@ pub struct Extent {
 
 impl From<wgpu::Extent3d> for Extent {
     fn from(val: wgpu::Extent3d) -> Self {
-        Extent {
-            width: val.width as f32,
-            height: val.height as f32,
-        }
+        Extent { width: val.width as f32, height: val.height as f32 }
     }
 }
 
 impl From<winit::dpi::PhysicalSize<u32>> for Extent {
     fn from(val: winit::dpi::PhysicalSize<u32>) -> Extent {
-        Extent {
-            width: val.width as f32,
-            height: val.height as f32,
-        }
+        Extent { width: val.width as f32, height: val.height as f32 }
     }
 }
 

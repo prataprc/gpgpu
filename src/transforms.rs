@@ -227,10 +227,7 @@ impl Transforms {
 
         let model_ref: &[f32; 16] = model.as_ref();
         let mvp_ref: &[f32; 16] = mvp.as_ref();
-        let ub = UniformBuffer {
-            model: model_ref.clone(),
-            mvp: mvp_ref.clone(),
-        };
+        let ub = UniformBuffer { model: model_ref.clone(), mvp: mvp_ref.clone() };
 
         let contents: [u8; UniformBuffer::SIZE] = bytemuck::cast(ub);
         contents.to_vec()

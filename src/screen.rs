@@ -1,9 +1,9 @@
-use winit::{window::Window, dpi};
-use log::{error, warn, info};
+use log::{error, info, warn};
+use winit::{dpi, window::Window};
 
-use std::{sync::Arc};
+use std::sync::Arc;
 
-use crate::{Config, Error, Result, util::Spinlock};
+use crate::{util::Spinlock, Config, Error, Result};
 
 pub struct Screen {
     pub name: String,
@@ -37,13 +37,16 @@ impl Screen {
 
         info!(
             "Surface created with size {}x{} format {:?} scale_factor:{}",
-            size.width, size.height, surface_format, win.scale_factor()
+            size.width,
+            size.height,
+            surface_format,
+            win.scale_factor()
         );
 
         let desc = wgpu::DeviceDescriptor {
             label: Some(&name),
             features: adapter.features(),
-            limits: wgpu::Limits::default(),   // TODO: fetch from configuration
+            limits: wgpu::Limits::default(), // TODO: fetch from configuration
         };
         let (device, queue) = {
             let res = adapter.request_device(&desc, config.to_trace_path()).await;
@@ -77,7 +80,7 @@ impl Screen {
     pub fn resize(&self, new_size: dpi::PhysicalSize<u32>, scale_factor: Option<f64>) {
         if new_size.width <= 0 && new_size.height <= 0 {
             warn!("screen-resize {:?}", new_size);
-            return
+            return;
         }
         info!("screen-resize {:?}", new_size);
         match scale_factor {
@@ -90,7 +93,6 @@ impl Screen {
             (s.surface_config.clone(), scale_factor.unwrap_or(s.scale_factor))
         };
 
-
         let surface_config = wgpu::SurfaceConfiguration {
             width: new_size.width,
             height: new_size.height,
@@ -98,10 +100,7 @@ impl Screen {
         };
         self.surface.configure(&self.device, &surface_config);
 
-        let state = State {
-            surface_config,
-            scale_factor,
-        };
+        let state = State { surface_config, scale_factor };
 
         *self.state.write() = Arc::new(state);
     }
@@ -135,8 +134,8 @@ impl Screen {
             format,
             usage: {
                 TextureUsages::COPY_SRC
-                | TextureUsages::TEXTURE_BINDING
-                | TextureUsages::RENDER_ATTACHMENT
+                    | TextureUsages::TEXTURE_BINDING
+                    | TextureUsages::RENDER_ATTACHMENT
             },
         };
         self.device.create_texture(&desc)
@@ -154,7 +153,7 @@ impl Screen {
 
     pub fn to_extent3d(&self) -> wgpu::Extent3d {
         let sc = self.to_surface_config();
-        wgpu::Extent3d{
+        wgpu::Extent3d {
             width: sc.width,
             height: sc.height,
             depth_or_array_layers: 1,
@@ -167,7 +166,6 @@ impl Screen {
         (sc.width as f32) / (sc.height as f32)
     }
 }
-
 
 fn uncaptured_error_handler(err: wgpu::Error) {
     error!("uncaptured error: {}", err)

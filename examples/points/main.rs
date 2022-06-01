@@ -91,21 +91,12 @@ fn on_redraw_requested(
     let target = state.render.to_color_target();
 
     let mut encoder = {
-        let desc = wgpu::CommandEncoderDescriptor {
-            label: Some("example-points"),
-        };
-        state
-            .render
-            .as_screen()
-            .device
-            .create_command_encoder(&desc)
+        let desc = wgpu::CommandEncoderDescriptor { label: Some("example-points") };
+        state.render.as_screen().device.create_command_encoder(&desc)
     };
     {
         let mut render_pass = {
-            let ops = wgpu::Operations {
-                load: wgpu::LoadOp::Load,
-                store: true,
-            };
+            let ops = wgpu::Operations { load: wgpu::LoadOp::Load, store: true };
             let desc = wgpu::RenderPassDescriptor {
                 label: Some("Render Pass"),
                 color_attachments: &[

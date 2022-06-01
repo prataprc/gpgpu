@@ -83,22 +83,10 @@ where
     T: fmt::Display,
 {
     fn print(&self) {
-        println!(
-            "{:.4} {:.4} {:.4} {:.4}",
-            self.x.x, self.y.x, self.z.x, self.w.x
-        );
-        println!(
-            "{:.4} {:.4} {:.4} {:.4}",
-            self.x.y, self.y.y, self.z.y, self.w.y
-        );
-        println!(
-            "{:.4} {:.4} {:.4} {:.4}",
-            self.x.z, self.y.z, self.z.z, self.w.z
-        );
-        println!(
-            "{:.4} {:.4} {:.4} {:.4}",
-            self.x.w, self.y.w, self.z.w, self.w.w
-        );
+        println!("{:.4} {:.4} {:.4} {:.4}", self.x.x, self.y.x, self.z.x, self.w.x);
+        println!("{:.4} {:.4} {:.4} {:.4}", self.x.y, self.y.y, self.z.y, self.w.y);
+        println!("{:.4} {:.4} {:.4} {:.4}", self.x.z, self.y.z, self.z.z, self.w.z);
+        println!("{:.4} {:.4} {:.4} {:.4}", self.x.w, self.y.w, self.z.w, self.w.w);
     }
 }
 
@@ -118,12 +106,7 @@ where
 
 pub fn html_to_color(s: &str) -> Result<wgpu::Color> {
     let c = tint::Color::from_hex(s);
-    let val = wgpu::Color {
-        r: c.red,
-        g: c.green,
-        b: c.blue,
-        a: c.alpha,
-    };
+    let val = wgpu::Color { r: c.red, g: c.green, b: c.blue, a: c.alpha };
     Ok(val)
 }
 
@@ -132,10 +115,8 @@ where
     T: FromStr,
     <T as FromStr>::Err: fmt::Display,
 {
-    let items: Vec<Result<T>> = txt
-        .split(",")
-        .map(|a| err_at!(FailConvert, a.parse()))
-        .collect();
+    let items: Vec<Result<T>> =
+        txt.split(",").map(|a| err_at!(FailConvert, a.parse())).collect();
     let mut outs = vec![];
     for item in items.into_iter() {
         outs.push(item?)
@@ -224,11 +205,7 @@ pub struct FrameRate {
 impl FrameRate {
     pub fn new() -> FrameRate {
         let now = time::Instant::now();
-        FrameRate {
-            next_frame: now,
-            start_time: now,
-            n_frames: 0,
-        }
+        FrameRate { next_frame: now, start_time: now, n_frames: 0 }
     }
 
     pub fn is_redraw(&self) -> bool {

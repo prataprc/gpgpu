@@ -125,12 +125,8 @@ impl FontFile {
 
     pub fn to_face_properties(&self) -> Result<FaceProperties> {
         let face = self.to_face()?;
-        let name = self
-            .loc
-            .file_name()
-            .map(|s| s.to_str())
-            .flatten()
-            .map(|x| x.to_string());
+        let name =
+            self.loc.file_name().map(|s| s.to_str()).flatten().map(|x| x.to_string());
 
         let val = FaceProperties {
             ff: self,
@@ -387,12 +383,7 @@ impl<'a> PrettyRow for FaceProperties<'a> {
 
 impl<'a> FaceProperties<'a> {
     pub fn print_property(&self, property: &str) -> Result<String> {
-        let name = self
-            .name
-            .as_ref()
-            .map(String::as_str)
-            .unwrap_or("-")
-            .to_string();
+        let name = self.name.as_ref().map(String::as_str).unwrap_or("-").to_string();
 
         let s = match property {
             "name" => name,
@@ -406,37 +397,30 @@ impl<'a> FaceProperties<'a> {
             "monospaced" => format_bool!(self.monospaced).to_string(),
             "variable" => format_bool!(self.variable).to_string(),
             "units_per_em" => self.units_per_em.to_string(),
-            "x_height" => self
-                .x_height
-                .as_ref()
-                .map(i16::to_string)
-                .unwrap_or("-".to_string()),
+            "x_height" => {
+                self.x_height.as_ref().map(i16::to_string).unwrap_or("-".to_string())
+            }
             "capital_height" => self
                 .capital_height
                 .as_ref()
                 .map(i16::to_string)
                 .unwrap_or("-".to_string()),
-            "underline_metrics" => self
-                .underline_metrics
-                .map(lmetrics_to_string)
-                .unwrap_or("-".to_string()),
-            "strikeout_metrics" => self
-                .strikeout_metrics
-                .map(lmetrics_to_string)
-                .unwrap_or("-".to_string()),
-            "subscript_metrics" => self
-                .subscript_metrics
-                .map(smetrics_to_string)
-                .unwrap_or("-".to_string()),
+            "underline_metrics" => {
+                self.underline_metrics.map(lmetrics_to_string).unwrap_or("-".to_string())
+            }
+            "strikeout_metrics" => {
+                self.strikeout_metrics.map(lmetrics_to_string).unwrap_or("-".to_string())
+            }
+            "subscript_metrics" => {
+                self.subscript_metrics.map(smetrics_to_string).unwrap_or("-".to_string())
+            }
             "superscript_metrics" => self
                 .superscript_metrics
                 .map(smetrics_to_string)
                 .unwrap_or("-".to_string()),
-            "italic_angle" => self
-                .italic_angle
-                .as_ref()
-                .map(f32::to_string)
-                .unwrap_or("-".to_string()),
+            "italic_angle" => {
+                self.italic_angle.as_ref().map(f32::to_string).unwrap_or("-".to_string())
+            }
             "weight" => weight_to_string(&self.weight),
             "width" => width_to_string(&self.width),
             "style" => style_to_string(&self.style),
@@ -558,22 +542,11 @@ fn style_to_string(s: &ttf_parser::os2::Style) -> String {
 }
 
 fn lmetrics_to_string(val: ttf_parser::LineMetrics) -> String {
-    let ttf_parser::LineMetrics {
-        position,
-        thickness,
-    } = val;
+    let ttf_parser::LineMetrics { position, thickness } = val;
     format!("pos:{},thick:{}", position, thickness)
 }
 
 fn smetrics_to_string(val: ttf_parser::ScriptMetrics) -> String {
-    let ttf_parser::ScriptMetrics {
-        x_size,
-        y_size,
-        x_offset,
-        y_offset,
-    } = val;
-    format!(
-        "xoff:{},yoff:{}/x:{},y:{}",
-        x_offset, y_offset, x_size, y_size,
-    )
+    let ttf_parser::ScriptMetrics { x_size, y_size, x_offset, y_offset } = val;
+    format!("xoff:{},yoff:{}/x:{},y:{}", x_offset, y_offset, x_size, y_size,)
 }

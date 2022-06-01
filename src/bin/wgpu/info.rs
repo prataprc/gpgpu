@@ -7,9 +7,9 @@ use winit::{
 };
 
 use gpgpu::{
-    err_at,
+    err_at, util,
     util::{self, PrettyRow},
-    Config, Error, Result, util,
+    Config, Error, Result,
 };
 
 use crate::Opt;
@@ -17,7 +17,8 @@ use crate::Opt;
 pub fn info_global_report(opts: &Opt) -> Result<()> {
     let inst = wgpu::Instance::new(util::wgpu_backend().into());
     let gr = inst.generate_report();
-    let mut srs: Vec<gpgpu::pretty::StorageReport> = vec![("surfaces", gr.surfaces).into()];
+    let mut srs: Vec<gpgpu::pretty::StorageReport> =
+        vec![("surfaces", gr.surfaces).into()];
 
     let mut extend_hub_report = |hr: &wgpu_core::hub::HubReport| {
         srs.extend_from_slice(&vec![
@@ -60,7 +61,8 @@ pub fn info_queue(_opts: &Opt) -> Result<()> {
             limits: wgpu::Limits::default(), // TODO: fetch from configuration
         };
         let (_, queue) = {
-            let r = pollster::block_on(async { adapter.request_device(&desc, None).await });
+            let r =
+                pollster::block_on(async { adapter.request_device(&desc, None).await });
             err_at!(Fatal, r)
         }?;
         println!(
@@ -87,14 +89,8 @@ pub fn info_window(
         err_at!(Fatal, wb.build(&eloop))?
     };
 
-    println!(
-        " Primary monitor: {:?}",
-        window.current_monitor().map(|m| m.name())
-    );
-    println!(
-        " Current monitor: {:?}",
-        window.current_monitor().map(|m| m.name())
-    );
+    println!(" Primary monitor: {:?}", window.current_monitor().map(|m| m.name()));
+    println!(" Current monitor: {:?}", window.current_monitor().map(|m| m.name()));
     println!();
 
     let monitors: Vec<MonitorHandle> = window.available_monitors().collect();
@@ -146,9 +142,9 @@ pub fn info_features(opts: &Opt) -> Result<()> {
     let adapters: Vec<wgpu::Adapter> =
         instance.enumerate_adapters(wgpu::Backends::all()).collect();
 
-    adapters
-        .iter()
-        .for_each(|a| gpgpu::pretty::add_adapter_to_features(&mut features, a.features()));
+    adapters.iter().for_each(|a| {
+        gpgpu::pretty::add_adapter_to_features(&mut features, a.features())
+    });
 
     let mut table = prettytable::Table::new();
     let table = match features.len() {

@@ -8,10 +8,7 @@ fn test_binomial_coeffs() {
     assert_eq!(binomial_coeffs(3), vec![1.0, 3.0, 3.0, 1.0]);
     assert_eq!(binomial_coeffs(4), vec![1.0, 4.0, 6.0, 4.0, 1.0]);
     assert_eq!(binomial_coeffs(5), vec![1.0, 5.0, 10.0, 10.0, 5.0, 1.0]);
-    assert_eq!(
-        binomial_coeffs(6),
-        vec![1.0, 6.0, 15.0, 20.0, 15.0, 6.0, 1.0]
-    );
+    assert_eq!(binomial_coeffs(6), vec![1.0, 6.0, 15.0, 20.0, 15.0, 6.0, 1.0]);
 }
 
 #[test]

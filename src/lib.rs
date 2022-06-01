@@ -121,12 +121,7 @@ pub use screen::Screen;
 pub use style::{to_rgba8unorm_color, Border, Style, StyleBorder};
 pub use transforms::{Camera, Ortho, Perspective, Transforms};
 
-pub const CLEAR_COLOR: wgpu::Color = wgpu::Color {
-    r: 0.0,
-    g: 0.0,
-    b: 0.0,
-    a: 1.0,
-};
+pub const CLEAR_COLOR: wgpu::Color = wgpu::Color { r: 0.0, g: 0.0, b: 0.0, a: 1.0 };
 
 pub const DEFAULT_SCALE_FACTOR: f32 = 1.0;
 

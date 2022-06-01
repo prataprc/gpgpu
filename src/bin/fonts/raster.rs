@@ -97,12 +97,7 @@ pub fn handle_raster(opts: Opt) -> Result<()> {
         let domr = make_dom(&opts, &render, FORMAT)?;
 
         render.start();
-        State {
-            font,
-            render,
-            frames: util::FrameRate::new(),
-            domr,
-        }
+        State { font, render, frames: util::FrameRate::new(), domr }
     };
 
     swin.on_win_scale_factor_changed(Box::new(on_win_scale_factor_changed))

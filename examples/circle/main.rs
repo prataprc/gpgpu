@@ -64,9 +64,7 @@ impl State {
             queue: self.render.as_queue(),
         };
         let mut target = self.render.to_color_target();
-        self.domr
-            .redraw(&context, &mut encoder, &mut target)
-            .unwrap();
+        self.domr.redraw(&context, &mut encoder, &mut target).unwrap();
 
         self.render.submit(encoder).unwrap();
 
@@ -105,11 +103,7 @@ fn main() {
         domr.print();
 
         render.start();
-        State {
-            render,
-            next_frame: time::Instant::now(),
-            domr,
-        }
+        State { render, next_frame: time::Instant::now(), domr }
     };
 
     swin.on_win_scale_factor_changed(Box::new(on_win_scale_factor_changed))

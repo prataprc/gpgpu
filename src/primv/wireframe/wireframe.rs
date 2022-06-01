@@ -176,9 +176,7 @@ impl Wireframe {
         // overwrite the transform mvp buffer.
         {
             let content = context.transforms.to_bind_content();
-            context
-                .queue
-                .write_buffer(&self.transform_buffer, 0, &content);
+            context.queue.write_buffer(&self.transform_buffer, 0, &content);
         }
 
         let mut render_pass = {
@@ -296,11 +294,10 @@ impl Vertex {
         match txt.split(";").collect::<Vec<&str>>().as_slice() {
             ["", ""] | [""] | [] => Ok(None),
             [pos, ""] => Some(Vertex::from_position(&util::parse_csv(pos)?)).transpose(),
-            [pos, color] => Some(Vertex::new(
-                &util::parse_csv(pos)?,
-                &util::parse_csv(color)?,
-            ))
-            .transpose(),
+            [pos, color] => {
+                Some(Vertex::new(&util::parse_csv(pos)?, &util::parse_csv(color)?))
+                    .transpose()
+            }
             [pos] => Some(Vertex::from_position(&util::parse_csv(pos)?)).transpose(),
             _ => err_at!(Invalid, msg: "invalid vertex {}", txt),
         }

@@ -76,8 +76,7 @@ fn main() {
         SubCommand::Formats => handle_formats(opts),
     };
 
-    res.map_err(|err: Error| println!("unexpected error: {}", err))
-        .ok();
+    res.map_err(|err: Error| println!("unexpected error: {}", err)).ok();
 }
 
 fn handle_report(opts: Opt, config: &Config) -> Result<()> {

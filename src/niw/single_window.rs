@@ -192,10 +192,7 @@ where
     }
 
     pub fn to_scale_factor(&self) -> f32 {
-        self.window
-            .as_ref()
-            .map(|w| w.scale_factor() as f32)
-            .unwrap_or(0.0)
+        self.window.as_ref().map(|w| w.scale_factor() as f32).unwrap_or(0.0)
     }
 
     pub fn run(mut self, mut state: S) -> !
@@ -428,10 +425,7 @@ where
 
     pub fn on_redraw_events_cleared(&mut self, handler: Handler<S, E>) -> &mut Self {
         debug!("subcribed to on_redraw_events_cleared ...");
-        self.event_handlers
-            .as_mut()
-            .unwrap()
-            .on_redraw_events_cleared = handler;
+        self.event_handlers.as_mut().unwrap().on_redraw_events_cleared = handler;
         self
     }
 
@@ -455,10 +449,7 @@ where
 
     pub fn on_win_close_requested(&mut self, handler: Handler<S, E>) -> &mut Self {
         debug!("subcribed to on_win_close_requested ...");
-        self.window_event_handlers
-            .as_mut()
-            .unwrap()
-            .on_close_requested = handler;
+        self.window_event_handlers.as_mut().unwrap().on_close_requested = handler;
         self
     }
 
@@ -482,19 +473,13 @@ where
 
     pub fn on_win_hovered_file_cancelled(&mut self, handler: Handler<S, E>) -> &mut Self {
         debug!("subcribed to on_win_hovered_file_cancelled ...");
-        self.window_event_handlers
-            .as_mut()
-            .unwrap()
-            .on_hovered_file_cancelled = handler;
+        self.window_event_handlers.as_mut().unwrap().on_hovered_file_cancelled = handler;
         self
     }
 
     pub fn on_win_received_character(&mut self, handler: Handler<S, E>) -> &mut Self {
         debug!("subcribed to on_win_received_character ...");
-        self.window_event_handlers
-            .as_mut()
-            .unwrap()
-            .on_received_character = handler;
+        self.window_event_handlers.as_mut().unwrap().on_received_character = handler;
         self
     }
 
@@ -506,19 +491,13 @@ where
 
     pub fn on_win_keyboard_input(&mut self, handler: Handler<S, E>) -> &mut Self {
         debug!("subcribed to on_win_keyboard_input ...");
-        self.window_event_handlers
-            .as_mut()
-            .unwrap()
-            .on_keyboard_input = handler;
+        self.window_event_handlers.as_mut().unwrap().on_keyboard_input = handler;
         self
     }
 
     pub fn on_win_modifiers_changed(&mut self, handler: Handler<S, E>) -> &mut Self {
         debug!("subcribed to on_win_modifiers_changed ...");
-        self.window_event_handlers
-            .as_mut()
-            .unwrap()
-            .on_modifiers_changed = handler;
+        self.window_event_handlers.as_mut().unwrap().on_modifiers_changed = handler;
         self
     }
 
@@ -530,10 +509,7 @@ where
 
     pub fn on_win_cursor_entered(&mut self, handler: Handler<S, E>) -> &mut Self {
         debug!("subcribed to on_win_cursor_entered ...");
-        self.window_event_handlers
-            .as_mut()
-            .unwrap()
-            .on_cursor_entered = handler;
+        self.window_event_handlers.as_mut().unwrap().on_cursor_entered = handler;
         self
     }
 
@@ -557,10 +533,7 @@ where
 
     pub fn on_win_touchpad_pressure(&mut self, handler: Handler<S, E>) -> &mut Self {
         debug!("subcribed to on_win_touchpad_pressure ...");
-        self.window_event_handlers
-            .as_mut()
-            .unwrap()
-            .on_touchpad_pressure = handler;
+        self.window_event_handlers.as_mut().unwrap().on_touchpad_pressure = handler;
         self
     }
 
@@ -578,19 +551,13 @@ where
 
     pub fn on_win_scale_factor_changed(&mut self, handler: Handler<S, E>) -> &mut Self {
         debug!("subcribed to on_win_scale_factor_changed ...");
-        self.window_event_handlers
-            .as_mut()
-            .unwrap()
-            .on_scale_factor_changed = handler;
+        self.window_event_handlers.as_mut().unwrap().on_scale_factor_changed = handler;
         self
     }
 
     pub fn on_win_theme_changed(&mut self, handler: Handler<S, E>) -> &mut Self {
         debug!("subcribed to on_win_theme_changed ...");
-        self.window_event_handlers
-            .as_mut()
-            .unwrap()
-            .on_theme_changed = handler;
+        self.window_event_handlers.as_mut().unwrap().on_theme_changed = handler;
         self
     }
 

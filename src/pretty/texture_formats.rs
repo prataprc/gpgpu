@@ -37,17 +37,18 @@ impl PrettyRow for TextureFormatInfo {
             .collect::<Vec<String>>()
             .join(",");
 
-        let flags = texture_format_flags()
-            .iter()
-            .filter_map(|(u, s, _)| {
-                if gff.flags.contains(*u) {
-                    Some(s.to_string())
-                } else {
-                    None
-                }
-            })
-            .collect::<Vec<String>>()
-            .join(",");
+        let flags =
+            texture_format_flags()
+                .iter()
+                .filter_map(|(u, s, _)| {
+                    if gff.flags.contains(*u) {
+                        Some(s.to_string())
+                    } else {
+                        None
+                    }
+                })
+                .collect::<Vec<String>>()
+                .join(",");
 
         row![
             self.name,
@@ -68,35 +69,16 @@ pub fn texture_usages() -> Vec<(wgpu_types::TextureUsages, &'static str, &'stati
     vec![
         (wgpu_types::TextureUsages::COPY_DST, "D", "COPY_DST"),
         (wgpu_types::TextureUsages::COPY_SRC, "C", "COPY_SRC"),
-        (
-            wgpu_types::TextureUsages::RENDER_ATTACHMENT,
-            "R",
-            "RENDER_ATTACHMENT",
-        ),
-        (
-            wgpu_types::TextureUsages::STORAGE_BINDING,
-            "S",
-            "STORAGE_BINDING",
-        ),
-        (
-            wgpu_types::TextureUsages::TEXTURE_BINDING,
-            "T",
-            "TEXTURE_BINDING",
-        ),
+        (wgpu_types::TextureUsages::RENDER_ATTACHMENT, "R", "RENDER_ATTACHMENT"),
+        (wgpu_types::TextureUsages::STORAGE_BINDING, "S", "STORAGE_BINDING"),
+        (wgpu_types::TextureUsages::TEXTURE_BINDING, "T", "TEXTURE_BINDING"),
     ]
 }
 
-pub fn texture_format_flags() -> Vec<(
-    wgpu_types::TextureFormatFeatureFlags,
-    &'static str,
-    &'static str,
-)> {
+pub fn texture_format_flags(
+) -> Vec<(wgpu_types::TextureFormatFeatureFlags, &'static str, &'static str)> {
     vec![
-        (
-            wgpu_types::TextureFormatFeatureFlags::STORAGE_ATOMICS,
-            "A",
-            "STORAGE_ATOMICS",
-        ),
+        (wgpu_types::TextureFormatFeatureFlags::STORAGE_ATOMICS, "A", "STORAGE_ATOMICS"),
         (
             wgpu_types::TextureFormatFeatureFlags::STORAGE_READ_WRITE,
             "RW",

@@ -28,13 +28,7 @@ impl<'a> Glyph<'a> {
         let id = face.glyph_index(ch).unwrap_or(ttf_parser::GlyphId(0));
         let name = face.glyph_name(id).unwrap_or("--").to_string();
 
-        let val = Glyph {
-            face,
-            code_point,
-            ch,
-            id,
-            name,
-        };
+        let val = Glyph { face, code_point, ch, id, name };
 
         Ok(val)
     }
@@ -142,12 +136,8 @@ impl<'a> PrettyRow for Glyph<'a> {
             self.name,
             format_option!(self.unicode_block().as_ref().map(|x| x.name())),
             self.cjk(),
-            self.hor_advance()
-                .map(|x| x.to_string())
-                .unwrap_or("-".to_string()),
-            self.ver_advance()
-                .map(|x| x.to_string())
-                .unwrap_or("-".to_string()),
+            self.hor_advance().map(|x| x.to_string()).unwrap_or("-".to_string()),
+            self.ver_advance().map(|x| x.to_string()).unwrap_or("-".to_string()),
             format_option!(self.hor_side_bearing()),
             format_option!(self.ver_side_bearing()),
             format_option!(self.y_origin()),
@@ -186,9 +176,7 @@ impl Segment {
 
 impl Default for Outline {
     fn default() -> Outline {
-        Outline {
-            segments: Vec::default(),
-        }
+        Outline { segments: Vec::default() }
     }
 }
 
@@ -206,8 +194,7 @@ impl ttf_parser::OutlineBuilder for Outline {
     }
 
     fn curve_to(&mut self, x1: f32, y1: f32, x2: f32, y2: f32, x: f32, y: f32) {
-        self.segments
-            .push(Segment::Curv((x1, y1), (x2, y2), (x, y)))
+        self.segments.push(Segment::Curv((x1, y1), (x2, y2), (x, y)))
     }
 
     fn close(&mut self) {
@@ -277,22 +264,13 @@ pub struct GlyphRect {
 
 impl Default for GlyphRect {
     fn default() -> GlyphRect {
-        GlyphRect {
-            x_min: 0.0,
-            y_min: 0.0,
-            x_max: 0.0,
-            y_max: 0.0,
-        }
+        GlyphRect { x_min: 0.0, y_min: 0.0, x_max: 0.0, y_max: 0.0 }
     }
 }
 
 impl fmt::Debug for GlyphRect {
     fn fmt(&self, f: &mut fmt::Formatter) -> result::Result<(), fmt::Error> {
-        write!(
-            f,
-            "({},{})->({},{})",
-            self.x_min, self.y_min, self.x_max, self.y_max
-        )
+        write!(f, "({},{})->({},{})", self.x_min, self.y_min, self.x_max, self.y_max)
     }
 }
 

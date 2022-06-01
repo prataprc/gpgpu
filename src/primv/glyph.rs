@@ -28,10 +28,9 @@ impl Default for Attributes {
 impl Resize for Attributes {
     fn resize(&self, _: Extent, scale_factor: Option<f32>) -> Self {
         match scale_factor {
-            Some(scale_factor) => Attributes {
-                height: self.height * scale_factor,
-                ..*self
-            },
+            Some(scale_factor) => {
+                Attributes { height: self.height * scale_factor, ..*self }
+            }
             None => self.clone(),
         }
     }
@@ -70,10 +69,7 @@ impl GlyphBox {
         let width = (self.metrics.bounding_box.to_width()
             / self.metrics.bounding_box.to_height())
             * self.attrs.height;
-        Extent {
-            width,
-            height: self.attrs.height,
-        }
+        Extent { width, height: self.attrs.height }
     }
 
     pub fn to_metrics(self) -> fonts::GlyphMetrics {

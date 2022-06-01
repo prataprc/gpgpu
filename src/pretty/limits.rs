@@ -190,66 +190,66 @@ pub fn add_adapter_to_limits(limits: &mut Vec<Limit>, adapter_limits: wgpu::Limi
             "max_dynamic_storage_buffers_per_pipeline_layout" => limit
                 .adapters
                 .push(adapter_limits.max_dynamic_storage_buffers_per_pipeline_layout),
-            "max_sampled_textures_per_shader_stage" => limit
-                .adapters
-                .push(adapter_limits.max_sampled_textures_per_shader_stage),
-            "max_samplers_per_shader_stage" => limit
-                .adapters
-                .push(adapter_limits.max_samplers_per_shader_stage),
-            "max_storage_buffers_per_shader_stage" => limit
-                .adapters
-                .push(adapter_limits.max_storage_buffers_per_shader_stage),
-            "max_storage_textures_per_shader_stage" => limit
-                .adapters
-                .push(adapter_limits.max_storage_textures_per_shader_stage),
-            "max_uniform_buffers_per_shader_stage" => limit
-                .adapters
-                .push(adapter_limits.max_uniform_buffers_per_shader_stage),
-            "max_uniform_buffer_binding_size" => limit
-                .adapters
-                .push(adapter_limits.max_uniform_buffer_binding_size),
-            "max_storage_buffer_binding_size" => limit
-                .adapters
-                .push(adapter_limits.max_storage_buffer_binding_size),
+            "max_sampled_textures_per_shader_stage" => {
+                limit.adapters.push(adapter_limits.max_sampled_textures_per_shader_stage)
+            }
+            "max_samplers_per_shader_stage" => {
+                limit.adapters.push(adapter_limits.max_samplers_per_shader_stage)
+            }
+            "max_storage_buffers_per_shader_stage" => {
+                limit.adapters.push(adapter_limits.max_storage_buffers_per_shader_stage)
+            }
+            "max_storage_textures_per_shader_stage" => {
+                limit.adapters.push(adapter_limits.max_storage_textures_per_shader_stage)
+            }
+            "max_uniform_buffers_per_shader_stage" => {
+                limit.adapters.push(adapter_limits.max_uniform_buffers_per_shader_stage)
+            }
+            "max_uniform_buffer_binding_size" => {
+                limit.adapters.push(adapter_limits.max_uniform_buffer_binding_size)
+            }
+            "max_storage_buffer_binding_size" => {
+                limit.adapters.push(adapter_limits.max_storage_buffer_binding_size)
+            }
             "max_vertex_buffers" => {
                 limit.adapters.push(adapter_limits.max_vertex_buffers)
             }
             "max_vertex_attributes" => {
                 limit.adapters.push(adapter_limits.max_vertex_attributes)
             }
-            "max_vertex_buffer_array_stride" => limit
-                .adapters
-                .push(adapter_limits.max_vertex_buffer_array_stride),
+            "max_vertex_buffer_array_stride" => {
+                limit.adapters.push(adapter_limits.max_vertex_buffer_array_stride)
+            }
             "max_push_constant_size" => {
                 limit.adapters.push(adapter_limits.max_push_constant_size)
             }
-            "min_uniform_buffer_offset_alignment" => limit
-                .adapters
-                .push(adapter_limits.min_uniform_buffer_offset_alignment),
-            "min_storage_buffer_offset_alignment" => limit
-                .adapters
-                .push(adapter_limits.min_storage_buffer_offset_alignment),
-            "max_inter_stage_shader_components" => limit
-                .adapters
-                .push(adapter_limits.max_inter_stage_shader_components),
-            "max_compute_workgroup_storage_size" => limit
-                .adapters
-                .push(adapter_limits.max_compute_workgroup_storage_size),
-            "max_compute_invocations_per_workgroup" => limit
-                .adapters
-                .push(adapter_limits.max_compute_invocations_per_workgroup),
-            "max_compute_workgroup_size_x" => limit
-                .adapters
-                .push(adapter_limits.max_compute_workgroup_size_x),
-            "max_compute_workgroup_size_y" => limit
-                .adapters
-                .push(adapter_limits.max_compute_workgroup_size_y),
-            "max_compute_workgroup_size_z" => limit
-                .adapters
-                .push(adapter_limits.max_compute_workgroup_size_z),
-            "max_compute_workgroups_per_dimension" => limit
-                .adapters
-                .push(adapter_limits.max_compute_workgroups_per_dimension),
+            "min_uniform_buffer_offset_alignment" => {
+                limit.adapters.push(adapter_limits.min_uniform_buffer_offset_alignment)
+            }
+            "min_storage_buffer_offset_alignment" => {
+                limit.adapters.push(adapter_limits.min_storage_buffer_offset_alignment)
+            }
+            "max_inter_stage_shader_components" => {
+                limit.adapters.push(adapter_limits.max_inter_stage_shader_components)
+            }
+            "max_compute_workgroup_storage_size" => {
+                limit.adapters.push(adapter_limits.max_compute_workgroup_storage_size)
+            }
+            "max_compute_invocations_per_workgroup" => {
+                limit.adapters.push(adapter_limits.max_compute_invocations_per_workgroup)
+            }
+            "max_compute_workgroup_size_x" => {
+                limit.adapters.push(adapter_limits.max_compute_workgroup_size_x)
+            }
+            "max_compute_workgroup_size_y" => {
+                limit.adapters.push(adapter_limits.max_compute_workgroup_size_y)
+            }
+            "max_compute_workgroup_size_z" => {
+                limit.adapters.push(adapter_limits.max_compute_workgroup_size_z)
+            }
+            "max_compute_workgroups_per_dimension" => {
+                limit.adapters.push(adapter_limits.max_compute_workgroups_per_dimension)
+            }
             _ => unreachable!(),
         }
     }

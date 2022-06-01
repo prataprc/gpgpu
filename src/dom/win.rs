@@ -57,10 +57,7 @@ impl Win {
             height: Dimension::Percent(1.0),
         };
         Win {
-            state: State {
-                style,
-                ..State::default()
-            },
+            state: State { style, ..State::default() },
             children,
         }
     }

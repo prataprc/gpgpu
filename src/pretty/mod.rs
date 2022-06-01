@@ -22,10 +22,7 @@ pub struct StorageReport {
 
 impl<'a> From<(&'a str, wgpu_core::hub::StorageReport)> for StorageReport {
     fn from((name, report): (&str, wgpu_core::hub::StorageReport)) -> Self {
-        StorageReport {
-            name: name.to_string(),
-            report,
-        }
+        StorageReport { name: name.to_string(), report }
     }
 }
 

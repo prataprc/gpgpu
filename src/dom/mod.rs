@@ -223,9 +223,7 @@ fn build_layout(flex: &mut stretch::node::Stretch, node: &mut Node) -> Result<()
 
 fn gather_layout(flex: &stretch::node::Stretch, node: &mut Node) -> Result<()> {
     node.set_box_layout(
-        err_at!(Invalid, flex.layout(node.to_flex_node()))?
-            .clone()
-            .into(),
+        err_at!(Invalid, flex.layout(node.to_flex_node()))?.clone().into(),
     );
     if let Some(nodes) = node.to_mut_children() {
         for node in nodes.iter_mut() {

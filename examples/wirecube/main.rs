@@ -79,9 +79,7 @@ impl State {
             device: &screen.device,
             queue: &screen.queue,
         };
-        self.wireframe
-            .redraw(&context, &mut encoder, &mut target)
-            .unwrap();
+        self.wireframe.redraw(&context, &mut encoder, &mut target).unwrap();
 
         self.render.submit(encoder).unwrap();
 

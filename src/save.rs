@@ -111,11 +111,9 @@ impl SaveFile {
 
             let mut data = Vec::with_capacity(size as usize);
             let padded_data = slice.get_mapped_range().to_vec();
-            padded_data
-                .chunks(self.padded_bytes_per_row as _)
-                .for_each(|chunk| {
-                    data.extend_from_slice(&chunk[..self.unpadded_bytes_per_row as _])
-                });
+            padded_data.chunks(self.padded_bytes_per_row as _).for_each(|chunk| {
+                data.extend_from_slice(&chunk[..self.unpadded_bytes_per_row as _])
+            });
             data
         };
 

@@ -213,12 +213,7 @@ fn handle_perspective(opts: &Opt) -> Result<()> {
     };
 
     let mut transform = Transforms::empty();
-    transform.perspective_by(Perspective {
-        fov,
-        aspect,
-        near,
-        far,
-    });
+    transform.perspective_by(Perspective { fov, aspect, near, far });
 
     match loc {
         Some(loc) => {
@@ -363,11 +358,10 @@ impl Vertex {
         match txt.split(";").collect::<Vec<&str>>().as_slice() {
             ["", ""] | [""] | [] => Ok(None),
             [pos, ""] => Some(Vertex::from_position(&util::parse_csv(pos)?)).transpose(),
-            [pos, color] => Some(Vertex::new(
-                &util::parse_csv(pos)?,
-                &util::parse_csv(color)?,
-            ))
-            .transpose(),
+            [pos, color] => {
+                Some(Vertex::new(&util::parse_csv(pos)?, &util::parse_csv(color)?))
+                    .transpose()
+            }
             [pos] => Some(Vertex::from_position(&util::parse_csv(pos)?)).transpose(),
             _ => err_at!(Invalid, msg: "invalid vertex {}", txt),
         }

@@ -113,21 +113,13 @@ pub fn r_bezier2(
         .map(|(k, (bc, r))| bc * (1.0 - t).powf((Q - k) as f32) * t.powf(k as f32) * r)
         .collect();
 
-    let x: f32 = denom
-        .clone()
-        .into_iter()
-        .zip(xs.into_iter())
-        .map(|(x, p)| x * p)
-        .sum::<f32>()
-        / denom.iter().sum::<f32>();
+    let x: f32 =
+        denom.clone().into_iter().zip(xs.into_iter()).map(|(x, p)| x * p).sum::<f32>()
+            / denom.iter().sum::<f32>();
 
-    let y: f32 = denom
-        .clone()
-        .into_iter()
-        .zip(ys.into_iter())
-        .map(|(y, p)| y * p)
-        .sum::<f32>()
-        / denom.iter().sum::<f32>();
+    let y: f32 =
+        denom.clone().into_iter().zip(ys.into_iter()).map(|(y, p)| y * p).sum::<f32>()
+            / denom.iter().sum::<f32>();
 
     cgmath::Point2::from((x, y))
 }
@@ -149,21 +141,13 @@ pub fn r_bezier3(
         .map(|(k, (bc, r))| bc * (1.0 - t).powf((Q - k) as f32) * t.powf(k as f32) * r)
         .collect();
 
-    let x: f32 = denom
-        .clone()
-        .into_iter()
-        .zip(xs.into_iter())
-        .map(|(x, p)| x * p)
-        .sum::<f32>()
-        / denom.iter().sum::<f32>();
+    let x: f32 =
+        denom.clone().into_iter().zip(xs.into_iter()).map(|(x, p)| x * p).sum::<f32>()
+            / denom.iter().sum::<f32>();
 
-    let y: f32 = denom
-        .clone()
-        .into_iter()
-        .zip(ys.into_iter())
-        .map(|(y, p)| y * p)
-        .sum::<f32>()
-        / denom.iter().sum::<f32>();
+    let y: f32 =
+        denom.clone().into_iter().zip(ys.into_iter()).map(|(y, p)| y * p).sum::<f32>()
+            / denom.iter().sum::<f32>();
 
     cgmath::Point2::from((x, y))
 }

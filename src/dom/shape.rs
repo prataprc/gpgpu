@@ -60,19 +60,13 @@ impl Shape {
     pub fn new_circle(val: primv::circle::Circle) -> Self {
         let mut state = State::<()>::default();
         state.style.flex_style.size = val.to_extent().into();
-        Shape {
-            state,
-            inner: Inner::Circle(val),
-        }
+        Shape { state, inner: Inner::Circle(val) }
     }
 
     pub fn new_glyph_box(val: primv::glyph::GlyphBox) -> Self {
         let mut state = State::<()>::default();
         state.style.flex_style.size = val.to_extent().into();
-        Shape {
-            state,
-            inner: Inner::GlyphBox(val),
-        }
+        Shape { state, inner: Inner::GlyphBox(val) }
     }
 
     pub fn print(&self, prefix: &str) {

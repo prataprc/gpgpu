@@ -25,18 +25,12 @@ impl AsMut<Render> for State {
 }
 
 const VERTICES: &[render::Vertex] = &[
-    render::Vertex {
-        position: [0.0, 0.5, 0.0],
-        color: [1.0, 0.0, 0.0],
-    },
+    render::Vertex { position: [0.0, 0.5, 0.0], color: [1.0, 0.0, 0.0] },
     render::Vertex {
         position: [-0.5, -0.5, 0.0],
         color: [0.0, 1.0, 0.0],
     },
-    render::Vertex {
-        position: [0.5, -0.5, 0.0],
-        color: [0.0, 0.0, 1.0],
-    },
+    render::Vertex { position: [0.5, -0.5, 0.0], color: [0.0, 0.0, 1.0] },
 ];
 
 fn main() {
@@ -88,14 +82,8 @@ fn on_redraw_requested(
     let target = state.render.to_color_target();
 
     let mut encoder = {
-        let desc = wgpu::CommandEncoderDescriptor {
-            label: Some("clear_screen"),
-        };
-        state
-            .render
-            .as_screen()
-            .device
-            .create_command_encoder(&desc)
+        let desc = wgpu::CommandEncoderDescriptor { label: Some("clear_screen") };
+        state.render.as_screen().device.create_command_encoder(&desc)
     };
     {
         let mut render_pass = {

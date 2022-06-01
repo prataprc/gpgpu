@@ -20,10 +20,7 @@ impl Clear {
         encoder: &mut wgpu::CommandEncoder,
         target: &mut ColorTarget,
     ) -> Result<()> {
-        let ops = wgpu::Operations {
-            load: wgpu::LoadOp::Clear(self.bg),
-            store: true,
-        };
+        let ops = wgpu::Operations { load: wgpu::LoadOp::Clear(self.bg), store: true };
 
         let mut render_pass = {
             let desc = wgpu::RenderPassDescriptor {

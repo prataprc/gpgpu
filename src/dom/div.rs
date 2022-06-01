@@ -49,10 +49,7 @@ impl dom::Domesticate for Div {
 
 impl Div {
     pub fn new(children: Vec<dom::Node>) -> Self {
-        Div {
-            state: State::default(),
-            children,
-        }
+        Div { state: State::default(), children }
     }
 
     pub fn print(&self, prefix: &str) {

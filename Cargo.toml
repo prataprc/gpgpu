@@ -31,7 +31,7 @@ wgpu-core = "0.12.0"
 wgpu-types = "0.12.0"
 pollster = "0.2.5"
 log = "0.4.14"
-toml = "0.5.8"
+toml = "0.5.9"
 tint = "1.0.1"
 serde = { version = "1", features = ["derive"] }
 bytemuck = { version = "1.9.1", features = [ "derive", "min_const_generics" ] }
@@ -44,7 +44,7 @@ unicode-blocks = "0.1.4"
 image = "0.24.1"
 
 env_logger = { version = "0.9", optional = true }
-structopt = { version = "0.3.20", default-features = false, optional = true }
+structopt = { version = "0.3.26", default-features = false, optional = true }
 
 [dev-dependencies]
 structopt = { version = "0.3.20", default-features = false }
